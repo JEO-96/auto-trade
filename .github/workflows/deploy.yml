@@ -1,0 +1,70 @@
+name: Deploy to Single Server
+
+on:
+  push:
+    branches: [ main ] # Trigger on push to main branch
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # (Optional) Test Backend
+    # - name: Set up Python
+    #   uses: actions/setup-python@v4
+    #   with:
+    #     python-version: '3.10'
+    # - name: Install backend dependencies
+    #   run: |
+    #     cd backend
+    #     pip install -r requirements.txt
+    # - name: Run tests
+    #   run: |
+    #     cd backend
+    #     # Add test command here if needed
+
+    # (Optional) Test Frontend
+    # - name: Set up Node
+    #   uses: actions/setup-node@v3
+    #   with:
+    #     node-version: '18'
+    # - name: Install frontend dependencies
+    #   run: |
+    #     cd frontend
+    #     npm install
+    # - name: Run linting
+    #   run: |
+    #     cd frontend
+    #     npm run lint
+
+    # 🚀 Deploy via SSH
+    - name: Deploy to Server via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          # 1. Navigate to project root
+          cd ~/traiding-bot # Or your server project path
+
+          # 2. Pull latest code from GitHub
+          git pull origin main
+
+          # 3. Rebuild and restart containers
+          docker compose up --build -d
+
+          # 4. Clean up old images to save space
+          docker image prune -f
+
+          echo "✅ Deployment Successful!"
+
+# 💡 Setup Instructions:
+# 1. Add these 'Secrets' in your GitHub Repo -> Settings -> Secrets and variables -> Actions:
+#    - SERVER_IP: Your server's public IP
+#    - SERVER_USERNAME: The username (e.g., ubuntu, root)
+#    - SSH_PRIVATE_KEY: Your server's private SSH key content

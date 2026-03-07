@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/trading_bot.db:/app/trading_bot.db # SQLite database persistence
+    environment:
+      - PORT=8000
+      # - EXCHANGE_API_KEY=your_key_here # Or use .env file
+
+  frontend:
+    build:
+      context: ./frontend
+      # Pass the backend URL at build time for client-side fetches
+      args:
+         - NEXT_PUBLIC_API_URL=http://your_server_ip:8000
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - NODE_ENV=production
