@@ -70,7 +70,7 @@ export default function DashboardPage() {
                         <h3 className="text-gray-400 text-sm font-semibold uppercase tracking-wider mb-2">봇 구동 상태</h3>
                         <div className="flex items-center gap-3">
                             <div className={`w-3 h-3 rounded-full ${isBotActive ? 'bg-secondary animate-pulse shadow-[0_0_10px_#10B981]' : 'bg-gray-600'}`}></div>
-                            <span className="text-2xl font-bold">{isBotActive ? '가동 중 (Running)' : '정지됨 (Stopped)'}</span>
+                            <span className="text-2xl font-bold">{isBotActive ? '실시간 가동 중' : '시스템 정지됨'}</span>
                         </div>
                     </div>
                     <div className="mt-4 text-sm text-gray-400">
@@ -98,35 +98,35 @@ export default function DashboardPage() {
                 {/* Active Controls */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="glass-panel p-6 rounded-2xl">
-                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" /> 인스턴스 컨트롤</h3>
+                        <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" /> 시스템 제어</h3>
 
                         {isBotActive ? (
                             <button
                                 onClick={toggleEngine}
                                 className="w-full flex items-center justify-center gap-2 py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl font-bold mb-4 transition-colors"
                             >
-                                <StopCircle className="w-6 h-6" /> 봇 정지하기
+                                <StopCircle className="w-6 h-6" /> 봇 엔진 정지하기
                             </button>
                         ) : (
                             <button
                                 onClick={toggleEngine}
                                 className="w-full flex items-center justify-center gap-2 py-4 bg-primary hover:bg-blue-600 text-white rounded-xl font-bold shadow-[0_0_15px_rgba(59,130,246,0.3)] mb-4 transition-all"
                             >
-                                <Play className="w-6 h-6" /> 봇 실행하기
+                                <Play className="w-6 h-6" /> 봇 엔진 실행하기
                             </button>
                         )}
 
                         <div className="bg-surface/50 p-4 rounded-lg border border-gray-700/50">
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-gray-400 text-sm">페어</span>
+                                <span className="text-gray-400 text-sm">감시 페어</span>
                                 <span className="font-semibold">BTC/KRW</span>
                             </div>
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-gray-400 text-sm">주기</span>
+                                <span className="text-gray-400 text-sm">봉 분석 주기</span>
                                 <span className="font-semibold">1 시간봉</span>
                             </div>
                             <div className="flex justify-between items-center text-xs">
-                                <span className="text-gray-400">전략</span>
+                                <span className="text-gray-400">활성 전략</span>
                                 <span className="text-primary font-medium tracking-wide">제임스 돌파전략 v1.0</span>
                             </div>
                         </div>
@@ -145,7 +145,7 @@ export default function DashboardPage() {
                     <div className="glass-panel p-6 rounded-2xl h-full min-h-[400px]">
                         <div className="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
                             <h3 className="text-xl font-bold flex items-center gap-2"><BarChart2 className="w-5 h-5 text-secondary" /> 실시간 로그</h3>
-                            <button className="text-sm bg-surface hover:bg-gray-800 px-3 py-1 rounded-md border border-gray-700 transition-colors">로그 지우기</button>
+                            <button className="text-sm bg-surface hover:bg-gray-800 px-3 py-1 rounded-md border border-gray-700 transition-colors">로그 초기화</button>
                         </div>
 
                         <div className="space-y-4">
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                                     <div className="flex-1">
                                         <div className="flex justify-between">
                                             <p className={`text-sm font-bold ${log.side === 'BUY' ? 'text-primary' : 'text-red-500'}`}>
-                                                {log.side === 'BUY' ? '진입 (BUY)' : '종료 (SELL)'} - {log.symbol}
+                                                {log.side === 'BUY' ? '매수 진입' : '매도 청산'} - {log.symbol}
                                             </p>
                                             <span className="text-xs text-gray-500">{log.timestamp}</span>
                                         </div>
@@ -172,7 +172,7 @@ export default function DashboardPage() {
                                                 </p>
                                             )}
                                         </div>
-                                        <p className="text-xs text-gray-400 mt-1 italic">사유: {log.reason}</p>
+                                        <p className="text-xs text-gray-400 mt-1 italic font-medium">실행사유: {log.reason}</p>
                                     </div>
                                 </div>
                             ))}

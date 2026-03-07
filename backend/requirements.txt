@@ -9,8 +9,9 @@ python-multipart
 python-jose[cryptography]
 passlib[bcrypt]
 bcrypt==3.2.0
-pandas
-pandas-ta
+numpy
+pandas>=2.2.0
+pandas-ta>=0.3.14b0
 ccxt
 matplotlib
 schedule
