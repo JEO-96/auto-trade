@@ -5,24 +5,31 @@ services:
     build:
       context: ./backend
     restart: always
-    ports:
-      - "8000:8000"
+    # ports: - "8000:8000" # Internalized: only Nginx talks to it
     volumes:
-      - ./backend/trading_bot.db:/app/trading_bot.db # SQLite database persistence
+      - ./backend/trading_bot.db:/app/trading_bot.db
     environment:
       - PORT=8000
-      # - EXCHANGE_API_KEY=your_key_here # Or use .env file
 
   frontend:
     build:
       context: ./frontend
-      # Pass the backend URL at build time for client-side fetches
       args:
-         - NEXT_PUBLIC_API_URL=http://your_server_ip:8000
+        - NEXT_PUBLIC_API_URL=http://jooeunoh.com/api # Use domain-based routing
     restart: always
-    ports:
-      - "3000:3000"
+    # ports: - "3000:3000" # Internalized: only Nginx talks to it
     depends_on:
       - backend
     environment:
       - NODE_ENV=production
+
+  nginx:
+    build:
+      context: ./nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
