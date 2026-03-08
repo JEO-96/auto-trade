@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { KeyRound, Plus, Save, Trash2, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { KeyRound, Plus, Save, Trash2, ShieldCheck, Eye, EyeOff, ExternalLink } from 'lucide-react';
 import api from '@/lib/api';
 
 type ExchangeKeyPreview = {
@@ -166,6 +166,51 @@ export default function ApiKeysPage() {
                             ))}
                         </div>
                     )}
+                </div>
+
+                {/* HELP SECTION */}
+                <div className="md:col-span-2 glass-panel p-6 rounded-2xl bg-secondary/5 border-secondary/20 border">
+                    <div className="flex items-start gap-4">
+                        <div className="p-3 bg-secondary/20 rounded-xl">
+                            <KeyRound className="w-6 h-6 text-secondary" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold mb-2">API 키 발급 방법이 궁금하신가요?</h3>
+                            <p className="text-gray-300 mb-4 leading-relaxed">
+                                업비트나 바이낸스 같은 거래소에서 자동 매매를 하려면 API 키라는 통행증이 필요합니다.
+                                아래 링크를 통해 각 거래소의 공식 가이드를 확인해 보세요.
+                            </p>
+                            <div className="flex flex-wrap gap-4">
+                                <a
+                                    href="https://upbit.com/service_center/guide"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-surface hover:bg-surface/80 text-white px-4 py-2.5 rounded-lg border border-gray-700 flex items-center gap-2 transition-all font-medium text-sm"
+                                >
+                                    <ExternalLink className="w-4 h-4 text-primary" />
+                                    업비트 고객센터 가이드
+                                </a>
+                                <a
+                                    href="https://upbit.com/mypage/open_api_management"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-secondary/10 hover:bg-secondary/20 text-secondary px-4 py-2.5 rounded-lg border border-secondary/30 flex items-center gap-2 transition-all font-medium text-sm"
+                                >
+                                    업비트 API 관리 바로가기
+                                </a>
+                            </div>
+                            <div className="mt-4 p-4 bg-black/30 rounded-lg border border-gray-800">
+                                <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
+                                    <ShieldCheck className="w-4 h-4 text-primary" /> 필수 확인 사항
+                                </h4>
+                                <ul className="text-xs text-gray-400 space-y-1.5 list-disc pl-4">
+                                    <li>API 발급 시 <strong className="text-white">IP 주소 제한</strong>을 설정하는 것이 보안상 매우 중요합니다. (현재 서버 IP: <code className="bg-gray-800 text-primary px-1 rounded">13.124.235.43</code>)</li>
+                                    <li>권한 설정 단계에서 <strong className="text-white">주문하기, 조회하기</strong> 권한만 체크해 주세요. <strong className="text-danger">출금 권한</strong>은 절대 체크하지 마세요.</li>
+                                    <li>Secret Key는 발급 시 단 한 번만 보여주므로 반드시 따로 메모해 두셔야 합니다.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>

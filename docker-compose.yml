@@ -15,7 +15,7 @@ services:
     build:
       context: ./frontend
       args:
-        - NEXT_PUBLIC_API_URL=http://jooeunoh.com/api # Use domain-based routing
+        - NEXT_PUBLIC_API_URL=https://jooeunoh.com/api # Use domain-based routing with HTTPS
     restart: always
     # ports: - "3000:3000" # Internalized: only Nginx talks to it
     depends_on:
@@ -30,6 +30,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
       - frontend
