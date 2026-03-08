@@ -33,9 +33,8 @@ def save_trade_log(bot_id: int, symbol: str, side: str, price: float, amount: fl
         db.close()
 
 async def run_bot_loop(bot_config_id: int):
-    print(f"--- [Bot {bot_config_id}] Engine Started ---")
+    print(f"--- [Bot {bot_config_id}] Engine Started (Portfolio Mode) ---")
     fetcher = DataFetcher()
-    strategy = MomentumBreakoutStrategy()
     
     db: Session = database.SessionLocal()
     bot_config = db.query(models.BotConfig).filter(models.BotConfig.id == bot_config_id).first()
@@ -44,25 +43,21 @@ async def run_bot_loop(bot_config_id: int):
         db.close()
         return
     
-    # Bot Configuration
-    symbol = bot_config.symbol
+    # Bot Configuration - Parse multiple symbols
+    symbol_str = bot_config.symbol or "BTC/KRW"
+    symbols = [s.strip() for s in symbol_str.split(',') if s.strip()]
     timeframe = bot_config.timeframe
-    capital = bot_config.allocated_capital
+    liquid_capital = bot_config.allocated_capital
     paper_trading = bot_config.paper_trading_mode
-
-    # Use Strategy Factory
-    from core.strategy import get_strategy
-    # Now defaulting to 'james_pro_stable' as the 'Standard' version was retired.
     strategy_name = getattr(bot_config, 'strategy_name', 'james_pro_stable')
+
+    from core.strategy import get_strategy
     strategy = get_strategy(strategy_name)
     
-    # Setup Execution Engine
     api_key = None
     api_secret = None
     exchange_name = 'upbit'
 
-    # Need careful session management inside a long-running task
-    # We close the initial session and open new ones when needed
     db.close()
 
     if not paper_trading:
@@ -70,7 +65,7 @@ async def run_bot_loop(bot_config_id: int):
         try:
             exchange_key = db_new.query(models.ExchangeKey).filter(models.ExchangeKey.user_id == bot_config.user_id).first()
             if exchange_key:
-                from main import fake_encrypt 
+                from routers.keys import fake_encrypt 
                 api_key = fake_encrypt(exchange_key.api_key_encrypted) 
                 api_secret = fake_encrypt(exchange_key.api_secret_encrypted)
                 exchange_name = exchange_key.exchange_name
@@ -86,89 +81,106 @@ async def run_bot_loop(bot_config_id: int):
         paper_trading=paper_trading
     )
     
-    is_in_position = False
-    position_amount = 0.0
-    entry_price = 0.0
-    stop_loss = 0.0
-    take_profit = 0.0
+    # Portfolio State
+    active_positions = {} # symbol -> {position_amount, entry_price, stop_loss, take_profit}
     
     try:
         while True:
-            print(f"--- [Bot {bot_config_id} | {symbol}] Tick: Fetching data... ---")
+            print(f"--- [Bot {bot_config_id}] Portfolio Tick: {len(symbols)} symbols ---")
             
-            # Use a fresh DB session for caching
+            # 1. Update Total Equity (Liquid + Current Positions Value)
+            total_equity = liquid_capital
+            current_prices = {}
+            
             current_db = database.SessionLocal()
             try:
-                df = fetcher.fetch_ohlcv(symbol=symbol, timeframe=timeframe, limit=200, db=current_db)
-                
-                if df is not None and len(df) > 0:
-                    df = strategy.apply_indicators(df)
-                    current_idx = len(df) - 1
-                    current_price = df.iloc[current_idx]['close']
-                    
-                    if is_in_position:
-                        # 1. Exit Check: Stop Loss or Take Profit
-                        exit_price = None
-                        reason = ""
-                        if current_price <= stop_loss:
-                            exit_price = current_price
-                            reason = "Stop Loss"
-                        elif current_price >= take_profit:
-                            exit_price = current_price
-                            reason = "Take Profit"
+                # First pass: Fetch data for all symbols and update equity
+                for symbol in symbols:
+                    df = fetcher.fetch_ohlcv(symbol=symbol, timeframe=timeframe, limit=100, db=current_db)
+                    if df is not None and not df.empty:
+                        curr_price = float(df.iloc[-1]['close'])
+                        current_prices[symbol] = curr_price
+                        if symbol in active_positions:
+                            total_equity += (active_positions[symbol]['position_amount'] * curr_price)
+                        
+                        # Process logic for this symbol
+                        df = strategy.apply_indicators(df)
+                        current_idx = len(df) - 1
+                        
+                        if symbol in active_positions:
+                            pos = active_positions[symbol]
+                            # A. Exit Check
+                            exit_price = None
+                            reason = ""
+                            if curr_price <= pos['stop_loss']:
+                                exit_price = curr_price
+                                reason = "Stop Loss"
+                            elif curr_price >= pos['take_profit']:
+                                exit_price = curr_price
+                                reason = "Take Profit"
 
-                        if exit_price:
-                            print(f"[Bot {bot_config_id}] {reason.upper()} hit for {symbol}!")
-                            res = execution.execute_sell(symbol, exit_price, position_amount, reason=reason)
-                            pnl = (exit_price - entry_price) * position_amount
-                            save_trade_log(bot_config_id, symbol, "SELL", exit_price, position_amount, f"{reason} (Elite)", pnl)
-                            is_in_position = False
-                        else:
-                            # 2. Trailing Stop Update (Elite Feature)
-                            if hasattr(strategy, 'update_trailing_stop'):
-                                atr = df.iloc[current_idx].get('ATR_14', 0)
-                                if atr > 0:
-                                    new_sl = strategy.update_trailing_stop(current_price, atr, stop_loss)
-                                    if new_sl > stop_loss:
-                                        stop_loss = new_sl
-                                        # Optional: print(f"[Bot {bot_config_id}] Trailing SL updated: {stop_loss}")
-                    else:
-                        if strategy.check_buy_signal(df, current_idx):
-                            print(f"[Bot {bot_config_id}] *** SIGNAL TRIGGERED for {symbol}! ***")
-                            
-                            # Calculate Stop Loss and Take Profit BEFORE buying
-                            sl, tp = strategy.calculate_exit_levels(df, current_idx, current_price)
-                            
-                            # James's Risk Based Sizing
-                            # Risk 2% of allocated capital
-                            risk_amount = capital * config.RISK_PER_TRADE
-                            price_risk = current_price - sl
-                            
-                            if price_risk > 0:
-                                desired_amount = risk_amount / price_risk
-                                # Max allowed amount based on allocated capital
-                                max_amount = capital / current_price
-                                position_amount = min(desired_amount, max_amount)
-                                
-                                if position_amount > 0:
-                                    res = execution.execute_buy(symbol, current_price, position_amount * current_price)
-                                    if res and res["status"] == "success":
-                                        is_in_position = True
-                                        entry_price = res["price"]
-                                        # Use actual filled amount if available, else ours
-                                        position_amount = res.get("amount", position_amount)
-                                        stop_loss = sl
-                                        take_profit = tp
-                                        save_trade_log(bot_config_id, symbol, "BUY", entry_price, position_amount, "Strategy Entry (Risk Adjusted)")
+                            if exit_price:
+                                print(f"[Bot {bot_config_id}] {reason.upper()} hit for {symbol}!")
+                                res = execution.execute_sell(symbol, exit_price, pos['position_amount'], reason=reason)
+                                pnl = (exit_price - pos['entry_price']) * pos['position_amount']
+                                liquid_capital += (pos['position_amount'] * exit_price)
+                                save_trade_log(bot_config_id, symbol, "SELL", exit_price, pos['position_amount'], f"{reason} (Portfolio)", pnl)
+                                del active_positions[symbol]
                             else:
-                                print(f"[Bot {bot_config_id}] WARNING: Price risk is 0 or negative. Skipping trade.")
+                                # B. Trailing Stop Update
+                                if hasattr(strategy, 'update_trailing_stop'):
+                                    atr = df.iloc[current_idx].get('ATR_14', 0)
+                                    if atr > 0:
+                                        new_sl = strategy.update_trailing_stop(curr_price, atr, pos['stop_loss'])
+                                        if new_sl > pos['stop_loss']:
+                                            pos['stop_loss'] = new_sl
+                        else:
+                            # C. Entry Check
+                            if strategy.check_buy_signal(df, current_idx):
+                                print(f"[Bot {bot_config_id}] *** BUY SIGNAL for {symbol}! ***")
+                                
+                                sl, tp = strategy.calculate_exit_levels(df, current_idx, curr_price)
+                                
+                                # Risk Management (2% of TOTAL Portfolio Equity)
+                                risk_multiplier = 1.0
+                                if hasattr(strategy, 'get_risk_multiplier'):
+                                    risk_multiplier = strategy.get_risk_multiplier(df, current_idx)
+                                
+                                risk_amount = total_equity * config.RISK_PER_TRADE * risk_multiplier
+                                price_risk = curr_price - sl
+                                
+                                if price_risk > 0:
+                                    desired_qty = risk_amount / price_risk
+                                    max_qty = liquid_capital / curr_price
+                                    qty = min(desired_qty, max_qty)
+                                    
+                                    if qty > 0:
+                                        res = execution.execute_buy(symbol, curr_price, qty * curr_price)
+                                        if res and res["status"] == "success":
+                                            entry_price = res["price"]
+                                            qty = res.get("amount", qty)
+                                            liquid_capital -= (qty * entry_price)
+                                            active_positions[symbol] = {
+                                                'position_amount': qty,
+                                                'entry_price': entry_price,
+                                                'stop_loss': sl,
+                                                'take_profit': tp
+                                            }
+                                            save_trade_log(bot_config_id, symbol, "BUY", entry_price, qty, "Portfolio Entry")
+                                else:
+                                    print(f"[Bot {bot_config_id}] Risk calculation failed for {symbol} (risk <= 0)")
+                
+                print(f"[Bot {bot_config_id}] Status: Equity={total_equity:,.0f} | Liquid={liquid_capital:,.0f} | Positions={list(active_positions.keys())}")
+                
             except Exception as e:
                 print(f"[Bot {bot_config_id}] Loop error: {e}")
+                import traceback
+                traceback.print_exc()
             finally:
                 current_db.close()
             
-            # Sleep for 5 minutes before checking again
-            await asyncio.sleep(300)
+            # Sleep for 1 minute in portfolio mode to be more reactive
+            await asyncio.sleep(60)
     except asyncio.CancelledError:
         print(f"--- [Bot {bot_config_id}] Engine Stopped ---")
         raise

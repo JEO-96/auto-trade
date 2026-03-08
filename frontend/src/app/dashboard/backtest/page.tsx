@@ -12,7 +12,7 @@ export default function BacktestPage() {
     const [form, setForm] = useState({
         symbols: ['BTC/KRW'],
         timeframe: '1h',
-        strategy_name: 'james_pro',
+        strategy_name: 'james_pro_elite',
         limit: 1000,
         initial_capital: 1000000,
         start_date: '',
@@ -119,6 +119,7 @@ export default function BacktestPage() {
                                         onChange={handleChange}
                                         className="w-full bg-slate-900/50 border-2 border-white/5 rounded-2xl px-5 py-4 focus:outline-none focus:border-primary/50 transition-all font-bold text-sm appearance-none"
                                     >
+                                        <option value="james_pro_elite">🚀 모멘텀 PRO (초고수익형)</option>
                                         <option value="james_pro_stable">🛡️ 모멘텀 PRO (안정형)</option>
                                         <option value="james_pro_aggressive">⚔️ 모멘텀 PRO (공격형)</option>
                                         <option value="james_basic">🌑 모멘텀 돌파 (기본)</option>
