@@ -15,7 +15,7 @@ services:
     build:
       context: ./frontend
       args:
-        - NEXT_PUBLIC_API_URL=https://jooeunoh.com/api # Use domain-based routing with HTTPS
+        - NEXT_PUBLIC_API_URL=/api # Use relative path to avoid DNS resolution issues on the client side
     restart: always
     # ports: - "3000:3000" # Internalized: only Nginx talks to it
     depends_on:
