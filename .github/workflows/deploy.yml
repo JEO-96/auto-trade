@@ -32,14 +32,14 @@ jobs:
           git reset --hard origin/main
 
           # 3. 컨테이너 중지 후 빌드 캐시 삭제
-          docker compose down
+          docker-compose down
           docker builder prune -f
 
           # 4. 이미지 재빌드 후 컨테이너 재시작
-          docker compose up --build -d
+          docker-compose up --build -d
 
           # 5. 컨테이너 정상 실행 확인
-          docker compose ps
+          docker-compose ps
 
           # 6. 오래된 이미지 정리
           docker image prune -f
