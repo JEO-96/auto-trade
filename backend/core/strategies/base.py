@@ -83,9 +83,12 @@ class BaseStrategy(ABC):
         )
 
         # Trend EMAs
-        df['EMA_200'] = df.ta.ema(length=200)
-        df['EMA_50'] = df.ta.ema(length=50)
-        df['EMA_20'] = df.ta.ema(length=20)
+        ema200 = df.ta.ema(length=200)
+        ema50 = df.ta.ema(length=50)
+        ema20 = df.ta.ema(length=20)
+        df['EMA_200'] = ema200.iloc[:, 0] if hasattr(ema200, 'iloc') and ema200.ndim > 1 else ema200
+        df['EMA_50'] = ema50.iloc[:, 0] if hasattr(ema50, 'iloc') and ema50.ndim > 1 else ema50
+        df['EMA_20'] = ema20.iloc[:, 0] if hasattr(ema20, 'iloc') and ema20.ndim > 1 else ema20
 
         # Volatility
         atr_df = df.ta.atr(length=14)
