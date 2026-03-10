@@ -40,12 +40,19 @@ def _is_bot_running(bot_id: int) -> bool:
 
 
 def _validate_symbol(symbol: str) -> None:
-    """심볼 형식 검증 (예: BTC/KRW)"""
-    if not SYMBOL_PATTERN.match(symbol):
+    """심볼 형식 검증 (예: BTC/KRW 또는 BTC/KRW,ETH/KRW)"""
+    symbols = [s.strip() for s in symbol.split(',') if s.strip()]
+    if not symbols:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid symbol format: '{symbol}'. Expected format: 'BTC/KRW'.",
+            detail="At least one symbol is required.",
         )
+    for s in symbols:
+        if not SYMBOL_PATTERN.match(s):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid symbol format: '{s}'. Expected format: 'BTC/KRW'.",
+            )
 
 
 def _validate_timeframe(timeframe: str) -> None:
