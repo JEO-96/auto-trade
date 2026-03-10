@@ -17,6 +17,13 @@ logger = logging.getLogger(__name__)
 # In production, use Celery + Redis for scaling.
 active_bots: dict[int, asyncio.Task] = {}
 
+# ──────────────────────────────────────────────
+# 리스크 관리 상수
+# ──────────────────────────────────────────────
+MAX_CONCURRENT_POSITIONS = 3          # 최대 동시 포지션 수
+MAX_RISK_MULTIPLIER = 2.0             # 리스크 배수 상한 (자산 대비 최대 4%)
+STOP_LOSS_COOLDOWN_SECONDS = 3600     # 손절 후 재진입 금지 시간 (1시간)
+
 
 def save_trade_log(bot_id: int, symbol: str, side: str, price: float, amount: float, reason: str, pnl: float = None):
     db: Session = database.SessionLocal()
@@ -228,6 +235,8 @@ def _process_symbol_entry(
     risk_multiplier = 1.0
     if hasattr(strategy, 'get_risk_multiplier'):
         risk_multiplier = strategy.get_risk_multiplier(df, current_idx)
+    # 리스크 배수 상한 적용
+    risk_multiplier = min(risk_multiplier, MAX_RISK_MULTIPLIER)
 
     risk_amount = total_equity * config.RISK_PER_TRADE * risk_multiplier
     price_risk = curr_price - sl
@@ -322,6 +331,8 @@ async def run_bot_loop(bot_config_id: int):
 
     # Portfolio State — DB에서 복구 시도
     active_positions = load_positions_from_db(bot_config_id)
+    # 손절 쿨다운 추적: {symbol: datetime}
+    cooldown_until: dict[str, datetime] = {}
 
     # 포지션이 복구된 경우, liquid_capital에서 보유 금액 차감
     for sym, pos in active_positions.items():
@@ -345,7 +356,7 @@ async def run_bot_loop(bot_config_id: int):
                 # First pass: Fetch data for all symbols and update equity
                 for symbol in symbols:
                     # Use async wrapper to avoid blocking the event loop with time.sleep()
-                    df = await fetcher.fetch_ohlcv_async(symbol=symbol, timeframe=timeframe, limit=100, db=current_db)
+                    df = await fetcher.fetch_ohlcv_async(symbol=symbol, timeframe=timeframe, limit=300, db=current_db)
                     if df is None or df.empty:
                         continue
 
@@ -374,6 +385,11 @@ async def run_bot_loop(bot_config_id: int):
                             bot_config_id, user_id, liquid_capital,
                         )
                         if was_exited:
+                            # 손절인 경우 쿨다운 적용
+                            if curr_price <= pos['stop_loss']:
+                                from datetime import timedelta
+                                cooldown_until[symbol] = datetime.now() + timedelta(seconds=STOP_LOSS_COOLDOWN_SECONDS)
+                                logger.info("[Bot %d] %s cooldown until %s after stop loss", bot_config_id, symbol, cooldown_until[symbol])
                             del active_positions[symbol]
                         else:
                             # B. Trailing Stop Update
@@ -385,14 +401,21 @@ async def run_bot_loop(bot_config_id: int):
                                     if new_sl > pos['stop_loss']:
                                         pos['stop_loss'] = new_sl
                     else:
-                        # C. Entry Check
-                        liquid_capital, new_position = _process_symbol_entry(
-                            symbol, df, curr_price, current_idx, strategy,
-                            execution, bot_config_id, user_id,
-                            total_equity, liquid_capital,
-                        )
-                        if new_position:
-                            active_positions[symbol] = new_position
+                        # C. Entry Check (포지션 수 제한 + 쿨다운 체크)
+                        if len(active_positions) >= MAX_CONCURRENT_POSITIONS:
+                            pass  # 최대 포지션 도달, 진입 스킵
+                        elif symbol in cooldown_until and datetime.now() < cooldown_until[symbol]:
+                            pass  # 손절 쿨다운 중, 진입 스킵
+                        else:
+                            liquid_capital, new_position = _process_symbol_entry(
+                                symbol, df, curr_price, current_idx, strategy,
+                                execution, bot_config_id, user_id,
+                                total_equity, liquid_capital,
+                            )
+                            if new_position:
+                                active_positions[symbol] = new_position
+                                # 쿨다운 만료된 항목 정리
+                                cooldown_until.pop(symbol, None)
 
                 # 매 tick마다 포지션 상태를 DB에 저장
                 save_positions_to_db(bot_config_id, active_positions)

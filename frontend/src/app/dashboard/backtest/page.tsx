@@ -1,13 +1,13 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X } from 'lucide-react';
+import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
 import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS } from '@/lib/constants';
-import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity } from '@/lib/api/backtest';
+import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory } from '@/lib/api/backtest';
 import { getErrorMessage } from '@/lib/utils';
 import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryItem } from '@/types/backtest';
 
@@ -85,6 +85,16 @@ export default function BacktestPage() {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
     }, []);
+
+    const handleDeleteHistory = async (id: number) => {
+        if (!confirm('이 백테스트 기록을 삭제하시겠습니까?')) return;
+        try {
+            await deleteBacktestHistory(id);
+            setHistoryList(prev => prev.filter(h => h.id !== id));
+        } catch (err) {
+            console.error('백테스트 기록 삭제 실패', err);
+        }
+    };
 
     useEffect(() => {
         if (activeTab === 'history') fetchHistory();
@@ -318,6 +328,13 @@ export default function BacktestPage() {
                                                     </button>
                                                 </>
                                             )}
+                                            <button
+                                                onClick={() => handleDeleteHistory(h.id)}
+                                                className="px-2 py-1.5 rounded-lg text-[11px] text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                title="삭제"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
                                     </div>
                                 );
@@ -552,8 +569,8 @@ export default function BacktestPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="glass-panel p-5 rounded-2xl">
                                     <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">누적 수익</p>
-                                    <p className={`text-2xl font-bold ${result.final_capital >= result.initial_capital ? 'text-emerald-400' : 'text-red-400'}`}>
-                                        ₩{(result.final_capital - result.initial_capital).toLocaleString()}
+                                    <p className={`text-2xl font-bold truncate ${result.final_capital >= result.initial_capital ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        ₩{Math.round(result.final_capital - result.initial_capital).toLocaleString()}
                                     </p>
                                     <div className={`inline-flex items-center gap-1 text-xs font-medium mt-2 ${result.final_capital >= result.initial_capital ? 'text-emerald-400' : 'text-red-400'}`}>
                                         {result.final_capital >= result.initial_capital ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
@@ -563,7 +580,7 @@ export default function BacktestPage() {
 
                                 <div className="glass-panel p-5 rounded-2xl">
                                     <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">최종 자산</p>
-                                    <p className="text-2xl font-bold text-white">₩{result.final_capital.toLocaleString()}</p>
+                                    <p className="text-2xl font-bold text-white truncate">₩{Math.round(result.final_capital).toLocaleString()}</p>
                                 </div>
 
                                 <div className="glass-panel p-5 rounded-2xl">
@@ -633,15 +650,15 @@ export default function BacktestPage() {
                                                             {trade.side === 'BUY' ? '매수' : '매도'}
                                                         </Badge>
                                                     </td>
-                                                    <td className="px-5 py-4 text-right font-mono text-sm text-gray-300">
-                                                        ₩{Number(trade.price ?? 0).toLocaleString()}
+                                                    <td className="px-5 py-4 text-right font-mono text-sm text-gray-300 whitespace-nowrap">
+                                                        ₩{Math.round(Number(trade.price ?? 0)).toLocaleString()}
                                                     </td>
-                                                    <td className="px-5 py-4 text-right">
+                                                    <td className="px-5 py-4 text-right whitespace-nowrap">
                                                         <p className={`font-mono text-sm font-medium ${trade.pnl > 0 ? 'text-emerald-400' : trade.pnl < 0 ? 'text-red-400' : 'text-gray-600'}`}>
-                                                            {trade.pnl !== 0 ? (trade.pnl > 0 ? `+₩${Number(trade.pnl).toLocaleString()}` : `-₩${Math.abs(trade.pnl).toLocaleString()}`) : '-'}
+                                                            {trade.pnl !== 0 ? (trade.pnl > 0 ? `+₩${Math.round(Number(trade.pnl)).toLocaleString()}` : `-₩${Math.round(Math.abs(trade.pnl)).toLocaleString()}`) : '-'}
                                                         </p>
                                                         <p className="text-[10px] text-gray-600 font-mono mt-0.5">
-                                                            ₩{Number(trade.capital ?? 0).toLocaleString()}
+                                                            ₩{Math.round(Number(trade.capital ?? 0)).toLocaleString()}
                                                         </p>
                                                     </td>
                                                 </tr>
@@ -766,7 +783,7 @@ function EquityCurveChart({ data }: { data: EquityCurvePoint[] }) {
                         {new Date(data[hoverIndex].time).toLocaleString()}
                     </p>
                     <p className="text-base font-bold text-white">
-                        ₩{data[hoverIndex].value.toLocaleString()}
+                        ₩{Math.round(data[hoverIndex].value).toLocaleString()}
                     </p>
                     <p className={`text-xs font-medium flex items-center gap-1 ${data[hoverIndex].value >= data[0].value ? 'text-emerald-400' : 'text-red-400'}`}>
                         {data[hoverIndex].value >= data[0].value ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}

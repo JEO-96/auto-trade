@@ -211,6 +211,26 @@ def get_backtest_history_detail(
     )
 
 
+@router.delete("/history/{history_id}")
+def delete_backtest_history(
+    history_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """백테스트 기록 삭제"""
+    history = db.query(models.BacktestHistory).filter(
+        models.BacktestHistory.id == history_id,
+        models.BacktestHistory.user_id == current_user.id,
+    ).first()
+    if not history:
+        raise HTTPException(status_code=404, detail="백테스트 기록을 찾을 수 없습니다.")
+
+    db.delete(history)
+    db.commit()
+    logger.info("User %d deleted backtest history %d", current_user.id, history_id)
+    return {"status": "success", "message": f"백테스트 기록 {history_id}이 삭제되었습니다."}
+
+
 @router.post("/history/{history_id}/share", response_model=schemas.PostResponse)
 def share_backtest_to_community(
     history_id: int,

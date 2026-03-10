@@ -51,12 +51,24 @@ class MomentumBreakoutBasicStrategy(BaseStrategy):
         if vol_ma_curr == 0:
             return False
 
+        # RSI 과열 구간 진입 방지 (RSI > 80이면 고점 추격 회피)
+        if rsi_curr > 80:
+            return False
+
         rsi_cross_up = (rsi_prev <= config.RSI_OVERBOUGHT) and (rsi_curr > config.RSI_OVERBOUGHT)
         macd_positive = macd_curr > macds_curr
         volume_spike = current['volume'] > (vol_ma_curr * self.volume_multiplier)
 
+        # MACD 히스토그램 증가 확인 (모멘텀 가속 중인지)
+        macd_hist_col = f"MACDh_{self.macd_fast}_{self.macd_slow}_{self.macd_signal}"
+        hist_curr = current.get(macd_hist_col, None)
+        hist_prev = prev.get(macd_hist_col, None)
+        if hist_curr is not None and hist_prev is not None and not pd.isna(hist_curr) and not pd.isna(hist_prev):
+            if hist_curr <= hist_prev:
+                return False  # 모멘텀 감속 중이면 진입 안 함
+
         if (rsi_curr > config.RSI_OVERBOUGHT) and macd_positive and volume_spike:
-            if rsi_cross_up or (rsi_curr - rsi_prev > 5):
+            if rsi_cross_up:
                 return True
         return False
 

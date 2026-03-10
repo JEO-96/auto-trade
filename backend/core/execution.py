@@ -1,8 +1,13 @@
 import ccxt
 import logging
+import random
 from core import config
 
 logger = logging.getLogger(__name__)
+
+# 페이퍼 트레이딩 슬리피지 (0.05% ~ 0.15%)
+PAPER_SLIPPAGE_MIN = 0.0005
+PAPER_SLIPPAGE_MAX = 0.0015
 
 class ExecutionEngine:
     def __init__(self, api_key=None, api_secret=None, exchange_name='binance', paper_trading=True):
@@ -56,8 +61,12 @@ class ExecutionEngine:
             return {"status": "error", "message": "Invalid amount (<=0)"}
 
         if self.paper_trading or not self.exchange:
-            logger.info("[PAPER] BUY executed for %s at %.2f. Amount: %.4f", symbol, price, amount)
-            return {"status": "success", "price": price, "amount": amount}
+            # 슬리피지 적용 (매수는 불리하게 → 가격 상승)
+            slippage = random.uniform(PAPER_SLIPPAGE_MIN, PAPER_SLIPPAGE_MAX)
+            fill_price = price * (1 + slippage)
+            amount = amount_usd / fill_price
+            logger.info("[PAPER] BUY executed for %s at %.2f (slip %.3f%%). Amount: %.4f", symbol, fill_price, slippage * 100, amount)
+            return {"status": "success", "price": fill_price, "amount": amount}
         else:
             try:
                 # CCXT real market order
@@ -82,9 +91,12 @@ class ExecutionEngine:
             return {"status": "error", "message": "Invalid amount (<=0)"}
 
         if self.paper_trading or not self.exchange:
-            pnl_usd = price * amount
-            logger.info("[PAPER] SELL (%s) executed for %s at %.2f. Returns: %.2f USD", reason, symbol, price, pnl_usd)
-            return {"status": "success", "price": price}
+            # 슬리피지 적용 (매도는 불리하게 → 가격 하락)
+            slippage = random.uniform(PAPER_SLIPPAGE_MIN, PAPER_SLIPPAGE_MAX)
+            fill_price = price * (1 - slippage)
+            pnl_usd = fill_price * amount
+            logger.info("[PAPER] SELL (%s) executed for %s at %.2f (slip %.3f%%). Returns: %.2f USD", reason, symbol, fill_price, slippage * 100, pnl_usd)
+            return {"status": "success", "price": fill_price}
         else:
             try:
                 logger.info("[LIVE] Executing SELL Market order for %s...", symbol)

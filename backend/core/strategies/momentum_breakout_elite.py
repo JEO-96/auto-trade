@@ -24,14 +24,14 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
         self.macd_signal = 9
         self.volume_ma_period = 20
 
-        # Signal thresholds (very loose for maximum entries)
+        # Signal thresholds (tuned for quality entries)
         self.rsi_threshold = 52
         self.adx_threshold = 25
-        self.volume_multiplier = 1.3
+        self.volume_multiplier = 2.0
 
-        # Exit parameters (tight SL, very ambitious TP - 1:5)
+        # Exit parameters (tight SL, 1:3 risk-reward)
         self.atr_sl_multiplier = 1.5
-        self.atr_tp_multiplier = 5.0
+        self.atr_tp_multiplier = 3.0
         self.trailing_stop_multiplier = 2.0
 
         # Trend rider parameters
@@ -72,17 +72,31 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
         ema_20 = current.get('EMA_20', None)
 
         # Guard against NaN -- any NaN in core indicators means skip
-        core_vals = [rsi_val, macd_val, macds_val, vol_avg, ema_100, ema_20]
+        core_vals = [rsi_val, macd_val, macds_val, vol_avg, ema_100, ema_20, ema_200]
         if any(v is None or pd.isna(v) for v in core_vals):
             return False
         if vol_avg == 0:
             return False
 
-        # 1. CORE BREAKOUT: Volume + RSI + MACD
+        # RSI 과열 구간 진입 방지
+        if rsi_val > 80:
+            return False
+
+        # MACD 히스토그램 증가 확인
+        macd_hist_col = f"MACDh_{self.macd_fast}_{self.macd_slow}_{self.macd_signal}"
+        hist_curr = current.get(macd_hist_col, None)
+        hist_prev = prev.get(macd_hist_col, None)
+        macd_accelerating = True
+        if hist_curr is not None and hist_prev is not None and not pd.isna(hist_curr) and not pd.isna(hist_prev):
+            macd_accelerating = hist_curr > hist_prev
+
+        # 1. CORE BREAKOUT: Volume + RSI + MACD + EMA_200 추세 필터
         breakout = (
             rsi_val > self.rsi_threshold and
             macd_val > macds_val and
+            macd_accelerating and
             current['volume'] > vol_avg * self.volume_multiplier and
+            current['close'] > ema_200 and
             current['close'] > ema_100
         )
 

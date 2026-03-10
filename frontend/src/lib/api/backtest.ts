@@ -40,6 +40,12 @@ export async function getBacktestHistoryDetail(
     return res.data;
 }
 
+export async function deleteBacktestHistory(
+    historyId: number,
+): Promise<void> {
+    await api.delete(`/backtest/history/${historyId}`);
+}
+
 export async function shareBacktestToCommunity(
     historyId: number,
     title: string,
