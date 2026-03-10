@@ -2,7 +2,7 @@ name: Deploy to Single Server
 
 on:
   push:
-    branches: [ main ] # Trigger on push to main branch
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -11,60 +11,40 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3
-
-    # (Optional) Test Backend
-    # - name: Set up Python
-    #   uses: actions/setup-python@v4
-    #   with:
-    #     python-version: '3.10'
-    # - name: Install backend dependencies
-    #   run: |
-    #     cd backend
-    #     pip install -r requirements.txt
-    # - name: Run tests
-    #   run: |
-    #     cd backend
-    #     # Add test command here if needed
-
-    # (Optional) Test Frontend
-    # - name: Set up Node
-    #   uses: actions/setup-node@v3
-    #   with:
-    #     node-version: '18'
-    # - name: Install frontend dependencies
-    #   run: |
-    #     cd frontend
-    #     npm install
-    # - name: Run linting
-    #   run: |
-    #     cd frontend
-    #     npm run lint
+      uses: actions/checkout@v4
 
     # 🚀 Deploy via SSH
     - name: Deploy to Server via SSH
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script_stop: true   # SSH 명령 실패 시 즉시 중단
         script: |
-          # 1. Navigate to project root
-          cd ~/traiding-bot # Or your server project path
+          set -e
 
-          # 2. Pull latest code from GitHub
-          git pull origin main
+          # 1. 프로젝트 디렉토리로 이동
+          cd ~/traiding-bot
 
-          # 3. Rebuild and restart containers
-          docker compose up --build -d
+          # 2. 최신 코드로 강제 동기화 (로컬 변경사항 무시)
+          git fetch origin main
+          git reset --hard origin/main
 
-          # 4. Clean up old images to save space
+          # 3. 캐시 없이 이미지 재빌드 후 컨테이너 재시작
+          docker compose build --no-cache
+          docker compose up -d
+
+          # 4. 컨테이너 정상 실행 확인
+          docker compose ps
+
+          # 5. 오래된 이미지 정리
           docker image prune -f
 
           echo "✅ Deployment Successful!"
 
-# 💡 Setup Instructions:
-# 1. Add these 'Secrets' in your GitHub Repo -> Settings -> Secrets and variables -> Actions:
-#    - SERVER_IP: Your server's public IP
-#    - SERVER_USERNAME: The username (e.g., ubuntu, root)
-#    - SSH_PRIVATE_KEY: Your server's private SSH key content
+# 💡 GitHub Secrets 설정 (Settings → Secrets and variables → Actions):
+#    - SERVER_IP: 서버 공인 IP
+#    - SERVER_USERNAME: 서버 접속 계정 (예: ubuntu, root)
+#    - SSH_PRIVATE_KEY: 서버 SSH 개인 키 내용
+#
