@@ -27,6 +27,26 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account deactivated")
     return user
 
+def get_current_user_optional(
+    token: str | None = Depends(OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=False)),
+    db: Session = Depends(get_db),
+) -> models.User | None:
+    """토큰이 없거나 유효하지 않으면 None을 반환하는 선택적 인증."""
+    if not token:
+        return None
+    try:
+        payload = auth.jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+    except auth.JWTError:
+        return None
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if user is None or not user.is_active:
+        return None
+    return user
+
+
 def get_admin_user(current_user: models.User = Depends(get_current_user)) -> models.User:
     """관리자 권한 검증 의존성. is_admin이 True인 사용자만 허용."""
     if not current_user.is_admin:

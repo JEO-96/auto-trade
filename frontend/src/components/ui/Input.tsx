@@ -74,7 +74,7 @@ export function SelectInput({
             )}
             <select
                 id={selectId}
-                className={`${baseInputStyles} appearance-none cursor-pointer font-medium ${error ? 'border-red-500/40' : ''} ${className}`}
+                className={`${baseInputStyles} appearance-none cursor-pointer font-medium [&>option]:bg-[#1e293b] [&>option]:text-white ${error ? 'border-red-500/40' : ''} ${className}`}
                 {...selectProps}
             >
                 {children}

@@ -8,7 +8,7 @@ from sqlalchemy import func
 
 import models
 import schemas
-from dependencies import get_db, get_current_user
+from dependencies import get_db, get_current_user, get_current_user_optional
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +17,13 @@ router = APIRouter(prefix="/community", tags=["community"])
 VALID_POST_TYPES = {"backtest_share", "performance_share", "strategy_review", "discussion"}
 
 
-def _post_to_response(post: models.CommunityPost, current_user_id: int, db: Session) -> schemas.PostResponse:
-    liked = db.query(models.PostLike).filter(
-        models.PostLike.post_id == post.id,
-        models.PostLike.user_id == current_user_id,
-    ).first() is not None
+def _post_to_response(post: models.CommunityPost, current_user_id: Optional[int], db: Session) -> schemas.PostResponse:
+    liked = False
+    if current_user_id is not None:
+        liked = db.query(models.PostLike).filter(
+            models.PostLike.post_id == post.id,
+            models.PostLike.user_id == current_user_id,
+        ).first() is not None
 
     return schemas.PostResponse(
         id=post.id,
@@ -87,7 +89,6 @@ async def update_nickname(
 @router.get("/profile/{user_id}", response_model=schemas.UserProfileResponse)
 async def get_user_profile(
     user_id: int,
-    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -115,7 +116,7 @@ async def list_posts(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     post_type: Optional[str] = Query(None),
-    current_user: models.User = Depends(get_current_user),
+    current_user: Optional[models.User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     query = db.query(models.CommunityPost).filter(models.CommunityPost.is_deleted == False)
@@ -136,7 +137,8 @@ async def list_posts(
         .all()
     )
 
-    post_responses = [_post_to_response(p, current_user.id, db) for p in posts]
+    user_id = current_user.id if current_user else None
+    post_responses = [_post_to_response(p, user_id, db) for p in posts]
 
     return schemas.PostListResponse(
         posts=post_responses,
@@ -194,7 +196,7 @@ async def create_post(
 @router.get("/posts/{post_id}", response_model=schemas.PostResponse)
 async def get_post(
     post_id: int,
-    current_user: models.User = Depends(get_current_user),
+    current_user: Optional[models.User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     post = db.query(models.CommunityPost).filter(
@@ -203,7 +205,8 @@ async def get_post(
     ).first()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="게시글을 찾을 수 없습니다.")
-    return _post_to_response(post, current_user.id, db)
+    user_id = current_user.id if current_user else None
+    return _post_to_response(post, user_id, db)
 
 
 @router.put("/posts/{post_id}", response_model=schemas.PostResponse)
@@ -313,7 +316,6 @@ async def toggle_like(
 @router.get("/posts/{post_id}/comments", response_model=list[schemas.CommentResponse])
 async def list_comments(
     post_id: int,
-    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     post = db.query(models.CommunityPost).filter(
@@ -415,7 +417,6 @@ async def delete_comment(
 @router.get("/chat", response_model=list[schemas.ChatMessageResponse])
 async def get_chat_messages(
     after_id: Optional[int] = Query(None),
-    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     query = db.query(models.ChatMessage)
@@ -472,7 +473,7 @@ async def send_chat_message(
 @router.get("/strategies/{strategy_name}/reviews", response_model=list[schemas.PostResponse])
 async def get_strategy_reviews(
     strategy_name: str,
-    current_user: models.User = Depends(get_current_user),
+    current_user: Optional[models.User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
     posts = (
@@ -486,13 +487,13 @@ async def get_strategy_reviews(
         .all()
     )
 
-    return [_post_to_response(p, current_user.id, db) for p in posts]
+    user_id = current_user.id if current_user else None
+    return [_post_to_response(p, user_id, db) for p in posts]
 
 
 @router.get("/strategies/{strategy_name}/rating")
 async def get_strategy_rating(
     strategy_name: str,
-    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     result = (

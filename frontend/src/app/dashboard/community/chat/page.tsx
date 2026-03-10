@@ -102,7 +102,7 @@ export default function ChatPage() {
     return (
         <PageContainer maxWidth="max-w-3xl">
             <Link
-                href="/dashboard/community"
+                href="/community"
                 className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-4"
             >
                 <ArrowLeft className="w-3.5 h-3.5" />

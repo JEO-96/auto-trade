@@ -82,7 +82,7 @@ export default function ProfilePage() {
     return (
         <PageContainer maxWidth="max-w-3xl">
             <Link
-                href="/dashboard/community"
+                href="/community"
                 className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-6"
             >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -140,7 +140,7 @@ export default function ProfilePage() {
                             return (
                                 <Link
                                     key={post.id}
-                                    href={`/dashboard/community/post?id=${post.id}`}
+                                    href={`/community/post?id=${post.id}`}
                                     className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors group"
                                 >
                                     <Badge variant={badge.variant}>{badge.label}</Badge>

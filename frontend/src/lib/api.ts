@@ -31,8 +31,10 @@ api.interceptors.response.use(
         if (error.response?.status === 401) {
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('access_token');
-                // 로그인 페이지가 아닌 경우에만 리다이렉트
-                if (window.location.pathname !== '/login') {
+                // 로그인 페이지나 공개 커뮤니티 페이지가 아닌 경우에만 리다이렉트
+                const pathname = window.location.pathname;
+                const isPublicPage = pathname === '/login' || pathname.startsWith('/community');
+                if (!isPublicPage) {
                     window.location.href = '/login';
                 }
             }
