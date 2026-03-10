@@ -36,14 +36,14 @@ def save_trade_log(bot_id: int, symbol: str, side: str, price: float, amount: fl
 async def run_bot_loop(bot_config_id: int):
     print(f"--- [Bot {bot_config_id}] Engine Started (Portfolio Mode) ---")
     fetcher = DataFetcher()
-    
+
     db: Session = database.SessionLocal()
     bot_config = db.query(models.BotConfig).filter(models.BotConfig.id == bot_config_id).first()
     if not bot_config:
         print(f"[Bot {bot_config_id}] Bot configuration not found. Stopping.")
         db.close()
         return
-    
+
     # Bot Configuration - Parse multiple symbols
     symbol_str = bot_config.symbol or "BTC/KRW"
     symbols = [s.strip() for s in symbol_str.split(',') if s.strip()]
@@ -54,7 +54,10 @@ async def run_bot_loop(bot_config_id: int):
 
     from core.strategy import get_strategy
     strategy = get_strategy(strategy_name)
-    
+
+    # Extract all bot_config attributes needed after db.close() to avoid DetachedInstanceError
+    user_id = bot_config.user_id
+
     api_key = None
     api_secret = None
     exchange_name = 'upbit'
@@ -64,11 +67,11 @@ async def run_bot_loop(bot_config_id: int):
     if not paper_trading:
         db_new = database.SessionLocal()
         try:
-            exchange_key = db_new.query(models.ExchangeKey).filter(models.ExchangeKey.user_id == bot_config.user_id).first()
+            exchange_key = db_new.query(models.ExchangeKey).filter(models.ExchangeKey.user_id == user_id).first()
             if exchange_key:
-                from routers.keys import fake_encrypt 
-                api_key = fake_encrypt(exchange_key.api_key_encrypted) 
-                api_secret = fake_encrypt(exchange_key.api_secret_encrypted)
+                from routers.keys import decrypt_key
+                api_key = decrypt_key(exchange_key.api_key_encrypted)
+                api_secret = decrypt_key(exchange_key.api_secret_encrypted)
                 exchange_name = exchange_key.exchange_name
             else:
                 paper_trading = True
@@ -76,23 +79,23 @@ async def run_bot_loop(bot_config_id: int):
             db_new.close()
 
     execution = ExecutionEngine(
-        api_key=api_key, 
-        api_secret=api_secret, 
-        exchange_name=exchange_name, 
+        api_key=api_key,
+        api_secret=api_secret,
+        exchange_name=exchange_name,
         paper_trading=paper_trading
     )
-    
+
     # Portfolio State
     active_positions = {} # symbol -> {position_amount, entry_price, stop_loss, take_profit}
-    
+
     try:
         while True:
             print(f"--- [Bot {bot_config_id}] Portfolio Tick: {len(symbols)} symbols ---")
-            
+
             # 1. Update Total Equity (Liquid + Current Positions Value)
             total_equity = liquid_capital
             current_prices = {}
-            
+
             current_db = database.SessionLocal()
             try:
                 # First pass: Fetch data for all symbols and update equity
@@ -103,11 +106,13 @@ async def run_bot_loop(bot_config_id: int):
                         current_prices[symbol] = curr_price
                         if symbol in active_positions:
                             total_equity += (active_positions[symbol]['position_amount'] * curr_price)
-                        
+
                         # Process logic for this symbol
                         df = strategy.apply_indicators(df)
-                        current_idx = len(df) - 1
-                        
+                        # Use iloc[-2] (last CLOSED candle) for all signal checks.
+                        # iloc[-1] is the still-forming candle and must not be used for signals.
+                        current_idx = len(df) - 2
+
                         if symbol in active_positions:
                             pos = active_positions[symbol]
                             # A. Exit Check
@@ -126,11 +131,11 @@ async def run_bot_loop(bot_config_id: int):
                                 pnl = (exit_price - pos['entry_price']) * pos['position_amount']
                                 liquid_capital += (pos['position_amount'] * exit_price)
                                 save_trade_log(bot_config_id, symbol, "SELL", exit_price, pos['position_amount'], f"{reason} (Portfolio)", pnl)
-                                
+
                                 # Send Kakao Notification
                                 msg = f"🔔 [거래 알림 - SELL]\n종목: {symbol}\n가격: {exit_price:,.0f} KRW\n수익률: {(pnl / (pos['entry_price'] * pos['position_amount']) * 100):.2f}%\n사유: {reason}"
-                                asyncio.create_task(send_kakao_message(bot_config.user_id, msg))
-                                
+                                asyncio.create_task(send_kakao_message(user_id, msg))
+
                                 del active_positions[symbol]
                             else:
                                 # B. Trailing Stop Update
@@ -144,22 +149,22 @@ async def run_bot_loop(bot_config_id: int):
                             # C. Entry Check
                             if strategy.check_buy_signal(df, current_idx):
                                 print(f"[Bot {bot_config_id}] *** BUY SIGNAL for {symbol}! ***")
-                                
+
                                 sl, tp = strategy.calculate_exit_levels(df, current_idx, curr_price)
-                                
+
                                 # Risk Management (2% of TOTAL Portfolio Equity)
                                 risk_multiplier = 1.0
                                 if hasattr(strategy, 'get_risk_multiplier'):
                                     risk_multiplier = strategy.get_risk_multiplier(df, current_idx)
-                                
+
                                 risk_amount = total_equity * config.RISK_PER_TRADE * risk_multiplier
                                 price_risk = curr_price - sl
-                                
+
                                 if price_risk > 0:
                                     desired_qty = risk_amount / price_risk
                                     max_qty = liquid_capital / curr_price
                                     qty = min(desired_qty, max_qty)
-                                    
+
                                     if qty > 0:
                                         res = execution.execute_buy(symbol, curr_price, qty * curr_price)
                                         if res and res["status"] == "success":
@@ -173,22 +178,22 @@ async def run_bot_loop(bot_config_id: int):
                                                 'take_profit': tp
                                             }
                                             save_trade_log(bot_config_id, symbol, "BUY", entry_price, qty, "Portfolio Entry")
-                                            
+
                                             # Send Kakao Notification
                                             msg = f"🚀 [거래 알림 - BUY]\n종목: {symbol}\n가격: {entry_price:,.0f} KRW\n수량: {qty:.4f}\n상태: 진입 완료"
-                                            asyncio.create_task(send_kakao_message(bot_config.user_id, msg))
+                                            asyncio.create_task(send_kakao_message(user_id, msg))
                                 else:
                                     print(f"[Bot {bot_config_id}] Risk calculation failed for {symbol} (risk <= 0)")
-                
+
                 print(f"[Bot {bot_config_id}] Status: Equity={total_equity:,.0f} | Liquid={liquid_capital:,.0f} | Positions={list(active_positions.keys())}")
-                
+
             except Exception as e:
                 print(f"[Bot {bot_config_id}] Loop error: {e}")
                 import traceback
                 traceback.print_exc()
             finally:
                 current_db.close()
-            
+
             # Sleep for 1 minute in portfolio mode to be more reactive
             await asyncio.sleep(60)
     except asyncio.CancelledError:

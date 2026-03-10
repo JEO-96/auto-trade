@@ -68,7 +68,7 @@ export default function TermsPage() {
                         <ul className="space-y-2 list-disc list-inside">
                             <li>이용자는 거래소 API 키를 등록할 때, 출금 권한이 없는 API 키만 사용할 것을 강력히 권고합니다.</li>
                             <li>API 키의 유출로 인한 피해는 이용자 본인이 책임집니다.</li>
-                            <li>서비스 제공자는 이용자의 API 키를 암호화하여 저장하며, 제3자에게 제공하지 않습니다.</li>
+                            <li>서비스 제공자는 이용자의 API 키를 보안 조치를 적용하여 저장하며, 제3자에게 제공하지 않습니다.</li>
                         </ul>
                     </section>
 

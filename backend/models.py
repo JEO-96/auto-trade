@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey, DateTime, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime
@@ -39,7 +39,7 @@ class BotConfig(Base):
     is_active = Column(Boolean, default=False)
     paper_trading_mode = Column(Boolean, default=True)
     allocated_capital = Column(Float, default=1000000.0)
-    
+
     # James Momentum specific parameters
     rsi_period = Column(Integer, default=14)
     macd_fast = Column(Integer, default=12)
@@ -53,7 +53,7 @@ class TradeLog(Base):
     __tablename__ = "trade_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    bot_id = Column(Integer, ForeignKey("bot_configs.id"))
+    bot_id = Column(Integer, ForeignKey("bot_configs.id"), index=True)
     symbol = Column(String, index=True)
     side = Column(String)  # 'BUY' or 'SELL'
     price = Column(Float)
@@ -77,5 +77,7 @@ class OHLCV(Base):
     close = Column(Float)
     volume = Column(Float)
 
-    # Note: In a real app, you'd add a UniqueConstraint(symbol, timeframe, timestamp)
-    # to avoid duplicates during bulk inserts.
+    __table_args__ = (
+        UniqueConstraint('symbol', 'timeframe', 'timestamp', name='uq_ohlcv_symbol_tf_ts'),
+        Index('ix_ohlcv_symbol_tf_ts', 'symbol', 'timeframe', 'timestamp'),
+    )

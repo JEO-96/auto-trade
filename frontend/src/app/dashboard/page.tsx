@@ -10,30 +10,47 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [tradeLogs, setTradeLogs] = useState<any[]>([]);
     const [showRiskModal, setShowRiskModal] = useState(false);
+    const [botId, setBotId] = useState<number | null>(null);
 
-    const botId = 1;
-
-    const fetchStatusAndLogs = async () => {
+    const fetchStatusAndLogs = async (id: number) => {
         try {
-            const statusRes = await api.get(`/bot/status/${botId}`);
+            const statusRes = await api.get(`/bot/status/${id}`);
             setIsBotActive(statusRes.data.bot_status === 'Running');
 
-            const logRes = await api.get(`/bot/logs/${botId}`);
+            const logRes = await api.get(`/bot/logs/${id}`);
             setTradeLogs(logRes.data);
         } catch (error) {
             console.error("상태 및 로그를 불러올 수 없습니다", error);
-        } finally {
-            setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchStatusAndLogs();
+        const initializeBotId = async () => {
+            try {
+                const res = await api.get('/bot/list');
+                const bots: any[] = res.data;
+                if (bots.length > 0) {
+                    const firstId = bots[0].id;
+                    setBotId(firstId);
+                    await fetchStatusAndLogs(firstId);
+                }
+            } catch (error) {
+                console.error("봇 목록을 불러올 수 없습니다", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeBotId();
+    }, []);
+
+    useEffect(() => {
+        if (botId === null) return;
         const interval = setInterval(() => {
-            fetchStatusAndLogs();
+            fetchStatusAndLogs(botId);
         }, 10000);
         return () => clearInterval(interval);
-    }, []);
+    }, [botId]);
 
     const handleStartClick = () => {
         setShowRiskModal(true);
@@ -41,6 +58,7 @@ export default function DashboardPage() {
 
     const handleRiskConfirm = async () => {
         setShowRiskModal(false);
+        if (botId === null) return;
         try {
             await api.post(`/bot/start/${botId}`);
             setIsBotActive(true);
@@ -50,6 +68,7 @@ export default function DashboardPage() {
     };
 
     const handleStop = async () => {
+        if (botId === null) return;
         try {
             await api.post(`/bot/stop/${botId}`);
             setIsBotActive(false);
@@ -112,15 +131,15 @@ export default function DashboardPage() {
 
                 <StatCard
                     title="일일 수익률"
-                    value="+4.20%"
+                    value="--"
                     icon={<TrendingUp className="w-4 h-4" />}
                     accentColor="from-secondary/10"
-                    subtitle={<span className="text-secondary text-xs font-semibold">+₩42,000</span>}
+                    subtitle={<span className="text-gray-500 text-xs font-semibold">N/A</span>}
                 />
 
                 <StatCard
                     title="승률"
-                    value="68.5%"
+                    value="--"
                     icon={<ArrowUpRight className="w-4 h-4" />}
                     accentColor="from-accent/10"
                     subtitle={<span className="text-[11px] text-gray-500">최근 50회 거래 기준</span>}
@@ -141,7 +160,8 @@ export default function DashboardPage() {
                         {isBotActive ? (
                             <button
                                 onClick={handleStop}
-                                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-red-500/[0.08] hover:bg-red-500/[0.15] text-red-400 border border-red-500/20 rounded-xl font-semibold text-sm mb-6 transition-colors"
+                                disabled={botId === null}
+                                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-red-500/[0.08] hover:bg-red-500/[0.15] text-red-400 border border-red-500/20 rounded-xl font-semibold text-sm mb-6 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 <StopCircle className="w-5 h-5" />
                                 엔진 정지
@@ -149,7 +169,8 @@ export default function DashboardPage() {
                         ) : (
                             <button
                                 onClick={handleStartClick}
-                                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold text-sm shadow-glow-primary mb-6 transition-colors"
+                                disabled={botId === null}
+                                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold text-sm shadow-glow-primary mb-6 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 <Play className="w-5 h-5" />
                                 엔진 가동

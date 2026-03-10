@@ -35,7 +35,7 @@ class MomentumBreakoutEliteStrategy:
         return df
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
-        if current_idx < 100: return False
+        if current_idx < 200: return False
         
         current = df.iloc[current_idx]
         prev = df.iloc[current_idx - 1]

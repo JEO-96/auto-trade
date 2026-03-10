@@ -6,6 +6,7 @@ from core.strategy import get_strategy
 from core import config
 import uuid
 import threading
+import time
 from typing import Dict, Any, Optional
 
 # Global storage for backtest tasks
@@ -48,6 +49,7 @@ class VectorBacktester:
             backtest_tasks[task_id]["progress"] = 100.0
             backtest_tasks[task_id]["result"] = result
             backtest_tasks[task_id]["message"] = "Backtest completed."
+            backtest_tasks[task_id]["completed_at"] = time.time()
         except Exception as e:
             print(f"Async backtest error: {e}")
             backtest_tasks[task_id]["status"] = "failed"
@@ -129,6 +131,10 @@ class VectorBacktester:
         entries_df.fillna(False, inplace=True)
         close_df.ffill(inplace=True)
 
+        # Shift entries by 1 bar to prevent look-ahead bias
+        # Signal fires on bar N, execution happens on bar N+1
+        entries_df = entries_df.shift(1).fillna(False)
+
         self._update_progress(
             task_id, 70.0,
             f"Executing vectorbt simulation for {len(ohlcv_data)} assets...",
@@ -164,7 +170,7 @@ class VectorBacktester:
             "status": "success",
             "initial_capital": float(initial_capital),
             "final_capital": float(portfolio.final_value()),
-            "total_trades": len(formatted_trades) // 2,
+            "total_trades": int(portfolio.trades.count()) if hasattr(portfolio.trades, 'count') else len(portfolio.trades.records),
             "trades": formatted_trades,
             "equity_curve": equity_curve
         }

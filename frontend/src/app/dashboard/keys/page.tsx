@@ -13,7 +13,6 @@ export default function ApiKeysPage() {
     const [keys, setKeys] = useState<ExchangeKeyPreview[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Form state
     const [exchangeName, setExchangeName] = useState('upbit');
     const [apiKey, setApiKey] = useState('');
     const [apiSecret, setApiSecret] = useState('');
@@ -44,11 +43,10 @@ export default function ApiKeysPage() {
                 api_key: apiKey,
                 api_secret: apiSecret
             });
-
             alert('API 키가 안전하게 저장되었습니다.');
             setApiKey('');
             setApiSecret('');
-            fetchKeys(); // Refresh list
+            fetchKeys();
         } catch (err) {
             alert('저장 실패. 로그인 상태인지 확인해 주세요.');
         } finally {
@@ -57,109 +55,116 @@ export default function ApiKeysPage() {
     };
 
     return (
-        <div className="p-8 max-w-5xl mx-auto animate-fade-in-up">
-            <header className="mb-8 flex justify-between items-end border-b border-gray-800 pb-6">
-                <div>
-                    <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-                        <KeyRound className="w-8 h-8 text-secondary" /> 거래소 연동 설정
-                    </h1>
-                    <p className="text-gray-400">CCXT 연동을 위한 글로벌 암호화폐 거래소 API 키를 관리합니다.</p>
-                </div>
+        <div className="p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in-up">
+            <header className="mb-8">
+                <h1 className="text-2xl font-bold mb-1 flex items-center gap-2.5">
+                    <KeyRound className="w-6 h-6 text-secondary" />
+                    거래소 연동 설정
+                </h1>
+                <p className="text-sm text-gray-500">CCXT 연동을 위한 거래소 API 키를 관리합니다.</p>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-                {/* ADD NEW KEY FORM */}
+                {/* Add Key Form */}
                 <div className="glass-panel p-6 rounded-2xl">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Plus className="w-5 h-5 text-primary" /> API 키 등록/수정</h3>
+                    <h3 className="text-base font-bold mb-5 flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-primary" />
+                        API 키 등록
+                    </h3>
 
                     <form onSubmit={handleSaveKey} className="space-y-4">
                         <div>
-                            <label className="text-sm text-gray-400 mb-1 block">거래소 선택</label>
+                            <label className="text-xs text-gray-500 font-medium mb-1.5 block">거래소 선택</label>
                             <select
                                 value={exchangeName}
                                 onChange={(e) => setExchangeName(e.target.value)}
-                                className="w-full bg-surface border border-gray-700 rounded-lg p-3 text-white focus:ring-primary focus:border-primary"
+                                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 text-sm text-white focus:border-primary/30 transition-colors"
                             >
-                                <option value="binance">Binance (바이낸스)</option>
                                 <option value="upbit">Upbit (업비트)</option>
+                                <option value="binance">Binance (바이낸스)</option>
                                 <option value="bybit">Bybit (바이비트)</option>
                             </select>
                         </div>
 
                         <div>
-                            <label className="text-sm text-gray-400 mb-1 block">API Key (Access Key)</label>
+                            <label className="text-xs text-gray-500 font-medium mb-1.5 block">API Key (Access Key)</label>
                             <input
                                 type="text"
                                 value={apiKey}
                                 onChange={(e) => setApiKey(e.target.value)}
                                 required
-                                placeholder="ex: XXXXXXXXXXXXXXXXXX"
-                                className="w-full bg-surface border border-gray-700 rounded-lg p-3 focus:ring-primary focus:border-primary"
+                                placeholder="API 키를 입력하세요"
+                                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 text-sm focus:border-primary/30 transition-colors"
                             />
                         </div>
 
                         <div>
-                            <label className="text-sm text-gray-400 mb-1 block">Secret Key</label>
+                            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Secret Key</label>
                             <div className="relative">
                                 <input
                                     type={showSecret ? "text" : "password"}
                                     value={apiSecret}
                                     onChange={(e) => setApiSecret(e.target.value)}
                                     required
-                                    placeholder="ex: YYYYYYYYYYYYYYYYYY"
-                                    className="w-full bg-surface border border-gray-700 rounded-lg p-3 pr-10 focus:ring-primary focus:border-primary"
+                                    placeholder="시크릿 키를 입력하세요"
+                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 pr-10 text-sm focus:border-primary/30 transition-colors"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowSecret(!showSecret)}
-                                    className="absolute right-3 top-3 text-gray-500 hover:text-white"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
                                 >
-                                    {showSecret ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
-                            <p className="text-xs text-yellow-500/80 mt-2 flex items-center gap-1">
+                            <p className="text-[10px] text-amber-500/70 mt-2 flex items-center gap-1">
                                 <ShieldCheck className="w-3 h-3" />
-                                Secret Key는 서버에 즉시 암호화되어 저장됩니다.
+                                Secret Key는 서버에 안전하게 저장됩니다.
                             </p>
                         </div>
 
                         <button
                             type="submit"
                             disabled={saving}
-                            className="w-full bg-primary hover:bg-blue-600 disabled:bg-primary/50 text-white font-semibold py-3 rounded-lg flex justify-center items-center gap-2 mt-4 transition-colors"
+                            className="w-full bg-primary hover:bg-primary-dark disabled:opacity-40 text-white font-semibold text-sm py-3 rounded-xl flex justify-center items-center gap-2 transition-colors"
                         >
-                            <Save className="w-5 h-5" /> {saving ? "저장 중..." : "저장하기"}
+                            <Save className="w-4 h-4" />
+                            {saving ? "저장 중..." : "저장하기"}
                         </button>
                     </form>
                 </div>
 
-                {/* LIST OF SAVED KEYS */}
+                {/* Saved Keys */}
                 <div className="glass-panel p-6 rounded-2xl h-fit">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-secondary" /> 등록된 API 키</h3>
+                    <h3 className="text-base font-bold mb-5 flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-secondary" />
+                        등록된 API 키
+                    </h3>
 
                     {loading ? (
-                        <p className="text-gray-400">키 정보를 불러오는 중...</p>
+                        <div className="py-8 text-center">
+                            <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-3" />
+                            <p className="text-sm text-gray-500">불러오는 중...</p>
+                        </div>
                     ) : keys.length === 0 ? (
-                        <div className="text-center py-10 bg-surface/30 rounded-lg border border-dashed border-gray-700">
-                            <KeyRound className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                            <p className="text-gray-400">등록된 거래소 API 키가 없습니다.</p>
+                        <div className="text-center py-10 bg-white/[0.02] rounded-xl border border-dashed border-white/[0.06]">
+                            <KeyRound className="w-10 h-10 text-gray-700 mx-auto mb-3" />
+                            <p className="text-sm text-gray-500">등록된 API 키가 없습니다.</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                             {keys.map((key) => (
-                                <div key={key.id} className="bg-surface border border-gray-700 p-4 rounded-lg flex justify-between items-center group hover:border-primary/50 transition-colors">
+                                <div key={key.id} className="bg-white/[0.03] border border-white/[0.06] p-4 rounded-xl flex justify-between items-center group hover:border-primary/20 transition-colors">
                                     <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="uppercase text-xs font-bold bg-primary/20 text-primary px-2 py-0.5 rounded">
-                                                {key.exchange_name}
-                                            </span>
-                                        </div>
-                                        <p className="font-mono text-sm tracking-widest text-gray-300">
+                                        <span className="uppercase text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-md">
+                                            {key.exchange_name}
+                                        </span>
+                                        <p className="font-mono text-sm tracking-wider text-gray-400 mt-1.5">
                                             {key.api_key_preview}
                                         </p>
                                     </div>
-                                    <button className="text-gray-500 hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity p-2 bg-danger/10 rounded-md">
+                                    <button className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-red-500/[0.08] rounded-lg">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
@@ -168,45 +173,45 @@ export default function ApiKeysPage() {
                     )}
                 </div>
 
-                {/* HELP SECTION */}
-                <div className="md:col-span-2 glass-panel p-6 rounded-2xl bg-secondary/5 border-secondary/20 border">
+                {/* Help Section */}
+                <div className="lg:col-span-2 glass-panel p-6 rounded-2xl">
                     <div className="flex items-start gap-4">
-                        <div className="p-3 bg-secondary/20 rounded-xl">
-                            <KeyRound className="w-6 h-6 text-secondary" />
+                        <div className="p-2.5 bg-secondary/10 rounded-xl border border-secondary/10 shrink-0">
+                            <KeyRound className="w-5 h-5 text-secondary" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-xl font-bold mb-2">API 키 발급 방법이 궁금하신가요?</h3>
-                            <p className="text-gray-300 mb-4 leading-relaxed">
-                                업비트나 바이낸스 같은 거래소에서 자동 매매를 하려면 API 키라는 통행증이 필요합니다.
-                                아래 링크를 통해 각 거래소의 공식 가이드를 확인해 보세요.
+                            <h3 className="text-base font-bold mb-2">API 키 발급 가이드</h3>
+                            <p className="text-sm text-gray-400 mb-4 leading-relaxed">
+                                자동 매매를 위해 거래소에서 API 키를 발급받아야 합니다.
                             </p>
-                            <div className="flex flex-wrap gap-4">
+                            <div className="flex flex-wrap gap-3 mb-4">
                                 <a
                                     href="https://upbit.com/service_center/guide"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="bg-surface hover:bg-surface/80 text-white px-4 py-2.5 rounded-lg border border-gray-700 flex items-center gap-2 transition-all font-medium text-sm"
+                                    className="bg-white/[0.04] hover:bg-white/[0.08] text-white px-4 py-2 rounded-lg border border-white/[0.06] flex items-center gap-2 transition-colors text-xs font-medium"
                                 >
-                                    <ExternalLink className="w-4 h-4 text-primary" />
-                                    업비트 고객센터 가이드
+                                    <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                                    업비트 고객센터
                                 </a>
                                 <a
                                     href="https://upbit.com/mypage/open_api_management"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="bg-secondary/10 hover:bg-secondary/20 text-secondary px-4 py-2.5 rounded-lg border border-secondary/30 flex items-center gap-2 transition-all font-medium text-sm"
+                                    className="bg-secondary/[0.08] hover:bg-secondary/[0.15] text-secondary px-4 py-2 rounded-lg border border-secondary/20 flex items-center gap-2 transition-colors text-xs font-medium"
                                 >
-                                    업비트 API 관리 바로가기
+                                    업비트 API 관리
                                 </a>
                             </div>
-                            <div className="mt-4 p-4 bg-black/30 rounded-lg border border-gray-800">
-                                <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                                    <ShieldCheck className="w-4 h-4 text-primary" /> 필수 확인 사항
+                            <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                                <h4 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                                    보안 체크리스트
                                 </h4>
                                 <ul className="text-xs text-gray-400 space-y-1.5 list-disc pl-4">
-                                    <li>API 발급 시 <strong className="text-white">IP 주소 제한</strong>을 설정하는 것이 보안상 매우 중요합니다. (현재 서버 IP: <code className="bg-gray-800 text-primary px-1 rounded">13.124.235.43</code>)</li>
-                                    <li>권한 설정 단계에서 <strong className="text-white">주문하기, 조회하기</strong> 권한만 체크해 주세요. <strong className="text-danger">출금 권한</strong>은 절대 체크하지 마세요.</li>
-                                    <li>Secret Key는 발급 시 단 한 번만 보여주므로 반드시 따로 메모해 두셔야 합니다.</li>
+                                    <li><strong className="text-white">IP 주소 제한</strong> 설정 필수 (서버 IP: <code className="text-primary bg-white/[0.04] px-1 rounded text-[10px]">13.124.235.43</code>)</li>
+                                    <li><strong className="text-white">주문, 조회</strong> 권한만 허용. <strong className="text-red-400">출금 권한은 절대 체크하지 마세요.</strong></li>
+                                    <li>Secret Key는 발급 시 한 번만 표시되므로 반드시 별도 보관하세요.</li>
                                 </ul>
                             </div>
                         </div>

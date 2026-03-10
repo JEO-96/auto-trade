@@ -1,8 +1,10 @@
+import asyncio
 import ccxt
 import pandas as pd
 import time
 from core import config
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 import models
 
 class DataFetcher:
@@ -14,7 +16,7 @@ class DataFetcher:
             'secret': config.API_SECRET,
             'enableRateLimit': True,
         })
-        
+
     def fetch_ohlcv(self, symbol=config.SYMBOL, timeframe=config.TIMEFRAME, limit=config.LIMIT, start_date=None, end_date=None, db: Session = None):
         """
         Fetches OHLCV data with Database Caching.
@@ -22,16 +24,21 @@ class DataFetcher:
         1. Try to load requested range from DB.
         2. Identify gaps or fetch missing data from API.
         3. Save new data to DB.
+
+        NOTE: This is a blocking method. Call it via fetch_ohlcv_async() from async
+        contexts, or wrap with asyncio.to_thread() at the call site, to avoid
+        blocking the event loop during the time.sleep() calls inside
+        _fetch_from_api_robust().
         """
         try:
             since = None
             until = None
-            
+
             if start_date:
                 since = self.exchange.parse8601(f"{start_date}T00:00:00Z")
             if end_date:
                 until = self.exchange.parse8601(f"{end_date}T23:59:59Z")
-            
+
             # If no start_date, determine roughly based on limit
             if not since and limit:
                 # Estimate since based on limit and current time
@@ -48,24 +55,24 @@ class DataFetcher:
                 )
                 if until:
                     query = query.filter(models.OHLCV.timestamp <= until)
-                
+
                 db_records = query.order_by(models.OHLCV.timestamp.asc()).all()
                 db_data = [[r.timestamp, r.open, r.high, r.low, r.close, r.volume] for r in db_records]
 
             # 2. Decide if we need to fetch more
             ohlcv = db_data
-            
+
             # Simplified Logic: If no DB data or data is insufficient, fetch everything from API for that range
             # In a production app, we would fetch only the GAPS.
             if len(ohlcv) < (limit if limit else 10):
                 print(f"Cache miss for {symbol} {timeframe}. Fetching from exchange...")
                 # Use existing robust fetch logic
                 ohlcv_api = self._fetch_from_api_robust(symbol, timeframe, limit, since, until)
-                
+
                 if ohlcv_api and db:
                     # Save newly fetched data to DB
                     self._save_to_db(db, symbol, timeframe, ohlcv_api)
-                
+
                 ohlcv = ohlcv_api
             else:
                 print(f"Loading {len(ohlcv)} candles from DB cache for {symbol} {timeframe}.")
@@ -76,17 +83,37 @@ class DataFetcher:
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             for col in ['open', 'high', 'low', 'close', 'volume']:
                 df[col] = df[col].astype(float)
-            
+
             # Final trim for limit
             if limit and not start_date:
                 df = df.tail(limit)
-                
+
             return df
         except Exception as e:
             print(f"Error fetching data: {e}")
             return None
 
+    async def fetch_ohlcv_async(self, symbol=config.SYMBOL, timeframe=config.TIMEFRAME, limit=config.LIMIT, start_date=None, end_date=None, db: Session = None):
+        """
+        Async wrapper for fetch_ohlcv. Runs the blocking fetch in a thread pool
+        executor so that time.sleep() calls inside _fetch_from_api_robust() do not
+        block the event loop.
+
+        Usage from async bot loop:
+            df = await fetcher.fetch_ohlcv_async(symbol, timeframe, limit, db=db)
+        """
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            None,
+            lambda: self.fetch_ohlcv(symbol, timeframe, limit, start_date, end_date, db)
+        )
+
     def _fetch_from_api_robust(self, symbol, timeframe, limit, since, until):
+        """
+        Blocking method: contains time.sleep() for rate limiting.
+        Must not be called directly from the async event loop.
+        Use fetch_ohlcv_async() instead.
+        """
         ohlcv = []
         try:
             # Re-use logic for date-range vs limit
@@ -128,34 +155,33 @@ class DataFetcher:
 
     def _save_to_db(self, db: Session, symbol: str, timeframe: str, data: list):
         """
-        Saves candles to DB, avoiding duplicates.
+        Bulk-upserts candles to DB using PostgreSQL INSERT ... ON CONFLICT DO NOTHING.
+        Replaces the previous per-candle SELECT + INSERT loop (N+1 queries) with a
+        single bulk statement, which is significantly faster for large batches.
+        Requires the uq_ohlcv_symbol_tf_ts unique constraint on (symbol, timeframe, timestamp).
         """
+        if not data:
+            return
         try:
-            new_records = []
-            for candle in data:
-                # Check if exists
-                exists = db.query(models.OHLCV.id).filter(
-                    models.OHLCV.symbol == symbol,
-                    models.OHLCV.timeframe == timeframe,
-                    models.OHLCV.timestamp == candle[0]
-                ).first()
-                
-                if not exists:
-                    new_records.append(models.OHLCV(
-                        symbol=symbol,
-                        timeframe=timeframe,
-                        timestamp=candle[0],
-                        open=candle[1],
-                        high=candle[2],
-                        low=candle[3],
-                        close=candle[4],
-                        volume=candle[5]
-                    ))
-            
-            if new_records:
-                db.bulk_save_objects(new_records)
-                db.commit()
-                print(f"Saved {len(new_records)} new candles to DB cache.")
+            rows = [
+                {
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "timestamp": candle[0],
+                    "open": candle[1],
+                    "high": candle[2],
+                    "low": candle[3],
+                    "close": candle[4],
+                    "volume": candle[5],
+                }
+                for candle in data
+            ]
+            stmt = pg_insert(models.OHLCV).values(rows).on_conflict_do_nothing(
+                index_elements=['symbol', 'timeframe', 'timestamp']
+            )
+            db.execute(stmt)
+            db.commit()
+            print(f"Saved up to {len(rows)} new candles to DB cache (duplicates skipped).")
         except Exception as e:
             db.rollback()
             print(f"Failed to save OHLCV to DB: {e}")

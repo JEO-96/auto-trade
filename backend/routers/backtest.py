@@ -21,10 +21,11 @@ def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depen
             end_date=req.end_date,
             db=db
         )
+        backtest_tasks[task_id]["user_id"] = current_user.id
         return {"status": "running", "task_id": task_id}
     except Exception as e:
         print(f"Backtest startup error: {e}")
-        return {"status": "error", "message": f"Startup Error: {str(e)}"}
+        raise HTTPException(status_code=500, detail="Backtest failed to start")
 
 @router.post("/portfolio", response_model=schemas.BacktestResponse)
 def run_portfolio_backtest(req: schemas.PortfolioBacktestRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -41,10 +42,11 @@ def run_portfolio_backtest(req: schemas.PortfolioBacktestRequest, current_user: 
             end_date=req.end_date,
             db=db
         )
+        backtest_tasks[task_id]["user_id"] = current_user.id
         return {"status": "running", "task_id": task_id}
     except Exception as e:
         print(f"Portfolio Backtest startup error: {e}")
-        return {"status": "error", "message": f"Startup Error: {str(e)}"}
+        raise HTTPException(status_code=500, detail="Backtest failed to start")
 
 @router.get("/status/{task_id}", response_model=schemas.BacktestTaskResponse)
 def get_backtest_status(task_id: str, current_user: models.User = Depends(get_current_user)):
