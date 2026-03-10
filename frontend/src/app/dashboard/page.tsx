@@ -197,7 +197,7 @@ export default function DashboardPage() {
         setModalMode('edit');
         setEditingBotId(bot.id);
         setFormData({
-            symbols: [bot.symbol],
+            symbols: bot.symbol.split(',').map(s => s.trim()).filter(Boolean),
             timeframe: bot.timeframe,
             strategy_name: bot.strategy_name,
             paper_trading_mode: bot.paper_trading_mode,
@@ -212,24 +212,23 @@ export default function DashboardPage() {
         setFormLoading(true);
         setFormError(null);
         try {
+            if (formData.symbols.length === 0) {
+                setFormError('심볼을 1개 이상 선택해주세요.');
+                setFormLoading(false);
+                return;
+            }
+            const symbolStr = formData.symbols.join(',');
             if (modalMode === 'create') {
-                if (formData.symbols.length === 0) {
-                    setFormError('심볼을 1개 이상 선택해주세요.');
-                    setFormLoading(false);
-                    return;
-                }
-                for (const symbol of formData.symbols) {
-                    await createBot({
-                        symbol,
-                        timeframe: formData.timeframe,
-                        strategy_name: formData.strategy_name,
-                        paper_trading_mode: formData.paper_trading_mode,
-                        allocated_capital: formData.allocated_capital,
-                    });
-                }
+                await createBot({
+                    symbol: symbolStr,
+                    timeframe: formData.timeframe,
+                    strategy_name: formData.strategy_name,
+                    paper_trading_mode: formData.paper_trading_mode,
+                    allocated_capital: formData.allocated_capital,
+                });
             } else if (editingBotId !== null) {
                 await updateBot(editingBotId, {
-                    symbol: formData.symbols[0],
+                    symbol: symbolStr,
                     timeframe: formData.timeframe,
                     strategy_name: formData.strategy_name,
                     paper_trading_mode: formData.paper_trading_mode,
@@ -357,7 +356,7 @@ export default function DashboardPage() {
 
                             <div>
                                 <label className="text-xs text-gray-500 font-medium mb-2 block">
-                                    심볼 (Symbol) {modalMode === 'create' && <span className="text-gray-600">— 복수 선택 가능</span>}
+                                    심볼 (Symbol) <span className="text-gray-600">— 복수 선택 가능</span>
                                 </label>
                                 <div className="grid grid-cols-2 gap-2">
                                     {SYMBOLS.map(s => {
@@ -367,16 +366,12 @@ export default function DashboardPage() {
                                                 key={s}
                                                 type="button"
                                                 onClick={() => {
-                                                    if (modalMode === 'edit') {
-                                                        setFormData({ ...formData, symbols: [s] });
-                                                    } else {
-                                                        setFormData({
-                                                            ...formData,
-                                                            symbols: isSelected
-                                                                ? formData.symbols.filter(sym => sym !== s)
-                                                                : [...formData.symbols, s],
-                                                        });
-                                                    }
+                                                    setFormData({
+                                                        ...formData,
+                                                        symbols: isSelected
+                                                            ? formData.symbols.filter(sym => sym !== s)
+                                                            : [...formData.symbols, s],
+                                                    });
                                                 }}
                                                 className={`py-2.5 rounded-xl text-xs font-semibold transition-all border ${
                                                     isSelected
