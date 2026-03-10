@@ -14,10 +14,10 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
         models.BotConfig.user_id == current_user.id
     ).first()
     if not bot_config:
-        return {"status": "error", "message": "Bot configuration not found."}
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bot configuration not found.")
 
     if bot_id in bot_manager.active_bots and not bot_manager.active_bots[bot_id].done():
-        return {"status": "error", "message": "Bot already running."}
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bot already running.")
 
     task = asyncio.create_task(bot_manager.run_bot_loop(bot_id))
     bot_manager.active_bots[bot_id] = task

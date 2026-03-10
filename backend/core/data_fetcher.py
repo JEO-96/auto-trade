@@ -102,7 +102,7 @@ class DataFetcher:
         Usage from async bot loop:
             df = await fetcher.fetch_ohlcv_async(symbol, timeframe, limit, db=db)
         """
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             None,
             lambda: self.fetch_ohlcv(symbol, timeframe, limit, start_date, end_date, db)

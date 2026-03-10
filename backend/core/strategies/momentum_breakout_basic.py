@@ -1,5 +1,6 @@
 import pandas_ta as ta
 import pandas as pd
+import numpy as np
 from core import config
 
 class MomentumBreakoutBasicStrategy:
@@ -18,22 +19,43 @@ class MomentumBreakoutBasicStrategy:
         macd_col = f"MACD_{config.MACD_FAST}_{config.MACD_SLOW}_{config.MACD_SIGNAL}"
         macds_col = f"MACDs_{config.MACD_FAST}_{config.MACD_SLOW}_{config.MACD_SIGNAL}"
 
-        rsi_cross_up = (prev[rsi_col] <= config.RSI_OVERBOUGHT) and (current[rsi_col] > config.RSI_OVERBOUGHT)
-        macd_positive = current[macd_col] > current[macds_col]
+        # Guard against NaN values in indicator columns
+        rsi_curr = current.get(rsi_col)
+        rsi_prev = prev.get(rsi_col)
+        macd_curr = current.get(macd_col)
+        macds_curr = current.get(macds_col)
         vol_ma_col = f"VOL_SMA_{config.VOLUME_MA_PERIOD}"
-        volume_spike = current['volume'] > (current[vol_ma_col] * config.VOLUME_SPIKE_MULTIPLIER)
+        vol_ma_curr = current.get(vol_ma_col)
 
-        if (current[rsi_col] > config.RSI_OVERBOUGHT) and macd_positive and volume_spike:
-            if rsi_cross_up or (current[rsi_col] - prev[rsi_col] > 5):
+        if any(pd.isna(v) for v in [rsi_curr, rsi_prev, macd_curr, macds_curr, vol_ma_curr]):
+            return False
+        if vol_ma_curr == 0:
+            return False
+
+        rsi_cross_up = (rsi_prev <= config.RSI_OVERBOUGHT) and (rsi_curr > config.RSI_OVERBOUGHT)
+        macd_positive = macd_curr > macds_curr
+        volume_spike = current['volume'] > (vol_ma_curr * config.VOLUME_SPIKE_MULTIPLIER)
+
+        if (rsi_curr > config.RSI_OVERBOUGHT) and macd_positive and volume_spike:
+            if rsi_cross_up or (rsi_curr - rsi_prev > 5):
                 return True
         return False
 
     def calculate_exit_levels(self, df: pd.DataFrame, entry_idx: int, entry_price: float):
-        prev_low = df.iloc[entry_idx - 1]['low']
-        curr_low = df.iloc[entry_idx]['low']
-        stop_loss = min(prev_low, curr_low)
+        if entry_price <= 0:
+            return entry_price * 0.985, entry_price * 1.015
+
+        if entry_idx >= 1:
+            prev_low = df.iloc[entry_idx - 1]['low']
+            curr_low = df.iloc[entry_idx]['low']
+            stop_loss = min(prev_low, curr_low)
+        else:
+            # Not enough history to look back; use a percentage-based fallback
+            stop_loss = entry_price * 0.985
+
         if entry_price <= stop_loss or (entry_price - stop_loss) / entry_price < 0.005:
             stop_loss = entry_price * 0.985
+
         risk = entry_price - stop_loss
         take_profit = entry_price + (risk * config.RISK_REWARD_RATIO)
         return stop_loss, take_profit

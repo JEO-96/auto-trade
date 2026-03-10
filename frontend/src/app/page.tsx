@@ -76,26 +76,29 @@ export default function Home() {
                     {[
                         {
                             icon: <Zap className="w-5 h-5" />,
-                            color: 'primary',
+                            bgClass: 'bg-primary/10 border-primary/10',
+                            textClass: 'text-primary',
                             title: '실시간 신호 포착',
                             desc: 'RSI 상향 돌파, MACD 교차, 거래량 폭증을 밀리초 단위로 추적하여 최적의 진입 시점을 포착합니다.'
                         },
                         {
                             icon: <TrendingUp className="w-5 h-5" />,
-                            color: 'secondary',
+                            bgClass: 'bg-secondary/10 border-secondary/10',
+                            textClass: 'text-secondary',
                             title: '24/7 무중단 가동',
                             desc: 'CCXT API를 통한 주요 거래소와의 완벽 연동으로 365일 지치지 않는 자동 매매를 실현합니다.'
                         },
                         {
                             icon: <ShieldCheck className="w-5 h-5" />,
-                            color: 'accent',
+                            bgClass: 'bg-accent/10 border-accent/10',
+                            textClass: 'text-accent',
                             title: '스마트 리스크 관리',
                             desc: '진입 캔들 저점 손절 및 다이나믹 익절 전략으로 하락장에서도 자산을 안전하게 보호합니다.'
                         }
                     ].map((feature) => (
                         <div key={feature.title} className="glass-panel glass-panel-hover p-8 rounded-2xl flex flex-col items-start">
-                            <div className={`bg-${feature.color}/10 p-3 rounded-xl mb-6 border border-${feature.color}/10`}>
-                                <span className={`text-${feature.color}`}>{feature.icon}</span>
+                            <div className={`${feature.bgClass} p-3 rounded-xl mb-6 border`}>
+                                <span className={feature.textClass}>{feature.icon}</span>
                             </div>
                             <h3 className="text-lg font-bold mb-3 text-white">{feature.title}</h3>
                             <p className="text-sm text-gray-400 leading-relaxed">{feature.desc}</p>

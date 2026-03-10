@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Play, StopCircle, Activity, Settings2, BarChart2, AlertTriangle, TrendingUp, TrendingDown, Clock, Wallet, ArrowUpRight, Zap, ListFilter } from 'lucide-react';
 import api from '@/lib/api';
 import StatCard from '@/components/ui/StatCard';
@@ -12,17 +12,17 @@ export default function DashboardPage() {
     const [showRiskModal, setShowRiskModal] = useState(false);
     const [botId, setBotId] = useState<number | null>(null);
 
-    const fetchStatusAndLogs = async (id: number) => {
+    const fetchStatusAndLogs = useCallback(async (id: number) => {
         try {
             const statusRes = await api.get(`/bot/status/${id}`);
             setIsBotActive(statusRes.data.bot_status === 'Running');
 
             const logRes = await api.get(`/bot/logs/${id}`);
             setTradeLogs(logRes.data);
-        } catch (error) {
-            console.error("상태 및 로그를 불러올 수 없습니다", error);
+        } catch (err) {
+            console.error("상태 및 로그를 불러올 수 없습니다", err);
         }
-    };
+    }, []);
 
     useEffect(() => {
         const initializeBotId = async () => {
@@ -34,15 +34,15 @@ export default function DashboardPage() {
                     setBotId(firstId);
                     await fetchStatusAndLogs(firstId);
                 }
-            } catch (error) {
-                console.error("봇 목록을 불러올 수 없습니다", error);
+            } catch (err) {
+                console.error("봇 목록을 불러올 수 없습니다", err);
             } finally {
                 setLoading(false);
             }
         };
 
         initializeBotId();
-    }, []);
+    }, [fetchStatusAndLogs]);
 
     useEffect(() => {
         if (botId === null) return;
@@ -50,7 +50,7 @@ export default function DashboardPage() {
             fetchStatusAndLogs(botId);
         }, 10000);
         return () => clearInterval(interval);
-    }, [botId]);
+    }, [botId, fetchStatusAndLogs]);
 
     const handleStartClick = () => {
         setShowRiskModal(true);
@@ -62,7 +62,7 @@ export default function DashboardPage() {
         try {
             await api.post(`/bot/start/${botId}`);
             setIsBotActive(true);
-        } catch (error: any) {
+        } catch {
             alert("서버 연결에 실패했거나 권한이 없습니다.");
         }
     };
@@ -72,7 +72,7 @@ export default function DashboardPage() {
         try {
             await api.post(`/bot/stop/${botId}`);
             setIsBotActive(false);
-        } catch (error: any) {
+        } catch {
             alert("서버 연결에 실패했거나 권한이 없습니다.");
         }
     };
@@ -214,7 +214,7 @@ export default function DashboardPage() {
                                 <BarChart2 className="w-5 h-5 text-secondary" />
                                 실행 타임라인
                             </h3>
-                            <button className="flex items-center gap-1.5 text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] px-3 py-2 rounded-lg border border-white/[0.06] transition-colors text-gray-400">
+                            <button aria-label="타임라인 필터" className="flex items-center gap-1.5 text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] px-3 py-2 rounded-lg border border-white/[0.06] transition-colors text-gray-400">
                                 <ListFilter className="w-3.5 h-3.5" />
                                 필터
                             </button>
@@ -235,10 +235,10 @@ export default function DashboardPage() {
                                                 <p className="text-[10px] text-gray-500 font-medium">{log.symbol} · {log.timestamp}</p>
                                             </div>
                                         </div>
-                                        {log.pnl !== null && (
+                                        {log.pnl != null && (
                                             <div className="text-right">
                                                 <p className={`text-base font-bold ${log.pnl > 0 ? 'text-secondary' : 'text-red-400'}`}>
-                                                    {log.pnl > 0 ? '+' : ''}₩{log.pnl.toLocaleString()}
+                                                    {log.pnl > 0 ? '+' : ''}₩{Number(log.pnl).toLocaleString()}
                                                 </p>
                                             </div>
                                         )}
@@ -247,7 +247,7 @@ export default function DashboardPage() {
                                     <div className="flex items-center gap-6 pt-3 border-t border-white/[0.04]">
                                         <div>
                                             <p className="text-[10px] text-gray-500 mb-0.5">체결가</p>
-                                            <p className="font-mono text-sm text-white font-medium">₩{log.price.toLocaleString()}</p>
+                                            <p className="font-mono text-sm text-white font-medium">₩{Number(log.price ?? 0).toLocaleString()}</p>
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-gray-500 mb-0.5">수량</p>

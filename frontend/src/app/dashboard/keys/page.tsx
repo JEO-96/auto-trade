@@ -113,6 +113,7 @@ export default function ApiKeysPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowSecret(!showSecret)}
+                                    aria-label={showSecret ? '비밀번호 숨기기' : '비밀번호 보기'}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
                                 >
                                     {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -164,7 +165,7 @@ export default function ApiKeysPage() {
                                             {key.api_key_preview}
                                         </p>
                                     </div>
-                                    <button className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-red-500/[0.08] rounded-lg">
+                                    <button aria-label="API 키 삭제" className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-red-500/[0.08] rounded-lg">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>

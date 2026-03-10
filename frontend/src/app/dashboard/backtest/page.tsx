@@ -38,7 +38,12 @@ export default function BacktestPage() {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        if (name === 'limit') {
+            setForm({ ...form, [name]: Number(value) });
+        } else {
+            setForm({ ...form, [name]: value });
+        }
     };
 
     const pollStatus = async (taskId: string) => {
@@ -95,8 +100,9 @@ export default function BacktestPage() {
                 setError(res.data.message || '백테스트 중 오류가 발생했습니다.');
                 setLoading(false);
             }
-        } catch (err: any) {
-            setError(err.response?.data?.detail || '서버와의 통신에 실패했습니다.');
+        } catch (err: unknown) {
+            const axiosErr = err as { response?: { data?: { detail?: string } } };
+            setError(axiosErr.response?.data?.detail || '서버와의 통신에 실패했습니다.');
             setLoading(false);
         }
     };
@@ -319,7 +325,7 @@ export default function BacktestPage() {
                                     </p>
                                     <div className={`inline-flex items-center gap-1 text-xs font-medium mt-2 ${result.final_capital >= result.initial_capital ? 'text-emerald-400' : 'text-red-400'}`}>
                                         {result.final_capital >= result.initial_capital ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                                        {(((result.final_capital - result.initial_capital) / result.initial_capital) * 100).toFixed(2)}%
+                                        {(((result.final_capital - result.initial_capital) / (result.initial_capital || 1)) * 100).toFixed(2)}%
                                     </div>
                                 </div>
 
@@ -399,14 +405,14 @@ export default function BacktestPage() {
                                                         </span>
                                                     </td>
                                                     <td className="px-5 py-4 text-right font-mono text-sm text-gray-300">
-                                                        ₩{trade.price.toLocaleString()}
+                                                        ₩{Number(trade.price ?? 0).toLocaleString()}
                                                     </td>
                                                     <td className="px-5 py-4 text-right">
                                                         <p className={`font-mono text-sm font-medium ${trade.pnl > 0 ? 'text-emerald-400' : trade.pnl < 0 ? 'text-red-400' : 'text-gray-600'}`}>
-                                                            {trade.pnl !== 0 ? (trade.pnl > 0 ? `+₩${trade.pnl.toLocaleString()}` : `-₩${Math.abs(trade.pnl).toLocaleString()}`) : '-'}
+                                                            {trade.pnl !== 0 ? (trade.pnl > 0 ? `+₩${Number(trade.pnl).toLocaleString()}` : `-₩${Math.abs(trade.pnl).toLocaleString()}`) : '-'}
                                                         </p>
                                                         <p className="text-[10px] text-gray-600 font-mono mt-0.5">
-                                                            ₩{trade.capital.toLocaleString()}
+                                                            ₩{Number(trade.capital ?? 0).toLocaleString()}
                                                         </p>
                                                     </td>
                                                 </tr>
@@ -434,13 +440,14 @@ function EquityCurveChart({ data }: { data: { time: string, value: number }[] })
 
     const chartMax = maxVal + padding;
     const chartMin = Math.max(0, minVal - padding);
-    const chartRange = chartMax - chartMin;
+    const chartRange = chartMax - chartMin || 1;
 
     const width = 1000;
     const height = 300;
 
+    const divisor = data.length > 1 ? data.length - 1 : 1;
     const points = data.map((d, i) => ({
-        x: (i / (data.length - 1)) * width,
+        x: (i / divisor) * width,
         y: height - ((d.value - chartMin) / chartRange) * height
     }));
 
@@ -465,7 +472,10 @@ function EquityCurveChart({ data }: { data: { time: string, value: number }[] })
                 viewBox={`0 0 ${width} ${height}`}
                 className="w-full h-full overflow-visible"
                 preserveAspectRatio="none"
+                role="img"
+                aria-label="자산 성장 추이 차트"
                 onMouseMove={(e) => {
+                    if (data.length < 2) return;
                     const rect = e.currentTarget.getBoundingClientRect();
                     const x = ((e.clientX - rect.left) / rect.width) * width;
                     const index = Math.round((x / width) * (data.length - 1));
@@ -518,9 +528,9 @@ function EquityCurveChart({ data }: { data: { time: string, value: number }[] })
                 <div
                     className="absolute z-10 p-3 rounded-xl bg-surface/95 border border-white/[0.08] backdrop-blur-md shadow-lg pointer-events-none"
                     style={{
-                        left: `${(hoverIndex / (data.length - 1)) * 100}%`,
+                        left: `${(hoverIndex / divisor) * 100}%`,
                         top: `${(points[hoverIndex].y / height) * 100}%`,
-                        transform: `translate(${hoverIndex > data.length / 2 ? '-110%' : '10%'}, -50%)`
+                        transform: `translate(${hoverIndex > divisor / 2 ? '-110%' : '10%'}, -50%)`
                     }}
                 >
                     <p className="text-[10px] text-gray-500 mb-1">
@@ -531,7 +541,7 @@ function EquityCurveChart({ data }: { data: { time: string, value: number }[] })
                     </p>
                     <p className={`text-xs font-medium flex items-center gap-1 ${data[hoverIndex].value >= data[0].value ? 'text-emerald-400' : 'text-red-400'}`}>
                         {data[hoverIndex].value >= data[0].value ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        {Math.abs(((data[hoverIndex].value - data[0].value) / data[0].value) * 100).toFixed(2)}%
+                        {Math.abs(((data[hoverIndex].value - data[0].value) / (data[0].value || 1)) * 100).toFixed(2)}%
                     </p>
                 </div>
             )}

@@ -10,7 +10,8 @@ router = APIRouter(prefix="/backtest", tags=["backtest"])
 def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         tester = VectorBacktester(strategy_name=req.strategy_name)
-        # Start asynchronous task
+        # Start asynchronous task -- do NOT pass the request-scoped db session
+        # to the background thread. The thread creates its own session internally.
         task_id = tester.start_async_backtest(
             symbols=[req.symbol],
             is_portfolio=False,
@@ -19,7 +20,6 @@ def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depen
             initial_capital=req.initial_capital,
             start_date=req.start_date,
             end_date=req.end_date,
-            db=db
         )
         backtest_tasks[task_id]["user_id"] = current_user.id
         return {"status": "running", "task_id": task_id}
@@ -31,7 +31,7 @@ def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depen
 def run_portfolio_backtest(req: schemas.PortfolioBacktestRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         tester = VectorBacktester(strategy_name=req.strategy_name)
-        # Start asynchronous portfolio task
+        # Start asynchronous portfolio task -- do NOT pass the request-scoped db session
         task_id = tester.start_async_backtest(
             symbols=req.symbols,
             is_portfolio=True,
@@ -40,7 +40,6 @@ def run_portfolio_backtest(req: schemas.PortfolioBacktestRequest, current_user: 
             initial_capital=req.initial_capital,
             start_date=req.start_date,
             end_date=req.end_date,
-            db=db
         )
         backtest_tasks[task_id]["user_id"] = current_user.id
         return {"status": "running", "task_id": task_id}
@@ -52,8 +51,13 @@ def run_portfolio_backtest(req: schemas.PortfolioBacktestRequest, current_user: 
 def get_backtest_status(task_id: str, current_user: models.User = Depends(get_current_user)):
     if task_id not in backtest_tasks:
         raise HTTPException(status_code=404, detail="Backtest task not found")
-    
+
     task_info = backtest_tasks[task_id]
+
+    # Authorization: ensure the user can only access their own backtest results
+    if task_info.get("user_id") and task_info["user_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this backtest")
+
     return {
         "task_id": task_id,
         "status": task_info["status"],

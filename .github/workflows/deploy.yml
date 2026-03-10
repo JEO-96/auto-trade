@@ -20,31 +20,40 @@ jobs:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script_stop: true   # SSH 명령 실패 시 즉시 중단
+        script_stop: true
+        command_timeout: 30m
         script: |
           set -e
 
-          # 1. 프로젝트 디렉토리로 이동
           cd ~/traiding-bot
 
-          # 2. 최신 코드로 강제 동기화 (로컬 변경사항 무시)
+          # 1. 최신 코드로 동기화
           git fetch origin main
           git reset --hard origin/main
 
-          # 3. 컨테이너 중지 후 빌드 캐시 삭제
+          # 2. 컨테이너 중지 (빌드 캐시는 유지하여 빌드 속도 향상)
           docker-compose down
-          docker builder prune -f
 
-          # 4. 이미지 재빌드 후 컨테이너 재시작
+          # 3. 이미지 재빌드 후 컨테이너 재시작
           docker-compose up --build -d
 
-          # 5. 컨테이너 정상 실행 확인
+          # 4. 헬스체크 (최대 60초 대기)
+          echo "Waiting for services to be healthy..."
+          for i in $(seq 1 12); do
+            if curl -sf http://localhost:8000/docs > /dev/null 2>&1; then
+              echo "Backend is healthy!"
+              break
+            fi
+            echo "Waiting... ($i/12)"
+            sleep 5
+          done
+
           docker-compose ps
 
-          # 6. 오래된 이미지 정리
+          # 5. 미사용 이미지만 정리 (빌드 캐시 유지)
           docker image prune -f
 
-          echo "✅ Deployment Successful!"
+          echo "Deployment Successful!"
 
 # 💡 GitHub Secrets 설정 (Settings → Secrets and variables → Actions):
 #    - SERVER_IP: 서버 공인 IP

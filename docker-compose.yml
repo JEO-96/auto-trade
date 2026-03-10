@@ -1,29 +1,37 @@
-version: '3.8'
-
 services:
   backend:
     build:
       context: ./backend
     restart: always
-    # ports: - "8000:8000" # Internalized: only Nginx talks to it
-    volumes:
-      - ./backend/trading_bot.db:/app/trading_bot.db
     env_file:
       - ./backend/.env
     environment:
       - PORT=8000
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   frontend:
     build:
       context: ./frontend
       args:
-        - NEXT_PUBLIC_API_URL=/api # Use relative path to avoid DNS resolution issues on the client side
+        - NEXT_PUBLIC_API_URL=/api
     restart: always
-    # ports: - "3000:3000" # Internalized: only Nginx talks to it
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       - NODE_ENV=production
+      - HOSTNAME=0.0.0.0
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   nginx:
     build:
@@ -35,5 +43,7 @@ services:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy

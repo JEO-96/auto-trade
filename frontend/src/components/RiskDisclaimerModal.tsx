@@ -15,7 +15,7 @@ export default function RiskDisclaimerModal({ onConfirm, onCancel }: RiskDisclai
     const allChecked = checked1 && checked2 && checked3;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" role="dialog" aria-modal="true" aria-labelledby="risk-modal-title">
             <div className="w-full max-w-md bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/[0.06]">
@@ -23,9 +23,9 @@ export default function RiskDisclaimerModal({ onConfirm, onCancel }: RiskDisclai
                         <div className="w-9 h-9 bg-amber-500/10 rounded-xl flex items-center justify-center border border-amber-500/20">
                             <AlertTriangle className="w-5 h-5 text-amber-500" />
                         </div>
-                        <h2 className="text-base font-bold text-white">투자 위험 고지</h2>
+                        <h2 id="risk-modal-title" className="text-base font-bold text-white">투자 위험 고지</h2>
                     </div>
-                    <button onClick={onCancel} className="text-gray-500 hover:text-gray-300 transition-colors">
+                    <button onClick={onCancel} aria-label="닫기" className="text-gray-500 hover:text-gray-300 transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>

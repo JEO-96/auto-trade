@@ -236,6 +236,26 @@ Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stor
 
 ---
 
+## Custom Agents (`.claude/agents/`)
+
+프로젝트 전문 에이전트가 `.claude/agents/` 디렉토리에 정의되어 있습니다. 사용자가 특정 에이전트를 언급하거나 해당 도메인 작업을 요청할 때, 에이전트의 `instructions`을 참고하여 해당 관점으로 응답하세요.
+
+| Agent | File | Role | When to Activate |
+|-------|------|------|-----------------|
+| **Senior Architect** | `architect.json` | 아키텍처, 클린코드, 코드리뷰 | 구조 설계, 리팩토링, 코드리뷰 요청 시 |
+| **UI/UX Designer** | `designer.json` | 데이터 시각화, 대시보드 UX | UI 개선, 차트/대시보드 작업 시 |
+| **Legal Compliance** | `legal.json` | 금융법, 가상자산법 준수 검토 | 전략 로직 변경, 법적 리스크 검토 시 |
+| **Security Expert** | `security.json` | API키 유출, 보안 취약점 분석 | 보안 점검, 인증/암호화 작업 시 |
+| **Trading Strategist** | `trader.json` | 퀀트 전략, 백테스팅 검증 | 전략 추가/수정, 백테스트 로직 검토 시 |
+
+### Agent 사용 규칙
+- 사용자가 "security 에이전트", "보안 점검해줘" 등으로 요청하면 해당 에이전트의 instructions를 로드하여 그 관점으로 분석
+- 여러 에이전트를 조합할 수 있음 (예: architect + security로 코드리뷰)
+- 에이전트 파일 경로: `.claude/agents/<name>.json`
+- JSON 형식: `{ "name", "description", "instructions" }`
+
+---
+
 ## Code Conventions
 
 ### Python (Backend)

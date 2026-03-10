@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 
@@ -9,22 +9,12 @@ export default function KakaoCallbackPage() {
     const searchParams = useSearchParams();
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const code = searchParams.get('code');
-
-        if (code) {
-            handleKakaoLogin(code);
-        } else {
-            setError('로그인 코드를 찾을 수 없습니다.');
-        }
-    }, [searchParams]);
-
-    const handleKakaoLogin = async (code: string) => {
+    const handleKakaoLogin = useCallback(async (code: string) => {
         try {
-            const redirect_uri = window.location.origin + '/auth/kakao';
+            const redirectUri = window.location.origin + '/auth/kakao';
             const response = await api.post('/auth/kakao', {
                 code,
-                redirect_uri: redirect_uri
+                redirect_uri: redirectUri
             });
 
             // 이메일 미제공 → 이메일 입력 페이지로 이동
@@ -41,11 +31,22 @@ export default function KakaoCallbackPage() {
             // 토큰 저장 후 대시보드로 이동
             localStorage.setItem('access_token', response.data.access_token);
             router.push('/dashboard');
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const axiosErr = err as { response?: { data?: { detail?: string } } };
             console.error('Kakao login error:', err);
-            setError(err.response?.data?.detail || '카카오 로그인에 실패했습니다.');
+            setError(axiosErr.response?.data?.detail || '카카오 로그인에 실패했습니다.');
         }
-    };
+    }, [router]);
+
+    useEffect(() => {
+        const code = searchParams.get('code');
+
+        if (code) {
+            handleKakaoLogin(code);
+        } else {
+            setError('로그인 코드를 찾을 수 없습니다.');
+        }
+    }, [searchParams, handleKakaoLogin]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#0B0F19]">

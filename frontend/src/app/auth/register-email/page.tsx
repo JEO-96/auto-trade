@@ -36,8 +36,9 @@ export default function RegisterEmailPage() {
 
             localStorage.setItem('access_token', response.data.access_token);
             router.push('/dashboard');
-        } catch (err: any) {
-            setError(err.response?.data?.detail || '이메일 등록에 실패했습니다.');
+        } catch (err: unknown) {
+            const axiosErr = err as { response?: { data?: { detail?: string } } };
+            setError(axiosErr.response?.data?.detail || '이메일 등록에 실패했습니다.');
         } finally {
             setLoading(false);
         }
@@ -61,8 +62,9 @@ export default function RegisterEmailPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm text-gray-400 mb-1">이메일 주소</label>
+                        <label htmlFor="email-input" className="block text-sm text-gray-400 mb-1">이메일 주소</label>
                         <input
+                            id="email-input"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}

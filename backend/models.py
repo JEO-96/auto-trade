@@ -13,7 +13,7 @@ class User(Base):
     kakao_id = Column(String, unique=True, index=True, nullable=True)
     kakao_access_token = Column(String, nullable=True) # For "Send to Me" messages
     is_active = Column(Boolean, default=False) # Changed to False by default
-    created_at = Column(DateTime, default=datetime.utcnow) # Added registration time
+    created_at = Column(DateTime, default=lambda: datetime.utcnow()) # Added registration time
 
     bots = relationship("BotConfig", back_populates="owner")
     api_keys = relationship("ExchangeKey", back_populates="owner")
@@ -39,6 +39,8 @@ class BotConfig(Base):
     is_active = Column(Boolean, default=False)
     paper_trading_mode = Column(Boolean, default=True)
     allocated_capital = Column(Float, default=1000000.0)
+
+    strategy_name = Column(String, default="james_pro_stable")
 
     # James Momentum specific parameters
     rsi_period = Column(Integer, default=14)

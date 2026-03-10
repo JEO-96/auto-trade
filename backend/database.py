@@ -1,7 +1,7 @@
 import os
 import urllib.parse
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # AWS Lightsail PostgreSQL Connection Info

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timezone
+from typing import Union
 import models, schemas, auth
 from dependencies import get_db, get_current_user
 import httpx
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @limiter.limit("10/minute")
 def login_for_access_token(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if not user or not auth.verify_password(form_data.password, user.hashed_password):
+    if not user or not user.hashed_password or not auth.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
 
     if not user.is_active:
@@ -27,11 +27,11 @@ def login_for_access_token(request: Request, form_data: OAuth2PasswordRequestFor
     access_token = auth.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.post("/kakao", response_model=schemas.Token)
+@router.post("/kakao", response_model=Union[schemas.Token, schemas.KakaoEmailRequired])
 @limiter.limit("10/minute")
 async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin, db: Session = Depends(get_db)):
     # 1. Exchange authorization code for access token
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         token_url = "https://kauth.kakao.com/oauth/token"
         token_params = {
             "grant_type": "authorization_code",
@@ -121,7 +121,7 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
 async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteRegister, db: Session = Depends(get_db)):
     """카카오 로그인 시 이메일 미제공 유저가 이메일 직접 입력 후 가입 완료하는 엔드포인트"""
     # Verify kakao_token is still valid by calling Kakao API
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         user_info_response = await client.get(
             "https://kapi.kakao.com/v2/user/me",
             headers={"Authorization": f"Bearer {data.kakao_token}"}

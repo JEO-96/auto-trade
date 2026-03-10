@@ -5,6 +5,11 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    'bg-primary/10', 'bg-secondary/10', 'bg-accent/10',
+    'border-primary/10', 'border-secondary/10', 'border-accent/10',
+    'text-primary', 'text-secondary', 'text-accent',
+  ],
   theme: {
     extend: {
       colors: {
@@ -29,26 +34,20 @@ module.exports = {
           light: '#A78BFA',
         },
         danger: '#EF4444',
-        border: 'rgba(255, 255, 255, 0.1)',
-      },
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
-        'glass-gradient': 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02))',
       },
       animation: {
-        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
+        'fade-in-up': 'fadeInUp 0.4s ease-out forwards',
         'glow-pulse': 'glowPulse 3s infinite ease-in-out',
         'float': 'float 6s infinite ease-in-out',
       },
       keyframes: {
         fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         glowPulse: {
-          '0%, 100%': { opacity: '0.4', filter: 'blur(20px)' },
-          '50%': { opacity: '0.7', filter: 'blur(30px)' },
+          '0%, 100%': { opacity: '0.4' },
+          '50%': { opacity: '0.7' },
         },
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
@@ -56,12 +55,11 @@ module.exports = {
         },
       },
       boxShadow: {
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-        'glow-primary': '0 0 20px rgba(59, 130, 246, 0.5)',
-        'glow-secondary': '0 0 20px rgba(16, 185, 129, 0.5)',
+        'glass': '0 4px 24px 0 rgba(0, 0, 0, 0.2)',
+        'glow-primary': '0 0 16px rgba(59, 130, 246, 0.4)',
+        'glow-secondary': '0 0 16px rgba(16, 185, 129, 0.4)',
       },
     },
   },
   plugins: [],
 }
-

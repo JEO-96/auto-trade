@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-    title: 'Momentum Breakout Platform',
-    description: 'Automated algorithmic trading platform leveraging James Momentum Breakout strategy',
+    title: 'Momentum PRO | 자동 트레이딩 플랫폼',
+    description: '검증된 모멘텀 돌파 전략으로 암호화폐 매매를 자동화하세요.',
 }
 
 export default function RootLayout({
@@ -15,8 +15,8 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en">
-            <body className={`${inter.className} bg-[#0B0F19] text-white min-h-screen antialiased`}>
+        <html lang="ko">
+            <body className={`${inter.className} bg-[#020617] text-white min-h-screen antialiased`}>
                 {children}
             </body>
         </html>

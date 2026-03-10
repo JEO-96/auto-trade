@@ -4,6 +4,7 @@ import vectorbt as vbt
 from core.data_fetcher import DataFetcher
 from core.strategy import get_strategy
 from core import config
+import database
 import uuid
 import threading
 import time
@@ -43,7 +44,14 @@ class VectorBacktester:
 
     def _run_task(self, task_id: str, symbols: list, is_portfolio: bool, **kwargs):
         try:
-            result = self._run_backtest(symbols, task_id=task_id, **kwargs)
+            # Create a thread-local DB session for background execution.
+            # The request-scoped session must NOT be used across threads.
+            db = database.SessionLocal()
+            kwargs["db"] = db
+            try:
+                result = self._run_backtest(symbols, task_id=task_id, **kwargs)
+            finally:
+                db.close()
 
             backtest_tasks[task_id]["status"] = "completed"
             backtest_tasks[task_id]["progress"] = 100.0
@@ -52,6 +60,8 @@ class VectorBacktester:
             backtest_tasks[task_id]["completed_at"] = time.time()
         except Exception as e:
             print(f"Async backtest error: {e}")
+            import traceback
+            traceback.print_exc()
             backtest_tasks[task_id]["status"] = "failed"
             backtest_tasks[task_id]["message"] = str(e)
 
@@ -88,6 +98,9 @@ class VectorBacktester:
                       end_date=None, db=None, task_id=None):
         """Core backtest execution for both single and multi-asset."""
         print(f"--- [VectorBacktest] Symbols: {symbols} ---")
+
+        if not symbols:
+            return {"status": "error", "message": "No symbols provided."}
 
         # 1. Fetch and align data
         ohlcv_data = {}
@@ -129,11 +142,27 @@ class VectorBacktester:
             entries_df[symbol] = pd.Series(signals, index=df_indexed.index)
 
         entries_df.fillna(False, inplace=True)
+        # Forward-fill then back-fill to handle leading NaN for symbols
+        # that started trading later than others in the portfolio
         close_df.ffill(inplace=True)
+        close_df.bfill(inplace=True)
+
+        # Drop any rows that still have NaN (should not happen after ffill+bfill,
+        # but guard against completely empty columns)
+        nan_rows = close_df.isna().any(axis=1)
+        if nan_rows.any():
+            close_df = close_df[~nan_rows]
+            entries_df = entries_df[~nan_rows]
+
+        if close_df.empty:
+            return {"status": "error", "message": "No valid price data after alignment."}
 
         # Shift entries by 1 bar to prevent look-ahead bias
         # Signal fires on bar N, execution happens on bar N+1
         entries_df = entries_df.shift(1).fillna(False)
+
+        # Ensure entries_df is boolean type (shift can convert to object)
+        entries_df = entries_df.astype(bool)
 
         self._update_progress(
             task_id, 70.0,
@@ -158,7 +187,7 @@ class VectorBacktester:
 
         # 4. Format Output
         formatted_trades = self._format_trades(portfolio, symbols, initial_capital, close_df)
-        
+
         # 5. Extract Equity Curve
         equity_series = portfolio.value()
         equity_curve = [
@@ -166,17 +195,26 @@ class VectorBacktester:
             for ts, val in equity_series.items()
         ]
 
+        # Safely get total trade count across different vectorbt versions
+        try:
+            total_trades = int(portfolio.trades.count())
+        except (TypeError, AttributeError):
+            try:
+                total_trades = len(portfolio.trades.records)
+            except Exception:
+                total_trades = len(formatted_trades) // 2
+
         return {
             "status": "success",
             "initial_capital": float(initial_capital),
             "final_capital": float(portfolio.final_value()),
-            "total_trades": int(portfolio.trades.count()) if hasattr(portfolio.trades, 'count') else len(portfolio.trades.records),
+            "total_trades": total_trades,
             "trades": formatted_trades,
             "equity_curve": equity_curve
         }
 
     # ------------------------------------------------------------------
-    # Trade formatting – version-agnostic column resolution
+    # Trade formatting -- version-agnostic column resolution
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -199,7 +237,11 @@ class VectorBacktester:
         Extract trades from vectorbt portfolio in a version-agnostic manner.
         Supports both old (Entry Timestamp) and new (Entry Idx) column layouts.
         """
-        vbt_trades = portfolio.trades.records_readable
+        try:
+            vbt_trades = portfolio.trades.records_readable
+        except Exception as e:
+            print(f"[WARN] Could not read trades from portfolio: {e}")
+            return []
 
         if vbt_trades.empty:
             return []
@@ -234,15 +276,19 @@ class VectorBacktester:
             if entry_price is None or exit_price is None:
                 continue
 
+            # Guard against NaN prices
+            if pd.isna(entry_price) or pd.isna(exit_price):
+                continue
+
             # PnL
             pnl_val = float(t[pnl_col]) if pnl_col and pd.notna(t.get(pnl_col)) else 0.0
 
-            # Timestamps – use column if available, otherwise reconstruct from index
+            # Timestamps -- use column if available, otherwise reconstruct from index
             if entry_ts_col and entry_ts_col in t.index:
                 entry_time = str(t[entry_ts_col])
             elif entry_idx_col and entry_idx_col in t.index:
                 idx_val = int(t[entry_idx_col])
-                entry_time = str(close_df.index[idx_val]) if idx_val < len(close_df.index) else "N/A"
+                entry_time = str(close_df.index[idx_val]) if 0 <= idx_val < len(close_df.index) else "N/A"
             else:
                 entry_time = "N/A"
 
@@ -250,7 +296,7 @@ class VectorBacktester:
                 exit_time = str(t[exit_ts_col])
             elif exit_idx_col and exit_idx_col in t.index:
                 idx_val = int(t[exit_idx_col])
-                exit_time = str(close_df.index[idx_val]) if idx_val < len(close_df.index) else "N/A"
+                exit_time = str(close_df.index[idx_val]) if 0 <= idx_val < len(close_df.index) else "N/A"
             else:
                 exit_time = "N/A"
 

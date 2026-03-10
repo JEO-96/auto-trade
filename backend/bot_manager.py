@@ -1,13 +1,13 @@
 import asyncio
 from typing import Dict, Any
 from datetime import datetime
-from core.strategy import MomentumBreakoutStrategy
 from core.data_fetcher import DataFetcher
 from core.execution import ExecutionEngine
 from core import config
 from sqlalchemy.orm import Session
 import database, models
 from notifications import send_kakao_message
+import pandas as pd
 
 # Global dictionary to store currently running tasks (Simple In-Memory Queue)
 # In production, use Celery + Redis for scaling.
@@ -29,6 +29,7 @@ def save_trade_log(bot_id: int, symbol: str, side: str, price: float, amount: fl
         db.add(log)
         db.commit()
     except Exception as e:
+        db.rollback()
         print(f"Failed to save trade log: {e}")
     finally:
         db.close()
@@ -38,31 +39,31 @@ async def run_bot_loop(bot_config_id: int):
     fetcher = DataFetcher()
 
     db: Session = database.SessionLocal()
-    bot_config = db.query(models.BotConfig).filter(models.BotConfig.id == bot_config_id).first()
-    if not bot_config:
-        print(f"[Bot {bot_config_id}] Bot configuration not found. Stopping.")
-        db.close()
-        return
+    try:
+        bot_config = db.query(models.BotConfig).filter(models.BotConfig.id == bot_config_id).first()
+        if not bot_config:
+            print(f"[Bot {bot_config_id}] Bot configuration not found. Stopping.")
+            return
 
-    # Bot Configuration - Parse multiple symbols
-    symbol_str = bot_config.symbol or "BTC/KRW"
-    symbols = [s.strip() for s in symbol_str.split(',') if s.strip()]
-    timeframe = bot_config.timeframe
-    liquid_capital = bot_config.allocated_capital
-    paper_trading = bot_config.paper_trading_mode
-    strategy_name = getattr(bot_config, 'strategy_name', 'james_pro_stable')
+        # Bot Configuration - Parse multiple symbols
+        symbol_str = bot_config.symbol or "BTC/KRW"
+        symbols = [s.strip() for s in symbol_str.split(',') if s.strip()]
+        timeframe = bot_config.timeframe
+        liquid_capital = bot_config.allocated_capital
+        paper_trading = bot_config.paper_trading_mode
+        strategy_name = getattr(bot_config, 'strategy_name', 'james_pro_stable')
+
+        # Extract all bot_config attributes needed after db.close() to avoid DetachedInstanceError
+        user_id = bot_config.user_id
+    finally:
+        db.close()
 
     from core.strategy import get_strategy
     strategy = get_strategy(strategy_name)
 
-    # Extract all bot_config attributes needed after db.close() to avoid DetachedInstanceError
-    user_id = bot_config.user_id
-
     api_key = None
     api_secret = None
     exchange_name = 'upbit'
-
-    db.close()
 
     if not paper_trading:
         db_new = database.SessionLocal()
@@ -100,7 +101,8 @@ async def run_bot_loop(bot_config_id: int):
             try:
                 # First pass: Fetch data for all symbols and update equity
                 for symbol in symbols:
-                    df = fetcher.fetch_ohlcv(symbol=symbol, timeframe=timeframe, limit=100, db=current_db)
+                    # Use async wrapper to avoid blocking the event loop with time.sleep()
+                    df = await fetcher.fetch_ohlcv_async(symbol=symbol, timeframe=timeframe, limit=100, db=current_db)
                     if df is not None and not df.empty:
                         curr_price = float(df.iloc[-1]['close'])
                         current_prices[symbol] = curr_price
@@ -112,6 +114,11 @@ async def run_bot_loop(bot_config_id: int):
                         # Use iloc[-2] (last CLOSED candle) for all signal checks.
                         # iloc[-1] is the still-forming candle and must not be used for signals.
                         current_idx = len(df) - 2
+
+                        # Guard: need at least 2 candles for current_idx >= 0, and strategies
+                        # need current_idx >= 1 to access prev candle
+                        if current_idx < 1:
+                            continue
 
                         if symbol in active_positions:
                             pos = active_positions[symbol]
@@ -132,17 +139,26 @@ async def run_bot_loop(bot_config_id: int):
                                 liquid_capital += (pos['position_amount'] * exit_price)
                                 save_trade_log(bot_config_id, symbol, "SELL", exit_price, pos['position_amount'], f"{reason} (Portfolio)", pnl)
 
-                                # Send Kakao Notification
-                                msg = f"🔔 [거래 알림 - SELL]\n종목: {symbol}\n가격: {exit_price:,.0f} KRW\n수익률: {(pnl / (pos['entry_price'] * pos['position_amount']) * 100):.2f}%\n사유: {reason}"
+                                # Send Kakao Notification -- safe percentage calculation
+                                cost_basis = pos['entry_price'] * pos['position_amount']
+                                pnl_pct = (pnl / cost_basis * 100) if cost_basis > 0 else 0.0
+                                msg = (
+                                    f"[SELL]\n"
+                                    f"Symbol: {symbol}\n"
+                                    f"Price: {exit_price:,.0f} KRW\n"
+                                    f"PnL: {pnl_pct:.2f}%\n"
+                                    f"Reason: {reason}"
+                                )
                                 asyncio.create_task(send_kakao_message(user_id, msg))
 
                                 del active_positions[symbol]
                             else:
                                 # B. Trailing Stop Update
                                 if hasattr(strategy, 'update_trailing_stop'):
-                                    atr = df.iloc[current_idx].get('ATR_14', 0)
-                                    if atr > 0:
-                                        new_sl = strategy.update_trailing_stop(curr_price, atr, pos['stop_loss'])
+                                    atr_val = df.iloc[current_idx].get('ATR_14', 0)
+                                    # Guard against NaN ATR which would corrupt the stop loss
+                                    if atr_val is not None and not pd.isna(atr_val) and atr_val > 0:
+                                        new_sl = strategy.update_trailing_stop(curr_price, atr_val, pos['stop_loss'])
                                         if new_sl > pos['stop_loss']:
                                             pos['stop_loss'] = new_sl
                         else:
@@ -151,6 +167,11 @@ async def run_bot_loop(bot_config_id: int):
                                 print(f"[Bot {bot_config_id}] *** BUY SIGNAL for {symbol}! ***")
 
                                 sl, tp = strategy.calculate_exit_levels(df, current_idx, curr_price)
+
+                                # Validate that exit levels are sensible (not NaN, SL < price < TP)
+                                if pd.isna(sl) or pd.isna(tp) or sl >= curr_price or tp <= curr_price:
+                                    print(f"[Bot {bot_config_id}] Invalid exit levels for {symbol}: SL={sl}, TP={tp}, Price={curr_price}. Skipping.")
+                                    continue
 
                                 # Risk Management (2% of TOTAL Portfolio Equity)
                                 risk_multiplier = 1.0
@@ -162,7 +183,7 @@ async def run_bot_loop(bot_config_id: int):
 
                                 if price_risk > 0:
                                     desired_qty = risk_amount / price_risk
-                                    max_qty = liquid_capital / curr_price
+                                    max_qty = liquid_capital / curr_price if curr_price > 0 else 0
                                     qty = min(desired_qty, max_qty)
 
                                     if qty > 0:
@@ -180,7 +201,13 @@ async def run_bot_loop(bot_config_id: int):
                                             save_trade_log(bot_config_id, symbol, "BUY", entry_price, qty, "Portfolio Entry")
 
                                             # Send Kakao Notification
-                                            msg = f"🚀 [거래 알림 - BUY]\n종목: {symbol}\n가격: {entry_price:,.0f} KRW\n수량: {qty:.4f}\n상태: 진입 완료"
+                                            msg = (
+                                                f"[BUY]\n"
+                                                f"Symbol: {symbol}\n"
+                                                f"Price: {entry_price:,.0f} KRW\n"
+                                                f"Amount: {qty:.4f}\n"
+                                                f"Status: Entry Complete"
+                                            )
                                             asyncio.create_task(send_kakao_message(user_id, msg))
                                 else:
                                     print(f"[Bot {bot_config_id}] Risk calculation failed for {symbol} (risk <= 0)")
@@ -200,7 +227,12 @@ async def run_bot_loop(bot_config_id: int):
         print(f"--- [Bot {bot_config_id}] Engine Stopped ---")
         raise
     except Exception as e:
-        print(f"[Bot {bot_config_id}] Error in bot loop: {e}")
+        import traceback
+        print(f"[Bot {bot_config_id}] Fatal error in bot loop: {e}")
+        traceback.print_exc()
+    finally:
+        # Clean up from active_bots so status correctly reports Stopped
+        active_bots.pop(bot_config_id, None)
 
 def get_bot_status(bot_config_id: int):
     if bot_config_id in active_bots:

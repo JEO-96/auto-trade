@@ -59,8 +59,11 @@ def get_exchange_keys(current_user: models.User = Depends(get_current_user), db:
     keys = db.query(models.ExchangeKey).filter(models.ExchangeKey.user_id == current_user.id).all()
     results = []
     for k in keys:
-        decrypted_key = decrypt_key(k.api_key_encrypted)
-        preview = decrypted_key[:4] + "*" * 10 if len(decrypted_key) >= 4 else "****"
+        try:
+            decrypted_key = decrypt_key(k.api_key_encrypted)
+            preview = decrypted_key[:4] + "*" * 10 if len(decrypted_key) >= 4 else "****"
+        except Exception:
+            preview = "****"
         results.append({
             "id": k.id,
             "exchange_name": k.exchange_name,

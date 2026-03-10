@@ -1,13 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import KakaoLoginButton from '@/components/KakaoLoginButton';
-import { AlertTriangle } from 'lucide-react';
 
 export default function LoginPage() {
-    const [error, setError] = useState('');
     const [termsAgreed, setTermsAgreed] = useState(false);
     const router = useRouter();
 
@@ -73,12 +71,6 @@ export default function LoginPage() {
                         <h2 className="text-2xl font-bold mb-2 text-white">로그인</h2>
                         <p className="text-sm text-gray-400">카카오 계정으로 간편하게 시작하세요.</p>
                     </div>
-
-                    {error && (
-                        <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm text-center">
-                            {error}
-                        </div>
-                    )}
 
                     {/* 투자 위험 고지 */}
                     <div className="mb-5 p-4 bg-amber-500/[0.04] border border-amber-500/15 rounded-xl flex items-start gap-3">
