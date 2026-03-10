@@ -1,20 +1,23 @@
 services:
   backend:
-    image: ghcr.io/jeo-96/auto-trade/backend:latest
+    build: ./backend
     restart: always
     env_file:
       - ./backend/.env
     environment:
       - PORT=8000
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 60s
 
   frontend:
-    image: ghcr.io/jeo-96/auto-trade/frontend:latest
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: /api
     restart: always
     depends_on:
       backend:
@@ -27,10 +30,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 60s
 
   nginx:
-    image: ghcr.io/jeo-96/auto-trade/nginx:latest
+    build: ./nginx
     restart: always
     ports:
       - "80:80"
