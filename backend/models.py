@@ -158,6 +158,26 @@ class PostLike(Base):
     )
 
 
+class ActivePosition(Base):
+    """봇이 보유 중인 포지션 (서버 재시작 시 복구용)"""
+    __tablename__ = "active_positions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_id = Column(Integer, ForeignKey("bot_configs.id"), nullable=False, index=True)
+    symbol = Column(String, nullable=False)
+    position_amount = Column(Float, nullable=False)
+    entry_price = Column(Float, nullable=False)
+    stop_loss = Column(Float, nullable=False)
+    take_profit = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+
+    bot = relationship("BotConfig")
+
+    __table_args__ = (
+        UniqueConstraint('bot_id', 'symbol', name='uq_active_position_bot_symbol'),
+    )
+
+
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 

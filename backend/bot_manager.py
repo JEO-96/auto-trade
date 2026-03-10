@@ -40,6 +40,89 @@ def save_trade_log(bot_id: int, symbol: str, side: str, price: float, amount: fl
         db.close()
 
 
+# ──────────────────────────────────────────────
+# 포지션 영속화 (서버 재시작 시 복구용)
+# ──────────────────────────────────────────────
+
+def save_positions_to_db(bot_id: int, active_positions: dict) -> None:
+    """현재 보유 포지션을 DB에 저장 (upsert)"""
+    db: Session = database.SessionLocal()
+    try:
+        # 기존 포지션 삭제 후 새로 삽입
+        db.query(models.ActivePosition).filter(models.ActivePosition.bot_id == bot_id).delete()
+        for symbol, pos in active_positions.items():
+            db.add(models.ActivePosition(
+                bot_id=bot_id,
+                symbol=symbol,
+                position_amount=pos['position_amount'],
+                entry_price=pos['entry_price'],
+                stop_loss=pos['stop_loss'],
+                take_profit=pos['take_profit'],
+            ))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error("[Bot %d] Failed to save positions: %s", bot_id, e)
+    finally:
+        db.close()
+
+
+def load_positions_from_db(bot_id: int) -> dict:
+    """DB에서 포지션 복구"""
+    db: Session = database.SessionLocal()
+    positions = {}
+    try:
+        rows = db.query(models.ActivePosition).filter(
+            models.ActivePosition.bot_id == bot_id
+        ).all()
+        for row in rows:
+            positions[row.symbol] = {
+                'position_amount': row.position_amount,
+                'entry_price': row.entry_price,
+                'stop_loss': row.stop_loss,
+                'take_profit': row.take_profit,
+            }
+        if positions:
+            logger.info("[Bot %d] Recovered %d positions from DB", bot_id, len(positions))
+    except Exception as e:
+        logger.error("[Bot %d] Failed to load positions: %s", bot_id, e)
+    finally:
+        db.close()
+    return positions
+
+
+def clear_positions_from_db(bot_id: int) -> None:
+    """봇 정지 시 DB 포지션 정리"""
+    db: Session = database.SessionLocal()
+    try:
+        db.query(models.ActivePosition).filter(models.ActivePosition.bot_id == bot_id).delete()
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error("[Bot %d] Failed to clear positions: %s", bot_id, e)
+    finally:
+        db.close()
+
+
+# ──────────────────────────────────────────────
+# 봇 활성 상태 DB 동기화
+# ──────────────────────────────────────────────
+
+def set_bot_active(bot_id: int, active: bool) -> None:
+    """DB의 is_active 플래그를 업데이트"""
+    db: Session = database.SessionLocal()
+    try:
+        bot = db.query(models.BotConfig).filter(models.BotConfig.id == bot_id).first()
+        if bot:
+            bot.is_active = active
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error("[Bot %d] Failed to update is_active: %s", bot_id, e)
+    finally:
+        db.close()
+
+
 def _load_bot_config(bot_config_id: int) -> dict | None:
     """Load bot configuration from DB and return as a plain dict to avoid DetachedInstanceError."""
     db: Session = database.SessionLocal()
@@ -199,6 +282,7 @@ async def run_bot_loop(bot_config_id: int):
 
     cfg = _load_bot_config(bot_config_id)
     if cfg is None:
+        set_bot_active(bot_config_id, False)
         return
 
     symbols = cfg["symbols"]
@@ -236,8 +320,17 @@ async def run_bot_loop(bot_config_id: int):
         paper_trading=paper_trading
     )
 
-    # Portfolio State
-    active_positions = {}  # symbol -> {position_amount, entry_price, stop_loss, take_profit}
+    # Portfolio State — DB에서 복구 시도
+    active_positions = load_positions_from_db(bot_config_id)
+
+    # 포지션이 복구된 경우, liquid_capital에서 보유 금액 차감
+    for sym, pos in active_positions.items():
+        invested = pos['entry_price'] * pos['position_amount']
+        liquid_capital -= invested
+        logger.info("[Bot %d] Recovered position %s: entry=%.0f, qty=%.4f", bot_config_id, sym, pos['entry_price'], pos['position_amount'])
+
+    # DB에 활성 상태 표시
+    set_bot_active(bot_config_id, True)
 
     try:
         while True:
@@ -301,6 +394,9 @@ async def run_bot_loop(bot_config_id: int):
                         if new_position:
                             active_positions[symbol] = new_position
 
+                # 매 tick마다 포지션 상태를 DB에 저장
+                save_positions_to_db(bot_config_id, active_positions)
+
                 logger.info(
                     "[Bot %d] Status: Equity=%s | Liquid=%s | Positions=%s",
                     bot_config_id,
@@ -318,7 +414,9 @@ async def run_bot_loop(bot_config_id: int):
             # Sleep for 1 minute in portfolio mode to be more reactive
             await asyncio.sleep(60)
     except asyncio.CancelledError:
-        logger.info("--- [Bot %d] Engine Stopped ---", bot_config_id)
+        logger.info("--- [Bot %d] Engine Stopped (graceful) ---", bot_config_id)
+        # 포지션은 DB에 유지 (재시작 시 복구 가능)
+        save_positions_to_db(bot_config_id, active_positions)
         raise
     except Exception as e:
         logger.error("[Bot %d] Fatal error in bot loop: %s", bot_config_id, e)
@@ -326,6 +424,7 @@ async def run_bot_loop(bot_config_id: int):
     finally:
         # Clean up from active_bots so status correctly reports Stopped
         active_bots.pop(bot_config_id, None)
+        set_bot_active(bot_config_id, False)
 
 
 def get_bot_status(bot_config_id: int):
@@ -334,3 +433,56 @@ def get_bot_status(bot_config_id: int):
         if not task.done():
             return "Running"
     return "Stopped"
+
+
+# ──────────────────────────────────────────────
+# 서버 시작 시 봇 자동 복구 & Graceful Shutdown
+# ──────────────────────────────────────────────
+
+async def recover_active_bots() -> None:
+    """서버 시작 시 DB에서 is_active=True인 봇을 자동 재가동"""
+    db: Session = database.SessionLocal()
+    try:
+        active_bot_configs = db.query(models.BotConfig).filter(
+            models.BotConfig.is_active == True,
+        ).all()
+
+        if not active_bot_configs:
+            logger.info("[Recovery] No active bots to recover.")
+            return
+
+        for bot_cfg in active_bot_configs:
+            bot_id = bot_cfg.id
+            paper_label = "모의투자" if bot_cfg.paper_trading_mode else "실매매"
+            logger.info(
+                "[Recovery] Restarting bot %d (%s, %s, %s)",
+                bot_id, bot_cfg.symbol, bot_cfg.strategy_name, paper_label,
+            )
+            task = asyncio.create_task(run_bot_loop(bot_id))
+            active_bots[bot_id] = task
+
+        logger.info("[Recovery] Recovered %d bot(s).", len(active_bot_configs))
+    except Exception as e:
+        logger.error("[Recovery] Failed to recover bots: %s", e)
+    finally:
+        db.close()
+
+
+async def graceful_shutdown() -> None:
+    """서버 종료 시 모든 봇을 안전하게 중단 (포지션은 DB에 유지)"""
+    if not active_bots:
+        return
+
+    logger.info("[Shutdown] Stopping %d active bot(s)...", len(active_bots))
+
+    tasks = list(active_bots.values())
+    for task in tasks:
+        task.cancel()
+
+    # 모든 태스크가 종료될 때까지 대기 (최대 10초)
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    for i, result in enumerate(results):
+        if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
+            logger.error("[Shutdown] Bot task error: %s", result)
+
+    logger.info("[Shutdown] All bots stopped. Positions preserved in DB.")

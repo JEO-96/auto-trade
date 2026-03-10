@@ -13,6 +13,8 @@ router = APIRouter(prefix="/bot", tags=["bots"])
 
 # 사용자당 최대 봇 수
 MAX_BOTS_PER_USER = 5
+# 실매매 봇은 사용자당 최대 1개
+MAX_LIVE_BOTS_PER_USER = 1
 
 # 심볼 형식 검증 (예: BTC/KRW, ETH/USDT)
 SYMBOL_PATTERN = re.compile(r'^[A-Z0-9]{2,10}/[A-Z]{3,5}$')
@@ -73,6 +75,18 @@ def create_bot(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Maximum {MAX_BOTS_PER_USER} bots allowed per user.",
         )
+
+    # 실매매 봇 개수 제한 (사용자당 1개)
+    if not req.paper_trading_mode:
+        live_bot_count = db.query(models.BotConfig).filter(
+            models.BotConfig.user_id == current_user.id,
+            models.BotConfig.paper_trading_mode == False,
+        ).count()
+        if live_bot_count >= MAX_LIVE_BOTS_PER_USER:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"실매매 봇은 최대 {MAX_LIVE_BOTS_PER_USER}개까지만 생성할 수 있습니다. 모의투자 봇은 무제한입니다.",
+            )
 
     # 입력값 검증
     _validate_symbol(req.symbol)
@@ -136,6 +150,19 @@ def update_bot(
             detail="Allocated capital must be positive.",
         )
 
+    # 모의투자 → 실매매로 변경 시, 기존 실매매 봇 수 체크
+    if "paper_trading_mode" in update_data and update_data["paper_trading_mode"] is False:
+        if bot.paper_trading_mode:  # 현재 모의투자인 봇을 실매매로 바꾸려는 경우만
+            live_bot_count = db.query(models.BotConfig).filter(
+                models.BotConfig.user_id == current_user.id,
+                models.BotConfig.paper_trading_mode == False,
+            ).count()
+            if live_bot_count >= MAX_LIVE_BOTS_PER_USER:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"실매매 봇은 최대 {MAX_LIVE_BOTS_PER_USER}개까지만 허용됩니다. 기존 실매매 봇을 모의투자로 전환하거나 삭제 후 다시 시도하세요.",
+                )
+
     for field, value in update_data.items():
         setattr(bot, field, value)
 
@@ -161,7 +188,8 @@ def delete_bot(
             detail="Cannot delete a running bot. Stop it first.",
         )
 
-    # 관련 트레이드 로그도 함께 삭제
+    # 관련 데이터 함께 삭제
+    db.query(models.ActivePosition).filter(models.ActivePosition.bot_id == bot_id).delete()
     db.query(models.TradeLog).filter(models.TradeLog.bot_id == bot_id).delete()
     db.delete(bot)
     db.commit()
@@ -191,7 +219,18 @@ async def stop_bot(bot_id: int, current_user: models.User = Depends(get_current_
     if bot_id in bot_manager.active_bots:
         task = bot_manager.active_bots.pop(bot_id)
         task.cancel()
+        # cancel 후 task 완료 대기 (포지션 저장이 끝날 때까지)
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        # 수동 정지 시 포지션 정보도 정리
+        bot_manager.clear_positions_from_db(bot_id)
+        bot_manager.set_bot_active(bot_id, False)
         return {"status": "success", "message": f"Bot {bot_id} stopped."}
+    # 메모리에 없지만 DB에 active로 남아있을 수 있음
+    bot_manager.set_bot_active(bot_id, False)
+    bot_manager.clear_positions_from_db(bot_id)
     return {"status": "error", "message": "Bot was not running."}
 
 @router.get("/status/{bot_id}")

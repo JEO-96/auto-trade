@@ -1,56 +1,108 @@
-name: Deploy to Single Server
+name: Build & Deploy
 
 on:
   push:
     branches: [ main ]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/jeo-96/auto-trade
+
 jobs:
-  deploy:
-    name: Build & Deploy
+  build:
+    name: Build Docker Images
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 🚀 Deploy via SSH
-    - name: Deploy to Server via SSH
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build & Push Backend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: true
+        tags: ${{ env.IMAGE_PREFIX }}/backend:latest
+
+    - name: Build & Push Frontend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        push: true
+        tags: ${{ env.IMAGE_PREFIX }}/frontend:latest
+        build-args: |
+          NEXT_PUBLIC_API_URL=/api
+
+    - name: Build & Push Nginx
+      uses: docker/build-push-action@v5
+      with:
+        context: ./nginx
+        push: true
+        tags: ${{ env.IMAGE_PREFIX }}/nginx:latest
+
+  deploy:
+    name: Deploy to Server
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy via SSH
       uses: appleboy/ssh-action@v1.0.3
+      env:
+        GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
+        GHCR_USER: ${{ github.actor }}
       with:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script_stop: true
-        command_timeout: 30m
+        command_timeout: 10m
+        envs: GHCR_TOKEN,GHCR_USER
         script: |
           set -e
 
           cd ~/traiding-bot
 
-          # 1. 최신 코드로 동기화
+          # 1. 최신 코드 (docker-compose.yml, .env 등)
           git fetch origin main
           git reset --hard origin/main
 
-          # 2. 컨테이너 중지 (빌드 캐시는 유지하여 빌드 속도 향상)
+          # 2. GHCR 로그인 & 이미지 pull (빌드 없이 다운로드만)
+          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
+          docker-compose pull
+
+          # 3. 컨테이너 재시작 (이미지만 교체)
           docker-compose down
+          docker-compose up -d
 
-          # 3. 이미지 재빌드 후 컨테이너 재시작
-          docker-compose up --build -d
-
-          # 4. 헬스체크 (최대 60초 대기)
-          echo "Waiting for services to be healthy..."
-          for i in $(seq 1 12); do
+          # 4. 헬스체크 (최대 90초)
+          echo "Waiting for services..."
+          for i in $(seq 1 18); do
             if curl -sf http://localhost:8000/docs > /dev/null 2>&1; then
               echo "Backend is healthy!"
               break
             fi
-            echo "Waiting... ($i/12)"
+            if [ "$i" -eq 18 ]; then
+              echo "WARNING: Health check timed out"
+              docker-compose logs --tail=20 backend
+            fi
+            echo "Waiting... ($i/18)"
             sleep 5
           done
 
           docker-compose ps
 
-          # 5. 미사용 이미지만 정리 (빌드 캐시 유지)
+          # 5. 미사용 이미지 정리
           docker image prune -f
 
           echo "Deployment Successful!"
@@ -59,4 +111,6 @@ jobs:
 #    - SERVER_IP: 서버 공인 IP
 #    - SERVER_USERNAME: 서버 접속 계정 (예: ubuntu, root)
 #    - SSH_PRIVATE_KEY: 서버 SSH 개인 키 내용
-#
+#    - GHCR_PAT: GitHub Personal Access Token (read:packages 권한)
+#      생성: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+#      권한: read:packages, write:packages

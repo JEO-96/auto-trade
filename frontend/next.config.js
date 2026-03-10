@@ -3,6 +3,15 @@ const nextConfig = {
   output: 'standalone',
   poweredByHeader: false,
   reactStrictMode: true,
+  // 빌드 트레이스 비활성화 (서버 메모리 부족 방지)
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/@swc/core-linux-x64-gnu',
+      'node_modules/@swc/core-linux-x64-musl',
+      'node_modules/@esbuild',
+      'node_modules/terser',
+    ],
+  },
   async headers() {
     return [
       {

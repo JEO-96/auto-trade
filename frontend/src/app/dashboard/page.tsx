@@ -234,6 +234,10 @@ export default function DashboardPage() {
     const selectedBotRunning = selectedBotId !== null ? !!botStatuses[selectedBotId] : false;
     const activeBotCount = Object.values(botStatuses).filter(Boolean).length;
 
+    // 실매매 봇이 이미 있는지 체크 (수정 중인 봇은 제외)
+    const hasLiveBot = bots.some((b) => !b.paper_trading_mode && b.id !== editingBotId);
+    const liveBotLimitReached = hasLiveBot;
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-[80vh]">
@@ -377,16 +381,31 @@ export default function DashboardPage() {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setFormData({ ...formData, paper_trading_mode: false })}
+                                        onClick={() => {
+                                            if (!liveBotLimitReached) {
+                                                setFormData({ ...formData, paper_trading_mode: false });
+                                            }
+                                        }}
+                                        disabled={liveBotLimitReached}
                                         className={`py-3 rounded-xl text-sm font-semibold transition-all border ${
                                             !formData.paper_trading_mode
                                                 ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                                                : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10'
+                                                : liveBotLimitReached
+                                                    ? 'bg-white/[0.01] border-white/[0.04] text-gray-700 cursor-not-allowed'
+                                                    : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10'
                                         }`}
                                     >
                                         실매매
                                     </button>
                                 </div>
+                                {liveBotLimitReached && formData.paper_trading_mode && (
+                                    <div className="mt-3 flex items-start gap-2.5 p-3 bg-yellow-500/[0.06] rounded-xl border border-yellow-500/15">
+                                        <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                                        <p className="text-xs text-yellow-400/90 leading-relaxed">
+                                            실매매 봇은 1개만 운영할 수 있습니다. 기존 실매매 봇을 삭제하거나 모의투자로 전환하세요.
+                                        </p>
+                                    </div>
+                                )}
                                 {!formData.paper_trading_mode && (
                                     <div className="mt-3 flex items-start gap-2.5 p-3 bg-red-500/[0.06] rounded-xl border border-red-500/15">
                                         <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />

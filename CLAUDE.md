@@ -104,10 +104,12 @@ Set `NEXT_PUBLIC_API_URL` at build time (Docker build arg) for the API base URL.
 
 ### Full Stack (Docker Compose)
 
+Production uses pre-built GHCR images (no local build needed):
 ```bash
-docker compose up --build -d    # start all services
-docker compose logs -f backend  # tail backend logs
-docker compose down             # stop all services
+docker-compose pull             # pull latest images from GHCR
+docker-compose up -d            # start all services
+docker-compose logs -f backend  # tail backend logs
+docker-compose down             # stop all services
 ```
 
 Services:
@@ -132,16 +134,18 @@ Services:
 | `BotConfig` | user_id, symbol, timeframe, is_active, paper_trading_mode, allocated_capital | Holds strategy params |
 | `TradeLog` | bot_id, symbol, side, price, amount, pnl, reason | side: BUY/SELL; reason: Entry/Stop Loss/Take Profit |
 | `OHLCV` | symbol, timeframe, timestamp, open, high, low, close, volume | Caching layer to reduce CCXT API calls |
+| `ActivePosition` | bot_id, symbol, position_amount, entry_price, stop_loss, take_profit | Bot position persistence for server restart recovery |
 
 ### Migrations
 
 Run migration scripts directly when changing schema:
 ```bash
 cd backend
-python migrate_postgres.py     # latest migration
+python migrate_active_positions.py  # latest migration (active_positions table)
+python migrate_postgres.py          # previous migration
 ```
 
-Multiple migration files (`migrate_db.py`, `migrate_db_v2.py`, `migrate_postgres.py`) exist for historical schema evolution.
+Multiple migration files (`migrate_db.py`, `migrate_db_v2.py`, `migrate_postgres.py`, `migrate_active_positions.py`) exist for historical schema evolution.
 
 ---
 
@@ -154,10 +158,14 @@ All routes except `/auth/*` require `Authorization: Bearer <jwt>` header.
 | POST | `/auth/token` | Email/password login → JWT |
 | POST | `/auth/kakao` | Kakao OAuth code → JWT |
 | GET | `/auth/me` | Current user info |
+| POST | `/bot/` | Create new bot config (max 5/user, live max 1/user) |
+| PUT | `/bot/{bot_id}` | Update bot config (stopped state only) |
+| DELETE | `/bot/{bot_id}` | Delete bot + related data (stopped state only) |
 | POST | `/bot/start/{bot_id}` | Start async trading bot |
-| POST | `/bot/stop/{bot_id}` | Stop bot |
+| POST | `/bot/stop/{bot_id}` | Stop bot (awaits cancellation, clears positions) |
 | GET | `/bot/status/{bot_id}` | Running/Stopped status |
-| GET | `/bot/logs/{bot_id}` | Trade log history |
+| GET | `/bot/logs/{bot_id}` | Trade log history (last 100) |
+| GET | `/bot/list` | List current user's bots |
 | POST | `/keys/` | Add/update exchange API key |
 | GET | `/keys/` | List saved keys (preview only) |
 | POST | `/backtest/` | Run single-symbol backtest |
@@ -172,9 +180,16 @@ All routes except `/auth/*` require `Authorization: Bearer <jwt>` header.
 `backend/core/strategy.py` — `get_strategy(name: str)` returns a strategy instance.
 Add new strategies by creating a class in `backend/core/strategies/` and registering in the factory.
 
-### 2. Async Bot Management
+### 2. Async Bot Management & Position Persistence
 `backend/bot_manager.py` — maintains a `Dict[int, asyncio.Task]` called `active_bots`.
 Bot loops run as asyncio tasks; `start_bot()` / `stop_bot()` manage the lifecycle.
+
+Key features:
+- **Position persistence**: Positions saved to `ActivePosition` table every tick; loaded on bot restart
+- **Graceful shutdown**: `graceful_shutdown()` cancels all tasks with timeout, preserving positions in DB
+- **Auto-recovery**: `recover_active_bots()` restores bots marked `is_active=True` on server startup
+- **Lifespan events**: `main.py` uses `asynccontextmanager` lifespan for startup recovery + shutdown
+- **Bot limits**: Max 5 bots/user total, max 1 live (실매매) bot/user, unlimited paper (모의투자) bots
 
 ### 3. Backtest Task Registry
 `backend/routers/backtest.py` — `backtest_tasks: Dict[str, dict]` stores progress by UUID.
@@ -216,10 +231,21 @@ Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stor
 
 ## CI/CD
 
-**Workflow:** `.github/workflows/deploy.yml`
+**Workflow:** `.github/workflows/deploy.yml` (2-job GHCR pipeline)
+- **Build job** (GitHub Actions, ubuntu-latest, 7GB RAM): Builds 3 Docker images → pushes to GHCR (`ghcr.io/jeo-96/auto-trade/*`)
+- **Deploy job**: SSHs into server → `docker-compose pull` → `docker-compose up -d`
 - Triggers on push to `main` branch
-- SSHs into production server
-- Runs `docker compose up --build -d` + `docker image prune -f`
+
+**Why CI builds?** Production server has only 414MB RAM; Next.js build requires 1GB+. All builds happen on GitHub Actions.
+
+**Docker images** (GHCR):
+- `ghcr.io/jeo-96/auto-trade/backend:latest`
+- `ghcr.io/jeo-96/auto-trade/frontend:latest`
+- `ghcr.io/jeo-96/auto-trade/nginx:latest`
+
+**Required GitHub Secrets:**
+- `SERVER_IP`, `SERVER_USERNAME`, `SSH_PRIVATE_KEY` — SSH access
+- `GHCR_PAT` — GitHub PAT with `read:packages`, `write:packages` for server-side GHCR pull
 
 **To deploy:** merge/push to `main`. The deployment is fully automated.
 
