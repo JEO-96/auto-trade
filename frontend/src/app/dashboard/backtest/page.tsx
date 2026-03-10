@@ -352,7 +352,7 @@ export default function BacktestPage() {
                                     name="strategy_name"
                                     value={form.strategy_name}
                                     onChange={handleChange}
-                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm font-medium text-white appearance-none cursor-pointer focus:border-primary/30 transition-colors"
+                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm font-medium text-white appearance-none cursor-pointer focus:border-primary/30 transition-colors [&>option]:bg-[#1e293b] [&>option]:text-white"
                                 >
                                     <option value="james_pro_elite">모멘텀 PRO (초고수익형)</option>
                                     <option value="james_pro_stable">모멘텀 PRO (안정형)</option>
