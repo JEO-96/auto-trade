@@ -5,11 +5,14 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # AWS Lightsail PostgreSQL Connection Info
-DB_USER = "dbmasteruser"
-DB_PASS = "$hP[W,r.<T^nM5.ta2Wc`V=Re{CQx=^*"
-DB_HOST = "ls-ab0936cf312f45c43332fb5d5b0c869641a6646c.c9yuqw2e28nh.ap-northeast-2.rds.amazonaws.com"
-DB_PORT = "5432"
-DB_NAME = "postgres"
+DB_USER = os.getenv("DB_USER", "dbmasteruser")
+DB_PASS = os.getenv("DB_PASS")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT", "5432")
+DB_NAME = os.getenv("DB_NAME", "postgres")
+
+if not DB_PASS or not DB_HOST:
+    raise RuntimeError("DB_PASS and DB_HOST must be set as environment variables")
 
 # URL encoding is required because the password contains special characters ($, [, ^, etc.)
 safe_password = urllib.parse.quote_plus(DB_PASS)

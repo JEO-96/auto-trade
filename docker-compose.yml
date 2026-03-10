@@ -8,6 +8,8 @@ services:
     # ports: - "8000:8000" # Internalized: only Nginx talks to it
     volumes:
       - ./backend/trading_bot.db:/app/trading_bot.db
+    env_file:
+      - ./backend/.env
     environment:
       - PORT=8000
 
