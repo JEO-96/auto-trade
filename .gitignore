@@ -3,12 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.egg-info/
 .venv/
 venv/
 ENV/
 env/
 build/
 dist/
+*.egg
 
 # Databases
 *.db
@@ -16,23 +18,57 @@ dist/
 
 # Environment / Secret Files
 .env
+.env.*
+!.env.example
 backend/core/config.py
 config.py
 backend/trading_bot.db
 
 # Node.js
+node_modules/
 frontend/node_modules/
 frontend/.next/
 frontend/out/
 frontend/build/
 frontend/.env*
 
+# Next.js build artifacts (anywhere)
+.next/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+pip-log.txt
+
 # System
 .DS_Store
 Thumbs.db
+Desktop.ini
+*.lnk
 
 # IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
+
+# Claude Code
+.claude/
+
+# Local scripts
+scripts/
+Trading-Dev-Team.ps1
+
+# Docker
+*.tar
+docker-compose.override.yml
+
+# Coverage / Testing
+htmlcov/
+.coverage
+.pytest_cache/
+.nyc_output/
+coverage/
