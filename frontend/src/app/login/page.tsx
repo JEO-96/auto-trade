@@ -1,14 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
 import KakaoLoginButton from '@/components/KakaoLoginButton';
+import { AlertTriangle } from 'lucide-react';
 
 export default function LoginPage() {
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [termsAgreed, setTermsAgreed] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -18,30 +18,107 @@ export default function LoginPage() {
     }, [router]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#0B0F19]">
-            <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
+        <div className="min-h-screen flex relative overflow-hidden bg-[#020617]">
+            {/* Left - Branding */}
+            <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] to-accent/[0.04]" />
+                <div className="absolute top-[20%] left-[10%] w-[60%] h-[60%] bg-primary/[0.06] rounded-full blur-[120px] pointer-events-none" />
 
-            <div className="glass-panel w-full max-w-md p-8 rounded-2xl z-10 animate-fade-in-up">
-                <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold mb-2">환영합니다</h2>
-                    <p className="text-gray-400">트레이딩 대시보드에 접속하려면 로그인하세요.</p>
-                </div>
-
-                {error && (
-                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 text-red-500 rounded-lg text-sm text-center">
-                        {error}
+                <div className="relative z-10 max-w-md">
+                    <div className="flex items-center gap-2.5 mb-8">
+                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
+                            <Activity className="w-5 h-5 text-primary" />
+                        </div>
+                        <span className="text-xl font-extrabold tracking-tight">MOMENTUM</span>
                     </div>
-                )}
 
-                <div className="space-y-6">
-                    <p className="text-gray-400 text-center mb-6">
-                        카카오 계정으로 간편하게 시작하세요. <br />
-                        <span className="text-xs text-amber-500/80 mt-2 block">
-                            * 첫 접속 시 자동으로 가입 신청되며, <br />
-                            관리자 승인 완료 후 이용 가능합니다.
-                        </span>
+                    <h1 className="text-3xl font-bold tracking-tight mb-4 leading-snug text-white">
+                        모멘텀 돌파 전략으로<br />
+                        <span className="text-gradient-primary">스마트한 트레이딩</span>
+                    </h1>
+
+                    <p className="text-gray-400 leading-relaxed text-sm">
+                        검증된 알고리즘 기반 자동 매매 시스템으로 24시간 시장을 모니터링하고,
+                        최적의 진입/청산 타이밍을 자동으로 실행합니다.
                     </p>
-                    <KakaoLoginButton />
+
+                    <div className="mt-10 grid grid-cols-2 gap-4">
+                        {[
+                            { label: '지원 거래소', value: 'Upbit' },
+                            { label: '분석 주기', value: '실시간' },
+                            { label: '리스크 관리', value: '자동 손절' },
+                            { label: '백테스팅', value: '포트폴리오' },
+                        ].map((item) => (
+                            <div key={item.label} className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.04]">
+                                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{item.label}</p>
+                                <p className="text-sm font-bold text-white">{item.value}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Right - Login Form */}
+            <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+                <div className="w-full max-w-sm">
+                    {/* Mobile logo */}
+                    <div className="flex items-center gap-2.5 mb-10 lg:hidden">
+                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
+                            <Activity className="w-4 h-4 text-primary" />
+                        </div>
+                        <span className="text-base font-extrabold tracking-tight">MOMENTUM</span>
+                    </div>
+
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-bold mb-2 text-white">로그인</h2>
+                        <p className="text-sm text-gray-400">카카오 계정으로 간편하게 시작하세요.</p>
+                    </div>
+
+                    {error && (
+                        <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm text-center">
+                            {error}
+                        </div>
+                    )}
+
+                    {/* 투자 위험 고지 */}
+                    <div className="mb-5 p-4 bg-amber-500/[0.04] border border-amber-500/15 rounded-xl flex items-start gap-3">
+                        <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-xs text-amber-500/80 leading-relaxed">
+                            가상자산 투자는 원금 손실 위험이 있습니다. 본 서비스는 투자 권유가 아니며, 모든 투자 결과에 대한 책임은 이용자 본인에게 있습니다.
+                        </p>
+                    </div>
+
+                    {/* 약관 동의 */}
+                    <label className="flex items-start gap-3 cursor-pointer mb-4 group">
+                        <input
+                            type="checkbox"
+                            checked={termsAgreed}
+                            onChange={(e) => setTermsAgreed(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 accent-primary cursor-pointer shrink-0"
+                        />
+                        <span className="text-xs text-gray-500 leading-relaxed group-hover:text-gray-400 transition-colors">
+                            <Link href="/terms" target="_blank" className="text-primary hover:underline">서비스 이용약관</Link>을 읽었으며, 투자 위험 고지에 동의합니다.
+                        </span>
+                    </label>
+
+                    <div className={!termsAgreed ? 'opacity-40 pointer-events-none' : ''}>
+                        <KakaoLoginButton />
+                    </div>
+
+                    {!termsAgreed && (
+                        <p className="text-xs text-amber-500/70 mt-2 text-center">약관에 동의해야 로그인할 수 있습니다.</p>
+                    )}
+
+                    <p className="text-xs text-gray-500 mt-6 leading-relaxed text-center">
+                        첫 로그인 시 자동으로 가입되며,<br />
+                        관리자 승인 후 서비스를 이용할 수 있습니다.
+                    </p>
+
+                    <div className="mt-10 pt-6 border-t border-white/[0.04]">
+                        <Link href="/" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                            ← 메인으로 돌아가기
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>

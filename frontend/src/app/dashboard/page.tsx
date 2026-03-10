@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { Play, StopCircle, Activity, Settings2, BarChart2, AlertTriangle, TrendingUp, TrendingDown, Clock, Wallet, ArrowUpRight, Zap, ListFilter } from 'lucide-react';
 import api from '@/lib/api';
 import StatCard from '@/components/ui/StatCard';
+import RiskDisclaimerModal from '@/components/RiskDisclaimerModal';
 
 export default function DashboardPage() {
     const [isBotActive, setIsBotActive] = useState(false);
     const [loading, setLoading] = useState(true);
     const [tradeLogs, setTradeLogs] = useState<any[]>([]);
+    const [showRiskModal, setShowRiskModal] = useState(false);
 
     const botId = 1;
 
@@ -33,57 +35,69 @@ export default function DashboardPage() {
         return () => clearInterval(interval);
     }, []);
 
-    const toggleEngine = async () => {
+    const handleStartClick = () => {
+        setShowRiskModal(true);
+    };
+
+    const handleRiskConfirm = async () => {
+        setShowRiskModal(false);
         try {
-            if (isBotActive) {
-                await api.post(`/bot/stop/${botId}`);
-                setIsBotActive(false);
-            } else {
-                await api.post(`/bot/start/${botId}`);
-                setIsBotActive(true);
-            }
+            await api.post(`/bot/start/${botId}`);
+            setIsBotActive(true);
         } catch (error: any) {
-            alert("서버 연결에 실패했거나 권한이 없습니다. (로그인 필요)");
+            alert("서버 연결에 실패했거나 권한이 없습니다.");
+        }
+    };
+
+    const handleStop = async () => {
+        try {
+            await api.post(`/bot/stop/${botId}`);
+            setIsBotActive(false);
+        } catch (error: any) {
+            alert("서버 연결에 실패했거나 권한이 없습니다.");
         }
     };
 
     if (loading) return (
         <div className="flex items-center justify-center h-[80vh]">
             <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                <p className="text-gray-400 font-bold animate-pulse">데이터 동기화 중...</p>
+                <div className="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+                <p className="text-gray-500 text-sm font-medium">데이터 불러오는 중...</p>
             </div>
         </div>
     );
 
     return (
-        <div className="p-10 max-w-7xl mx-auto animate-fade-in-up">
-            <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in-up">
+            {showRiskModal && (
+                <RiskDisclaimerModal
+                    onConfirm={handleRiskConfirm}
+                    onCancel={() => setShowRiskModal(false)}
+                />
+            )}
+            <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-4xl font-extrabold mb-3 text-white tracking-tight">트레이딩 대시보드</h1>
-                    <p className="text-gray-400 font-medium">제임스의 모멘텀 돌파 전략 V1.0 - 실시간 모니터링</p>
+                    <h1 className="text-2xl font-bold mb-1 text-white">트레이딩 대시보드</h1>
+                    <p className="text-sm text-gray-500">모멘텀 돌파 전략 V1.0 - 실시간 모니터링</p>
                 </div>
 
-                <div className="flex items-center gap-3 bg-white/5 p-2 rounded-2xl border border-white/10 backdrop-blur-md">
-                    <div className="px-4 py-2 flex items-center gap-2">
-                        <Wallet className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-bold">CONNECTED: UPBIT</span>
-                    </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs">
+                    <div className="w-1.5 h-1.5 rounded-full bg-secondary"></div>
+                    <span className="font-medium text-gray-300">UPBIT 연결됨</span>
                 </div>
             </header>
 
-            {/* Main Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                <div className="glass-panel glass-panel-hover p-8 rounded-[2rem] flex flex-col justify-between relative overflow-hidden group">
-                    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${isBotActive ? 'from-secondary/20' : 'from-gray-500/10'} blur-2xl opacity-50 group-hover:opacity-80 transition-opacity`} />
-                    <div className="relative z-10 flex flex-col h-full">
-                        <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-[0.1em]">엔진 상태</h3>
-                            {isBotActive ? <Zap className="w-5 h-5 text-secondary animate-pulse" /> : <Activity className="w-5 h-5 text-gray-500" />}
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="glass-panel glass-panel-hover p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden group">
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">엔진 상태</h3>
+                            {isBotActive ? <Zap className="w-4 h-4 text-secondary" /> : <Activity className="w-4 h-4 text-gray-600" />}
                         </div>
-                        <div className="flex items-center gap-3 mt-auto">
-                            <div className={`w-3.5 h-3.5 rounded-full ${isBotActive ? 'bg-secondary animate-glow-pulse shadow-glow-secondary' : 'bg-gray-600'}`}></div>
-                            <span className="text-2xl font-extrabold text-white">{isBotActive ? 'ACTIVE' : 'OFFLINE'}</span>
+                        <div className="flex items-center gap-2.5">
+                            <div className={`w-2.5 h-2.5 rounded-full ${isBotActive ? 'bg-secondary shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-gray-600'}`}></div>
+                            <span className="text-xl font-bold text-white">{isBotActive ? 'ACTIVE' : 'OFFLINE'}</span>
                         </div>
                     </div>
                 </div>
@@ -91,167 +105,162 @@ export default function DashboardPage() {
                 <StatCard
                     title="운용 자산"
                     value="₩1,000,000"
-                    icon={<Wallet className="w-5 h-5" />}
-                    accentColor="from-primary/20"
-                    subtitle={<span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] text-primary font-bold uppercase tracking-wider">Paper Trading</span>}
+                    icon={<Wallet className="w-4 h-4" />}
+                    accentColor="from-primary/10"
+                    subtitle={<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-[10px] text-primary font-semibold">Paper Trading</span>}
                 />
 
                 <StatCard
                     title="일일 수익률"
                     value="+4.20%"
-                    icon={<TrendingUp className="w-5 h-5" />}
-                    accentColor="from-secondary/20"
-                    subtitle={<span className="text-secondary font-bold flex items-center gap-1 uppercase tracking-wider text-[10px]">+₩42,000 Today</span>}
+                    icon={<TrendingUp className="w-4 h-4" />}
+                    accentColor="from-secondary/10"
+                    subtitle={<span className="text-secondary text-xs font-semibold">+₩42,000</span>}
                 />
 
                 <StatCard
-                    title="승률 (WIN RATE)"
+                    title="승률"
                     value="68.5%"
-                    icon={<ArrowUpRight className="w-5 h-5" />}
-                    accentColor="from-accent/20"
-                    subtitle={<p className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Based on last 50 trades</p>}
+                    icon={<ArrowUpRight className="w-4 h-4" />}
+                    accentColor="from-accent/10"
+                    subtitle={<span className="text-[11px] text-gray-500">최근 50회 거래 기준</span>}
                 />
             </div>
 
-            {/* Dashboard Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                {/* Control Panel (Left/Top) */}
-                <div className="lg:col-span-4 space-y-8">
-                    <div className="glass-panel p-10 rounded-[2.5rem] border-white/5 relative overflow-hidden">
-                        <h3 className="text-2xl font-extrabold mb-10 flex items-center gap-3">
-                            <Settings2 className="w-6 h-6 text-primary" />
+                {/* Control Panel */}
+                <div className="lg:col-span-4 space-y-6">
+                    <div className="glass-panel p-6 rounded-2xl">
+                        <h3 className="text-base font-bold mb-6 flex items-center gap-2.5">
+                            <Settings2 className="w-5 h-5 text-primary" />
                             시스템 제어
                         </h3>
 
                         {isBotActive ? (
                             <button
-                                onClick={toggleEngine}
-                                className="w-full flex items-center justify-center gap-3 py-5 bg-danger/10 hover:bg-danger/20 text-danger border border-danger/30 rounded-2xl font-bold mb-8 transition-all duration-300 group"
+                                onClick={handleStop}
+                                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-red-500/[0.08] hover:bg-red-500/[0.15] text-red-400 border border-red-500/20 rounded-xl font-semibold text-sm mb-6 transition-colors"
                             >
-                                <StopCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                엔진 강제 정지
+                                <StopCircle className="w-5 h-5" />
+                                엔진 정지
                             </button>
                         ) : (
                             <button
-                                onClick={toggleEngine}
-                                className="w-full flex items-center justify-center gap-3 py-5 bg-primary hover:bg-primary-dark text-white rounded-2xl font-bold shadow-glow-primary mb-8 transition-all duration-300 group"
+                                onClick={handleStartClick}
+                                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold text-sm shadow-glow-primary mb-6 transition-colors"
                             >
-                                <Play className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                                엔진 가동 시작
+                                <Play className="w-5 h-5" />
+                                엔진 가동
                             </button>
                         )}
 
-                        <div className="space-y-4">
-                            <div className="p-5 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between">
+                        <div className="space-y-3">
+                            <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.04] flex items-center justify-between">
                                 <div>
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Target Symbol</p>
-                                    <p className="font-bold text-white">BTC/KRW</p>
+                                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-0.5">Symbol</p>
+                                    <p className="text-sm font-semibold text-white">BTC/KRW</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Timeframe</p>
-                                    <p className="font-bold text-white">1H Candle</p>
+                                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-0.5">Timeframe</p>
+                                    <p className="text-sm font-semibold text-white">1H</p>
                                 </div>
                             </div>
 
-                            <div className="p-5 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between">
-                                <div className="flex-1">
-                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Active Strategy</p>
-                                    <p className="font-bold text-primary truncate">Momentum Breakout V1.2</p>
-                                </div>
+                            <div className="p-4 bg-white/[0.03] rounded-xl border border-white/[0.04]">
+                                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-0.5">Strategy</p>
+                                <p className="text-sm font-semibold text-primary">Momentum Breakout V1.2</p>
                             </div>
                         </div>
 
                         {!isBotActive && (
-                            <div className="mt-8 flex items-start gap-4 p-5 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
-                                <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
-                                <p className="text-xs text-yellow-500/80 leading-relaxed font-medium">
-                                    엔진이 정지된 상태입니다. 자동 매매 및 신호 알림이 비활성화되었습니다.
+                            <div className="mt-5 flex items-start gap-3 p-4 bg-amber-500/[0.04] rounded-xl border border-amber-500/10">
+                                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                                <p className="text-xs text-amber-500/80 leading-relaxed">
+                                    엔진이 정지된 상태입니다. 자동 매매가 비활성화되었습니다.
                                 </p>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Real-time Logs (Right/Bottom) */}
+                {/* Timeline */}
                 <div className="lg:col-span-8">
-                    <div className="glass-panel p-10 rounded-[2.5rem] min-h-[600px] flex flex-col">
-                        <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-8">
-                            <h3 className="text-2xl font-extrabold flex items-center gap-3">
-                                <BarChart2 className="w-6 h-6 text-secondary" />
+                    <div className="glass-panel p-6 rounded-2xl min-h-[500px] flex flex-col">
+                        <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/[0.04]">
+                            <h3 className="text-base font-bold flex items-center gap-2.5">
+                                <BarChart2 className="w-5 h-5 text-secondary" />
                                 실행 타임라인
                             </h3>
-                            <button className="flex items-center gap-2 text-xs font-bold bg-white/5 hover:bg-white/10 px-4 py-2.5 rounded-xl border border-white/10 transition-all text-gray-300">
-                                <ListFilter className="w-4 h-4" />
-                                필터링
+                            <button className="flex items-center gap-1.5 text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] px-3 py-2 rounded-lg border border-white/[0.06] transition-colors text-gray-400">
+                                <ListFilter className="w-3.5 h-3.5" />
+                                필터
                             </button>
                         </div>
 
-                        <div className="space-y-5 flex-1 overflow-y-auto custom-scrollbar">
+                        <div className="space-y-3 flex-1 overflow-y-auto">
                             {tradeLogs.length > 0 ? tradeLogs.map((log) => (
-                                <div key={log.id} className={`group p-6 rounded-2xl border transition-all duration-300 hover:translate-x-2 ${log.side === 'BUY' ? 'bg-primary/5 border-primary/10 hover:border-primary/30' : 'bg-red-500/5 border-red-500/10 hover:border-red-500/30'}`}>
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`p-3 rounded-xl ${log.side === 'BUY' ? 'bg-primary/20 text-primary' : 'bg-red-500/20 text-red-500'}`}>
-                                                {log.side === 'BUY' ? <ArrowUpRight className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                                <div key={log.id} className={`group p-5 rounded-xl border transition-colors ${log.side === 'BUY' ? 'bg-primary/[0.03] border-primary/10 hover:border-primary/20' : 'bg-red-500/[0.03] border-red-500/10 hover:border-red-500/20'}`}>
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg ${log.side === 'BUY' ? 'bg-primary/10 text-primary' : 'bg-red-500/10 text-red-400'}`}>
+                                                {log.side === 'BUY' ? <ArrowUpRight className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                                             </div>
                                             <div>
-                                                <p className={`text-lg font-extrabold ${log.side === 'BUY' ? 'text-primary' : 'text-red-500'}`}>
-                                                    {log.side === 'BUY' ? 'POSITION OPEN' : 'POSITION CLOSED'}
+                                                <p className={`text-sm font-bold ${log.side === 'BUY' ? 'text-primary' : 'text-red-400'}`}>
+                                                    {log.side === 'BUY' ? '매수' : '매도'}
                                                 </p>
-                                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">{log.symbol} • {log.timestamp}</p>
+                                                <p className="text-[10px] text-gray-500 font-medium">{log.symbol} · {log.timestamp}</p>
                                             </div>
                                         </div>
                                         {log.pnl !== null && (
                                             <div className="text-right">
-                                                <p className={`text-xl font-black ${log.pnl > 0 ? 'text-secondary' : 'text-red-500'}`}>
+                                                <p className={`text-base font-bold ${log.pnl > 0 ? 'text-secondary' : 'text-red-400'}`}>
                                                     {log.pnl > 0 ? '+' : ''}₩{log.pnl.toLocaleString()}
                                                 </p>
-                                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">Settled PnL</p>
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="flex items-center gap-8 py-4 px-2 border-t border-white/5 mt-4">
+                                    <div className="flex items-center gap-6 pt-3 border-t border-white/[0.04]">
                                         <div>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Execution Price</p>
-                                            <p className="font-mono text-white font-bold">₩{log.price.toLocaleString()}</p>
+                                            <p className="text-[10px] text-gray-500 mb-0.5">체결가</p>
+                                            <p className="font-mono text-sm text-white font-medium">₩{log.price.toLocaleString()}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Quantity</p>
-                                            <p className="font-mono text-white font-bold">{log.amount}</p>
+                                            <p className="text-[10px] text-gray-500 mb-0.5">수량</p>
+                                            <p className="font-mono text-sm text-white font-medium">{log.amount}</p>
                                         </div>
                                         <div className="ml-auto text-right">
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Trigger</p>
-                                            <p className="text-xs text-secondary font-bold">{log.reason}</p>
+                                            <p className="text-[10px] text-gray-500 mb-0.5">트리거</p>
+                                            <p className="text-xs text-secondary font-medium">{log.reason}</p>
                                         </div>
                                     </div>
                                 </div>
                             )) : (
-                                <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
-                                    <Clock className="w-16 h-16 mb-4 text-gray-500" />
-                                    <p className="text-xl font-bold text-gray-300">엔진 가동 준비 완료</p>
-                                    <p className="text-sm text-gray-400 mt-2">새로운 거래가 발생하면 이곳에 타임라인이 표시됩니다.</p>
+                                <div className="flex flex-col items-center justify-center py-16 text-center">
+                                    <Clock className="w-12 h-12 mb-4 text-gray-700" />
+                                    <p className="text-base font-semibold text-gray-400">거래 내역이 없습니다</p>
+                                    <p className="text-sm text-gray-600 mt-1">엔진을 가동하면 거래 타임라인이 표시됩니다.</p>
                                 </div>
                             )}
 
                             {isBotActive && (
-                                <div className="flex items-center gap-4 p-6 bg-white/5 rounded-2xl border border-white/5 animate-pulse">
-                                    <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                                        <Activity className="w-5 h-5 text-primary" />
+                                <div className="flex items-center gap-3 p-4 bg-white/[0.03] rounded-xl border border-white/[0.04]">
+                                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                                        <Activity className="w-4 h-4 text-primary animate-pulse" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-white font-bold">실시간 시장 데이터 스트리밍 중...</p>
-                                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-[0.2em]">Searching for next breakout pattern</p>
+                                        <p className="text-sm text-white font-medium">실시간 스트리밍 중...</p>
+                                        <p className="text-[10px] text-gray-500">다음 돌파 패턴을 탐색하고 있습니다</p>
                                     </div>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     );
 }
-
