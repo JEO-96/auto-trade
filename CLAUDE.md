@@ -1,0 +1,314 @@
+# CLAUDE.md — AI Assistant Guide for auto-trade
+
+## Project Overview
+
+**auto-trade** is a full-stack cryptocurrency algorithmic trading platform.
+- **Backend:** FastAPI (Python 3.12) with PostgreSQL (AWS RDS)
+- **Frontend:** Next.js 14 (TypeScript) with Tailwind CSS
+- **Infrastructure:** Docker Compose, Nginx (SSL), GitHub Actions CI/CD
+- **Exchange:** Upbit via CCXT library
+- **Auth:** Kakao OAuth 2.0 + JWT
+- **Production URL:** https://jooeunoh.com
+
+---
+
+## Repository Structure
+
+```
+auto-trade/
+├── backend/                    # FastAPI Python application
+│   ├── main.py                 # App entry point, CORS config, router registration
+│   ├── models.py               # SQLAlchemy ORM models
+│   ├── schemas.py              # Pydantic request/response schemas
+│   ├── database.py             # PostgreSQL connection (AWS RDS)
+│   ├── auth.py                 # JWT creation/verification helpers
+│   ├── dependencies.py         # FastAPI Depends() providers
+│   ├── bot_manager.py          # Async bot task lifecycle management
+│   ├── notifications.py        # Kakao Talk message notifications
+│   ├── requirements.txt        # Python dependencies
+│   ├── Dockerfile
+│   ├── .env.example
+│   ├── routers/
+│   │   ├── auth.py             # POST /auth/token, POST /auth/kakao, GET /auth/me
+│   │   ├── backtest.py         # POST /backtest/, POST /backtest/portfolio, GET /backtest/status/{id}
+│   │   ├── bots.py             # POST /bot/start|stop/{id}, GET /bot/status|logs/{id}
+│   │   └── keys.py             # POST /keys/, GET /keys/
+│   └── core/
+│       ├── data_fetcher.py     # CCXT OHLCV fetcher with PostgreSQL caching
+│       ├── execution.py        # Paper/live trade execution engine
+│       ├── strategy.py         # Strategy factory: get_strategy(name)
+│       ├── vector_backtester.py # Vectorized backtesting with vectorbt
+│       └── strategies/
+│           ├── momentum_breakout_basic.py
+│           ├── momentum_breakout_pro_stable.py   # Conservative: tight stops, 2.1x volume threshold
+│           ├── momentum_breakout_pro_aggressive.py # Aggressive: loose stops, 1.8x volume threshold
+│           └── momentum_breakout_elite.py
+├── frontend/                   # Next.js 14 application
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── page.tsx        # Landing page
+│   │   │   ├── login/page.tsx
+│   │   │   ├── register/page.tsx
+│   │   │   ├── auth/kakao/page.tsx  # Kakao OAuth callback
+│   │   │   └── dashboard/
+│   │   │       ├── layout.tsx  # Sidebar navigation
+│   │   │       ├── page.tsx    # Bot control + trade log viewer
+│   │   │       ├── backtest/page.tsx
+│   │   │       └── keys/page.tsx
+│   │   ├── components/
+│   │   │   ├── AuthGuard.tsx   # JWT-based route protection
+│   │   │   ├── KakaoLoginButton.tsx
+│   │   │   └── ui/             # StatCard, NavItem
+│   │   └── lib/
+│   │       └── api.ts          # Axios instance with auth interceptors
+│   ├── package.json
+│   ├── tsconfig.json           # Path alias: @/* → src/*
+│   └── Dockerfile
+├── nginx/
+│   ├── nginx.conf              # SSL termination, /api/* → backend, /* → frontend
+│   └── Dockerfile
+├── docker-compose.yml          # Orchestrates: backend, frontend, nginx
+├── .github/workflows/deploy.yml # SSH deploy to server on push to main
+└── README.md                   # Korean-language project documentation
+```
+
+---
+
+## Development Setup
+
+### Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+cp .env.example .env        # fill in Kakao OAuth credentials
+python main.py              # starts uvicorn on port 8000
+```
+
+Environment variables needed (see `backend/.env.example`):
+- `KAKAO_CLIENT_ID`
+- `KAKAO_REDIRECT_URI`
+- Database credentials (currently hardcoded in `database.py` — see security notes)
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev                 # dev server on port 3000
+npm run build               # production build
+npm run lint                # ESLint
+```
+
+Set `NEXT_PUBLIC_API_URL` at build time (Docker build arg) for the API base URL.
+
+### Full Stack (Docker Compose)
+
+```bash
+docker compose up --build -d    # start all services
+docker compose logs -f backend  # tail backend logs
+docker compose down             # stop all services
+```
+
+Services:
+- `backend`: FastAPI on port 8000 (internal)
+- `frontend`: Next.js on port 3000 (internal)
+- `nginx`: Reverse proxy on ports 80/443 (public)
+
+---
+
+## Database
+
+**Engine:** PostgreSQL (AWS RDS)
+**ORM:** SQLAlchemy with declarative base
+**Connection:** defined in `backend/database.py`
+
+### Models (`backend/models.py`)
+
+| Model | Key Fields | Notes |
+|-------|-----------|-------|
+| `User` | id, email, nickname, kakao_id, is_active | `is_active` gates access |
+| `ExchangeKey` | user_id, exchange_name, api_key_encrypted, api_secret_encrypted | "Encryption" is currently string reversal — needs real encryption |
+| `BotConfig` | user_id, symbol, timeframe, is_active, paper_trading_mode, allocated_capital | Holds strategy params |
+| `TradeLog` | bot_id, symbol, side, price, amount, pnl, reason | side: BUY/SELL; reason: Entry/Stop Loss/Take Profit |
+| `OHLCV` | symbol, timeframe, timestamp, open, high, low, close, volume | Caching layer to reduce CCXT API calls |
+
+### Migrations
+
+Run migration scripts directly when changing schema:
+```bash
+cd backend
+python migrate_postgres.py     # latest migration
+```
+
+Multiple migration files (`migrate_db.py`, `migrate_db_v2.py`, `migrate_postgres.py`) exist for historical schema evolution.
+
+---
+
+## API Routes
+
+All routes except `/auth/*` require `Authorization: Bearer <jwt>` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/auth/token` | Email/password login → JWT |
+| POST | `/auth/kakao` | Kakao OAuth code → JWT |
+| GET | `/auth/me` | Current user info |
+| POST | `/bot/start/{bot_id}` | Start async trading bot |
+| POST | `/bot/stop/{bot_id}` | Stop bot |
+| GET | `/bot/status/{bot_id}` | Running/Stopped status |
+| GET | `/bot/logs/{bot_id}` | Trade log history |
+| POST | `/keys/` | Add/update exchange API key |
+| GET | `/keys/` | List saved keys (preview only) |
+| POST | `/backtest/` | Run single-symbol backtest |
+| POST | `/backtest/portfolio` | Run multi-symbol portfolio backtest |
+| GET | `/backtest/status/{task_id}` | Poll backtest progress/results |
+
+---
+
+## Key Architectural Patterns
+
+### 1. Strategy Factory Pattern
+`backend/core/strategy.py` — `get_strategy(name: str)` returns a strategy instance.
+Add new strategies by creating a class in `backend/core/strategies/` and registering in the factory.
+
+### 2. Async Bot Management
+`backend/bot_manager.py` — maintains a `Dict[int, asyncio.Task]` called `active_bots`.
+Bot loops run as asyncio tasks; `start_bot()` / `stop_bot()` manage the lifecycle.
+
+### 3. Backtest Task Registry
+`backend/routers/backtest.py` — `backtest_tasks: Dict[str, dict]` stores progress by UUID.
+Frontend polls `GET /backtest/status/{task_id}` for results. Tasks run in threads.
+
+### 4. Data Caching
+`backend/core/data_fetcher.py` — checks `OHLCV` table before calling CCXT API.
+Prevents rate limit issues; always prefer using `DataFetcher` over raw CCXT calls.
+
+### 5. Paper Trading
+`backend/core/execution.py` — `ExecutionEngine` wraps real and paper trading behind the same interface.
+`BotConfig.paper_trading_mode = True` prevents real orders from being placed.
+
+### 6. Dependency Injection
+`backend/dependencies.py` — provides `get_db()` (yields DB session) and `get_current_user()` (validates JWT).
+Always use `Depends(get_db)` and `Depends(get_current_user)` in route handlers.
+
+### 7. Frontend API Client
+`frontend/src/lib/api.ts` — Axios instance that automatically attaches JWT from localStorage.
+All API calls must go through this client, never fetch directly.
+
+---
+
+## Trading Strategies
+
+All strategies are in `backend/core/strategies/` and follow a common interface.
+
+| Strategy | Profile | Volume Threshold | Description |
+|----------|---------|-----------------|-------------|
+| `momentum_breakout_basic` | Baseline | — | Simple momentum breakout |
+| `momentum_breakout_pro_stable` | Conservative | 2.1x | Tight stops, lower drawdown |
+| `momentum_breakout_pro_aggressive` | Aggressive | 1.8x | Loose stops, higher upside |
+| `momentum_breakout_elite` | Elite | — | Most advanced variant |
+
+Signals use: RSI, MACD, Volume MA (via `pandas-ta`).
+Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stored in `BotConfig`.
+
+---
+
+## CI/CD
+
+**Workflow:** `.github/workflows/deploy.yml`
+- Triggers on push to `main` branch
+- SSHs into production server
+- Runs `docker compose up --build -d` + `docker image prune -f`
+
+**To deploy:** merge/push to `main`. The deployment is fully automated.
+
+---
+
+## Security Issues to Be Aware Of
+
+> These are known issues in the codebase. Do not make them worse; fix them when working nearby.
+
+1. **Hardcoded DB credentials** — `backend/database.py` contains AWS RDS password in plain text. Should use `os.getenv()`.
+2. **Fake encryption** — `backend/routers/keys.py` uses string reversal (`text[::-1]`) as "encryption". Should use `cryptography` (Fernet) or similar.
+3. **Hardcoded JWT secret** — `backend/auth.py` has a hardcoded `SECRET_KEY`. Must move to environment variable.
+4. **No test suite** — The project has no automated tests. Add tests before adding new critical features.
+
+---
+
+## Code Conventions
+
+### Python (Backend)
+- Use type hints on all function signatures
+- Use `async def` for all route handlers
+- Pydantic schemas in `schemas.py` for request/response validation
+- SQLAlchemy models in `models.py`; never write raw SQL
+- Use `Depends(get_db)` / `Depends(get_current_user)` in every protected route
+- Korean comments are acceptable (existing codebase uses Korean)
+
+### TypeScript (Frontend)
+- Functional components with React hooks only — no class components
+- All API calls via `frontend/src/lib/api.ts` (the Axios instance)
+- Use `@/` path alias (resolves to `src/`)
+- Tailwind CSS for all styling; custom classes defined in `globals.css`
+- Auth state managed via localStorage JWT + `AuthGuard` component
+- UI text may be Korean (existing codebase convention)
+
+### Git
+- Main production branch: `main`
+- Feature branches: `feature/<description>` or `claude/<description>`
+- CI/CD deploys automatically from `main`
+
+---
+
+## Common Tasks
+
+### Add a new trading strategy
+1. Create `backend/core/strategies/my_strategy.py` implementing the strategy interface
+2. Register it in `backend/core/strategy.py` inside `get_strategy()`
+3. Add the strategy name as an option in `frontend/src/app/dashboard/backtest/page.tsx`
+
+### Add a new API endpoint
+1. Add route handler in the appropriate `backend/routers/*.py` file
+2. Add Pydantic schema to `backend/schemas.py` if needed
+3. Register the router in `backend/main.py` if it's a new router file
+4. Update `frontend/src/lib/api.ts` with the new API call function
+
+### Add a new database model
+1. Define the SQLAlchemy model in `backend/models.py`
+2. Create a migration script `backend/migrate_<description>.py`
+3. Add corresponding Pydantic schemas in `backend/schemas.py`
+
+### Run a backtest manually
+```bash
+# Via API (after auth):
+curl -X POST https://jooeunoh.com/api/backtest/ \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"symbol": "BTC/KRW", "timeframe": "4h", "strategy": "momentum_breakout_pro_stable"}'
+```
+
+---
+
+## Dependencies Quick Reference
+
+### Backend Key Packages
+| Package | Purpose |
+|---------|---------|
+| `fastapi` | Web framework |
+| `sqlalchemy` | ORM |
+| `ccxt` | Exchange API (Upbit, etc.) |
+| `pandas`, `numpy` | Data manipulation |
+| `pandas-ta` | Technical indicators (RSI, MACD) |
+| `vectorbt` | Vectorized backtesting |
+| `python-jose` | JWT |
+| `bcrypt` | Password hashing |
+| `httpx` | Async HTTP client |
+
+### Frontend Key Packages
+| Package | Purpose |
+|---------|---------|
+| `next` | React framework (App Router) |
+| `axios` | HTTP client |
+| `lucide-react` | Icon library |
+| `tailwindcss` | CSS utility framework |
