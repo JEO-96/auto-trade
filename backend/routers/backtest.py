@@ -31,6 +31,9 @@ def _save_backtest_result(task_id: str, task_info: dict):
 
         if task_info["status"] == "completed" and task_info.get("result"):
             result = task_info["result"]
+            # commission_rate를 result_data JSON에 포함하여 저장
+            if task_info.get("commission_rate") is not None:
+                result["commission_rate"] = task_info["commission_rate"]
             history.status = "completed"
             history.final_capital = result.get("final_capital")
             history.total_trades = result.get("total_trades")
@@ -59,8 +62,10 @@ def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depen
             initial_capital=req.initial_capital,
             start_date=req.start_date,
             end_date=req.end_date,
+            fees=req.commission_rate,
         )
         backtest_tasks[task_id]["user_id"] = current_user.id
+        backtest_tasks[task_id]["commission_rate"] = req.commission_rate
 
         # DB에 기록 생성
         history = models.BacktestHistory(
@@ -94,8 +99,10 @@ def run_portfolio_backtest(req: schemas.PortfolioBacktestRequest, current_user: 
             initial_capital=req.initial_capital,
             start_date=req.start_date,
             end_date=req.end_date,
+            fees=req.commission_rate,
         )
         backtest_tasks[task_id]["user_id"] = current_user.id
+        backtest_tasks[task_id]["commission_rate"] = req.commission_rate
 
         # DB에 기록 생성
         history = models.BacktestHistory(

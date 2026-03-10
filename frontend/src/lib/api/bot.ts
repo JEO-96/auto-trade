@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { BotConfig, TradeLog, BotStatus } from '@/types/bot';
+import type { BotConfig, BotCreateRequest, TradeLog, BotStatus } from '@/types/bot';
 
 export async function getBotList(): Promise<BotConfig[]> {
     const res = await api.get<BotConfig[]>('/bot/list');
@@ -22,4 +22,18 @@ export async function stopBot(botId: number): Promise<void> {
 export async function getBotLogs(botId: number): Promise<TradeLog[]> {
     const res = await api.get<TradeLog[]>(`/bot/logs/${botId}`);
     return res.data;
+}
+
+export async function createBot(data: BotCreateRequest): Promise<BotConfig> {
+    const res = await api.post<BotConfig>('/bot/', data);
+    return res.data;
+}
+
+export async function updateBot(botId: number, data: Partial<BotCreateRequest>): Promise<BotConfig> {
+    const res = await api.put<BotConfig>(`/bot/${botId}`, data);
+    return res.data;
+}
+
+export async function deleteBot(botId: number): Promise<void> {
+    await api.delete(`/bot/${botId}`);
 }

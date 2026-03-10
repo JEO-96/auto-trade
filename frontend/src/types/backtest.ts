@@ -30,6 +30,7 @@ export interface BacktestFormParams {
     initial_capital: number;
     start_date: string | null;
     end_date: string | null;
+    commission_rate?: number;
 }
 
 export interface BacktestTaskStatus {

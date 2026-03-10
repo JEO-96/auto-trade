@@ -1,3 +1,4 @@
+import re
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -9,6 +10,15 @@ from typing import List
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bot", tags=["bots"])
+
+# 사용자당 최대 봇 수
+MAX_BOTS_PER_USER = 5
+
+# 심볼 형식 검증 (예: BTC/KRW, ETH/USDT)
+SYMBOL_PATTERN = re.compile(r'^[A-Z0-9]{2,10}/[A-Z]{3,5}$')
+
+# 허용되는 타임프레임
+VALID_TIMEFRAMES = {"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d", "1w"}
 
 
 def _get_user_bot(bot_id: int, user_id: int, db: Session) -> models.BotConfig:
@@ -22,11 +32,151 @@ def _get_user_bot(bot_id: int, user_id: int, db: Session) -> models.BotConfig:
     return bot
 
 
+def _is_bot_running(bot_id: int) -> bool:
+    """봇이 현재 실행 중인지 확인"""
+    return bot_id in bot_manager.active_bots and not bot_manager.active_bots[bot_id].done()
+
+
+def _validate_symbol(symbol: str) -> None:
+    """심볼 형식 검증 (예: BTC/KRW)"""
+    if not SYMBOL_PATTERN.match(symbol):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid symbol format: '{symbol}'. Expected format: 'BTC/KRW'.",
+        )
+
+
+def _validate_timeframe(timeframe: str) -> None:
+    """타임프레임 검증"""
+    if timeframe not in VALID_TIMEFRAMES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid timeframe: '{timeframe}'. Allowed: {sorted(VALID_TIMEFRAMES)}",
+        )
+
+
+# -------- CRUD 엔드포인트 --------
+
+@router.post("/", response_model=schemas.BotConfigResponse, status_code=status.HTTP_201_CREATED)
+def create_bot(
+    req: schemas.BotConfigCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """새 봇 설정 생성 (사용자당 최대 5개)"""
+    # 사용자당 봇 수 제한
+    bot_count = db.query(models.BotConfig).filter(
+        models.BotConfig.user_id == current_user.id
+    ).count()
+    if bot_count >= MAX_BOTS_PER_USER:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Maximum {MAX_BOTS_PER_USER} bots allowed per user.",
+        )
+
+    # 입력값 검증
+    _validate_symbol(req.symbol)
+    _validate_timeframe(req.timeframe)
+
+    if req.allocated_capital <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Allocated capital must be positive.",
+        )
+
+    bot = models.BotConfig(
+        user_id=current_user.id,
+        symbol=req.symbol,
+        timeframe=req.timeframe,
+        strategy_name=req.strategy_name,
+        paper_trading_mode=req.paper_trading_mode,
+        allocated_capital=req.allocated_capital,
+        rsi_period=req.rsi_period,
+        macd_fast=req.macd_fast,
+        macd_slow=req.macd_slow,
+        volume_ma_period=req.volume_ma_period,
+        is_active=False,
+    )
+    db.add(bot)
+    db.commit()
+    db.refresh(bot)
+
+    logger.info("User %d created bot %d (symbol=%s)", current_user.id, bot.id, bot.symbol)
+    return bot
+
+
+@router.put("/{bot_id}", response_model=schemas.BotConfigResponse)
+def update_bot(
+    bot_id: int,
+    req: schemas.BotConfigUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """봇 설정 수정 (정지 상태에서만 가능)"""
+    bot = _get_user_bot(bot_id, current_user.id, db)
+
+    if _is_bot_running(bot_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot update a running bot. Stop it first.",
+        )
+
+    # 변경 요청된 필드만 업데이트
+    update_data = req.model_dump(exclude_unset=True)
+
+    if "symbol" in update_data:
+        _validate_symbol(update_data["symbol"])
+
+    if "timeframe" in update_data:
+        _validate_timeframe(update_data["timeframe"])
+
+    if "allocated_capital" in update_data and update_data["allocated_capital"] <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Allocated capital must be positive.",
+        )
+
+    for field, value in update_data.items():
+        setattr(bot, field, value)
+
+    db.commit()
+    db.refresh(bot)
+
+    logger.info("User %d updated bot %d", current_user.id, bot.id)
+    return bot
+
+
+@router.delete("/{bot_id}")
+def delete_bot(
+    bot_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """봇 설정 삭제 (정지 상태에서만 가능)"""
+    bot = _get_user_bot(bot_id, current_user.id, db)
+
+    if _is_bot_running(bot_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete a running bot. Stop it first.",
+        )
+
+    # 관련 트레이드 로그도 함께 삭제
+    db.query(models.TradeLog).filter(models.TradeLog.bot_id == bot_id).delete()
+    db.delete(bot)
+    db.commit()
+
+    logger.info("User %d deleted bot %d", current_user.id, bot.id)
+    return {"status": "success", "message": f"Bot {bot_id} deleted."}
+
+
+# -------- 봇 제어 엔드포인트 --------
+
 @router.post("/start/{bot_id}")
 async def start_bot(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     _get_user_bot(bot_id, current_user.id, db)
 
-    if bot_id in bot_manager.active_bots and not bot_manager.active_bots[bot_id].done():
+    if _is_bot_running(bot_id):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bot already running.")
 
     task = asyncio.create_task(bot_manager.run_bot_loop(bot_id))

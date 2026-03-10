@@ -67,16 +67,42 @@ class ExchangeKeyResponse(BaseModel):
 # -------- Bot Config Schemas --------
 class BotConfigCreate(BaseModel):
     symbol: str
-    timeframe: str
-    rsi_period: int
-    volume_ma_period: int
-    allocated_capital: float
+    timeframe: str = "1h"
+    strategy_name: str = "momentum_stable"
+    paper_trading_mode: bool = True
+    allocated_capital: float = 1000000.0
+    rsi_period: int = 14
+    macd_fast: int = 12
+    macd_slow: int = 26
+    volume_ma_period: int = 20
 
-class BotConfigResponse(BotConfigCreate):
+
+class BotConfigUpdate(BaseModel):
+    """봇 설정 수정용 스키마 - 모든 필드 선택적"""
+    symbol: Optional[str] = None
+    timeframe: Optional[str] = None
+    strategy_name: Optional[str] = None
+    paper_trading_mode: Optional[bool] = None
+    allocated_capital: Optional[float] = None
+    rsi_period: Optional[int] = None
+    macd_fast: Optional[int] = None
+    macd_slow: Optional[int] = None
+    volume_ma_period: Optional[int] = None
+
+
+class BotConfigResponse(BaseModel):
     id: int
+    symbol: str
+    timeframe: str
+    strategy_name: Optional[str] = None
     is_active: bool
     paper_trading_mode: bool
-    
+    allocated_capital: float
+    rsi_period: int
+    macd_fast: int
+    macd_slow: int
+    volume_ma_period: int
+
     class Config:
         from_attributes = True
 
@@ -104,6 +130,7 @@ class BacktestRequest(BaseModel):
     start_date: Optional[str] = None  # YYYY-MM-DD
     end_date: Optional[str] = None    # YYYY-MM-DD
     initial_capital: float = 1000000.0
+    commission_rate: float = 0.0005  # 수수료율 (기본값: 0.05%)
 
 class PortfolioBacktestRequest(BaseModel):
     symbols: List[str] = ["BTC/KRW"]
@@ -113,6 +140,7 @@ class PortfolioBacktestRequest(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     initial_capital: float = 1000000.0
+    commission_rate: float = 0.0005  # 수수료율 (기본값: 0.05%)
 
 class BacktestTradeResponse(BaseModel):
     symbol: str

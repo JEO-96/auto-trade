@@ -1,16 +1,24 @@
 export interface BotConfig {
     id: number;
-    user_id: number;
+    user_id?: number;
     symbol: string;
     timeframe: string;
-    strategy_name?: string;
-    is_active: boolean;
+    strategy_name: string;
     paper_trading_mode: boolean;
-    allocated_capital?: number;
-    rsi_period?: number;
+    allocated_capital: number;
+    is_active: boolean;
+    rsi_period: number;
+    volume_ma_period: number;
     macd_fast?: number;
     macd_slow?: number;
-    volume_ma_period?: number;
+}
+
+export interface BotCreateRequest {
+    symbol: string;
+    timeframe?: string;
+    strategy_name?: string;
+    paper_trading_mode?: boolean;
+    allocated_capital?: number;
 }
 
 export interface TradeLog {

@@ -98,6 +98,7 @@ export default function BacktestPage() {
         initial_capital: 1000000,
         start_date: '',
         end_date: '',
+        commission_rate_pct: 0.05,
     });
     const [useDateRange, setUseDateRange] = useState(false);
 
@@ -161,6 +162,7 @@ export default function BacktestPage() {
                 start_date: useDateRange ? form.start_date : null,
                 end_date: useDateRange ? form.end_date : null,
                 initial_capital: Number(form.initial_capital),
+                commission_rate: form.commission_rate_pct / 100,
             });
 
             if (data.status === 'running' && data.task_id) {
@@ -465,6 +467,24 @@ export default function BacktestPage() {
                                         placeholder="0"
                                     />
                                 </div>
+                            </div>
+
+                            {/* Commission Rate */}
+                            <div>
+                                <label className="text-xs text-gray-500 font-medium mb-2 block">수수료율 (%)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    max="10"
+                                    value={form.commission_rate_pct}
+                                    onChange={(e) => setForm({ ...form, commission_rate_pct: parseFloat(e.target.value) || 0 })}
+                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm font-medium text-white focus:border-primary/30 transition-colors font-mono"
+                                    placeholder="0.05"
+                                />
+                                <p className="text-[10px] text-gray-600 mt-1.5">
+                                    예: 0.05 = 0.05% (업비트 기본 수수료)
+                                </p>
                             </div>
 
                             <Button

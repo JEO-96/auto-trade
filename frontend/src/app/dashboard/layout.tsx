@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
-import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield, MessageSquare } from 'lucide-react';
+import Link from 'next/link';
+import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield, MessageSquare, UserCircle } from 'lucide-react';
 import NavItem from '@/components/ui/NavItem';
 import AuthGuard from '@/components/AuthGuard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -66,15 +67,19 @@ export default function DashboardLayout({
 
                     {/* User */}
                     <div className="p-3 mt-auto border-t border-white/[0.04]">
-                        <div className="flex items-center gap-3 p-3 rounded-xl">
+                        <Link
+                            href="/dashboard/profile"
+                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.04] transition-colors group"
+                        >
                             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-xs font-bold border border-white/[0.06] text-white/80">
                                 {initials}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate text-white">{displayName}</p>
+                                <p className="text-sm font-semibold truncate text-white group-hover:text-primary transition-colors">{displayName}</p>
                                 <p className="text-[10px] text-gray-500 truncate">{user?.email || ''}</p>
                             </div>
-                        </div>
+                            <UserCircle className="w-4 h-4 text-gray-600 group-hover:text-primary transition-colors shrink-0" />
+                        </Link>
 
                         <button
                             onClick={logout}

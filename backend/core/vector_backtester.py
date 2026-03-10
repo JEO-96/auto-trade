@@ -70,20 +70,20 @@ class VectorBacktester:
 
     def run(self, symbol="BTC/KRW", timeframe="1h", limit=1000,
             initial_capital=1000000.0, start_date=None, end_date=None,
-            db=None, task_id=None):
+            db=None, task_id=None, fees=0.0005):
         return self._run_backtest(
             [symbol], timeframe=timeframe, limit=limit,
             initial_capital=initial_capital, start_date=start_date,
-            end_date=end_date, db=db, task_id=task_id,
+            end_date=end_date, db=db, task_id=task_id, fees=fees,
         )
 
     def run_portfolio(self, symbols: list, timeframe="1h", limit=1000,
                       initial_capital=1000000.0, start_date=None,
-                      end_date=None, db=None, task_id=None):
+                      end_date=None, db=None, task_id=None, fees=0.0005):
         return self._run_backtest(
             symbols, timeframe=timeframe, limit=limit,
             initial_capital=initial_capital, start_date=start_date,
-            end_date=end_date, db=db, task_id=task_id,
+            end_date=end_date, db=db, task_id=task_id, fees=fees,
         )
 
     # ------------------------------------------------------------------
@@ -98,7 +98,7 @@ class VectorBacktester:
 
     def _run_backtest(self, symbols: list, timeframe="1h", limit=1000,
                       initial_capital=1000000.0, start_date=None,
-                      end_date=None, db=None, task_id=None):
+                      end_date=None, db=None, task_id=None, fees=0.0005):
         """Core backtest execution for both single and multi-asset."""
         logger.info("--- [VectorBacktest] Symbols: %s ---", symbols)
 
@@ -180,7 +180,7 @@ class VectorBacktester:
             sl_stop=0.015,
             tp_stop=0.03,
             init_cash=initial_capital,
-            fees=0.0005,
+            fees=fees,
             freq=timeframe,
             cash_sharing=True,
             group_by=True,
