@@ -11,9 +11,11 @@ RUN npm ci
 
 # Copy code and build
 COPY . .
-# Set build-time env for API URL
+# Set build-time env for API URL and Kakao Client ID
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_KAKAO_CLIENT_ID
+ENV NEXT_PUBLIC_KAKAO_CLIENT_ID=$NEXT_PUBLIC_KAKAO_CLIENT_ID
 RUN npm run build
 
 # Stage 2: Serve

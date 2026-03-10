@@ -16,6 +16,7 @@ services:
       context: ./frontend
       args:
         - NEXT_PUBLIC_API_URL=/api # Use relative path to avoid DNS resolution issues on the client side
+        - NEXT_PUBLIC_KAKAO_CLIENT_ID=${NEXT_PUBLIC_KAKAO_CLIENT_ID}
     restart: always
     # ports: - "3000:3000" # Internalized: only Nginx talks to it
     depends_on:
