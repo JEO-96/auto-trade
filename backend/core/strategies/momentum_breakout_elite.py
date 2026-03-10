@@ -72,18 +72,17 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
         ema_20 = current.get('EMA_20', None)
 
         # Guard against NaN -- any NaN in core indicators means skip
-        core_vals = [rsi_val, macd_val, macds_val, vol_avg, ema_100, ema_20, ema_200]
+        core_vals = [rsi_val, macd_val, macds_val, vol_avg, ema_100, ema_20]
         if any(v is None or pd.isna(v) for v in core_vals):
             return False
         if vol_avg == 0:
             return False
 
-        # 1. CORE BREAKOUT: Volume + RSI + MACD + EMA_200 추세 필터
+        # 1. CORE BREAKOUT: Volume + RSI + MACD
         breakout = (
             rsi_val > self.rsi_threshold and
             macd_val > macds_val and
             current['volume'] > vol_avg * self.volume_multiplier and
-            current['close'] > ema_200 and
             current['close'] > ema_100
         )
 

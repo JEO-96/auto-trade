@@ -45,17 +45,14 @@ class MomentumBreakoutProStableStrategy(BaseStrategy):
         required_cols = [
             self.rsi_col, self.macd_col, self.macds_col,
             self.vol_ma_col, adx_col, 'EMA_200', 'EMA_20',
-            'DMP_14', 'DMN_14',
         ]
         if not self._validate_indicators(current, required_cols):
             return False
         if current.get(self.vol_ma_col, 0) == 0:
             return False
 
-        # 추세 필터: EMA_200 위 + ADX 방향 확인 (상승 추세만)
+        # trend check
         if current['close'] < current['EMA_200']:
-            return False
-        if current['DMP_14'] <= current['DMN_14']:
             return False
 
         # STABLE criteria: Moderate-High thresholds (Version 2.0)
