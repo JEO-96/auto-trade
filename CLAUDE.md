@@ -39,10 +39,12 @@ auto-trade/
 │       ├── strategy.py         # Strategy factory: get_strategy(name)
 │       ├── vector_backtester.py # Vectorized backtesting with vectorbt
 │       └── strategies/
+│           ├── base.py                            # BaseStrategy: common indicators, trailing stop logic
 │           ├── momentum_breakout_basic.py
 │           ├── momentum_breakout_pro_stable.py   # Conservative: tight stops, 2.1x volume threshold
 │           ├── momentum_breakout_pro_aggressive.py # Aggressive: loose stops, 1.8x volume threshold
-│           └── momentum_breakout_elite.py
+│           ├── momentum_breakout_elite.py         # Hyper-growth: 3 entry signals, 1:5 RR
+│           └── steady_compounder.py               # High win-rate swing: OR-based signals, 1:3 RR
 ├── frontend/                   # Next.js 14 application
 │   ├── src/
 │   │   ├── app/
@@ -171,6 +173,7 @@ All routes except `/auth/*` require `Authorization: Bearer <jwt>` header.
 | POST | `/backtest/` | Run single-symbol backtest |
 | POST | `/backtest/portfolio` | Run multi-symbol portfolio backtest |
 | GET | `/backtest/status/{task_id}` | Poll backtest progress/results |
+| DELETE | `/backtest/history/{history_id}` | Delete backtest history record |
 
 ---
 
@@ -217,15 +220,29 @@ All API calls must go through this client, never fetch directly.
 
 All strategies are in `backend/core/strategies/` and follow a common interface.
 
-| Strategy | Profile | Volume Threshold | Description |
-|----------|---------|-----------------|-------------|
-| `momentum_breakout_basic` | Baseline | — | Simple momentum breakout |
-| `momentum_breakout_pro_stable` | Conservative | 2.1x | Tight stops, lower drawdown |
-| `momentum_breakout_pro_aggressive` | Aggressive | 1.8x | Loose stops, higher upside |
-| `momentum_breakout_elite` | Elite | — | Most advanced variant |
+| Strategy | Profile | Volume Threshold | RR Ratio | Description |
+|----------|---------|-----------------|----------|-------------|
+| `momentum_breakout_basic` | Baseline | — | 1:2 | Simple momentum breakout |
+| `momentum_breakout_pro_stable` | Conservative | 2.1x | 1:2 | Tight stops, lower drawdown |
+| `momentum_breakout_pro_aggressive` | Aggressive | 1.8x | 1:2 | Loose stops, higher upside |
+| `momentum_breakout_elite` | Elite | 1.3x | 1:5 | 3 entry signals (breakout/trend rider/pullback), hyper-growth |
+| `steady_compounder` | Swing | ≥ avg | 1:3 | OR-based signals (RSI bounce/MACD cross/EMA bounce), 4h optimized |
 
-Signals use: RSI, MACD, Volume MA (via `pandas-ta`).
+Signals use: RSI, MACD, Volume MA, EMA (20/50/100/200), ADX (via `pandas-ta`).
 Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stored in `BotConfig`.
+
+### Strategy Selection Guide
+| Goal | Recommended Strategy | Timeframe |
+|------|---------------------|-----------|
+| 안정적 스윙 수익 | `steady_compounder` | 4h |
+| 보수적 모멘텀 | `momentum_breakout_pro_stable` | 1h~4h |
+| 공격적 모멘텀 | `momentum_breakout_pro_aggressive` | 1h~4h |
+| 최대 수익 추구 | `momentum_breakout_elite` | 4h~1d |
+
+### Important Notes
+- **전략 로직 수정 금지**: 기존 전략의 신호 로직은 검증 완료됨. 파라미터/인프라 변경만 허용.
+- **bot_manager.py limit=300**: Pro/Elite 전략은 `current_idx >= 200` 필요. limit이 작으면 신호 미발생.
+- **새 전략 추가 시**: `backend/core/strategies/`에 클래스 생성 → `strategy.py` STRATEGY_MAP 등록 → `frontend/src/lib/constants.ts` 추가
 
 ---
 
