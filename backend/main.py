@@ -8,7 +8,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import models, database
-from routers import auth, bots, keys, backtest, admin
+from routers import auth, bots, keys, backtest, admin, community
 from settings import settings
 
 models.Base.metadata.create_all(bind=database.engine)
@@ -33,3 +33,8 @@ app.include_router(bots.router)
 app.include_router(keys.router)
 app.include_router(backtest.router)
 app.include_router(admin.router)
+app.include_router(community.router)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -19,6 +19,7 @@ class User(Base):
 
     bots = relationship("BotConfig", back_populates="owner")
     api_keys = relationship("ExchangeKey", back_populates="owner")
+    posts = relationship("CommunityPost", back_populates="author")
 
 class ExchangeKey(Base):
     __tablename__ = "exchange_keys"
@@ -85,3 +86,84 @@ class OHLCV(Base):
         UniqueConstraint('symbol', 'timeframe', 'timestamp', name='uq_ohlcv_symbol_tf_ts'),
         Index('ix_ohlcv_symbol_tf_ts', 'symbol', 'timeframe', 'timestamp'),
     )
+
+
+class BacktestHistory(Base):
+    __tablename__ = "backtest_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    symbols = Column(String, nullable=False)  # JSON array string e.g. '["BTC/KRW"]'
+    timeframe = Column(String, nullable=False)
+    strategy_name = Column(String, nullable=False)
+    initial_capital = Column(Float, nullable=False)
+    final_capital = Column(Float, nullable=True)
+    total_trades = Column(Integer, nullable=True)
+    result_data = Column(String, nullable=True)  # Full result JSON (trades, equity_curve)
+    status = Column(String, default="running")  # running, completed, failed
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+
+    owner = relationship("User")
+
+
+class CommunityPost(Base):
+    __tablename__ = "community_posts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    post_type = Column(String, nullable=False, index=True)  # backtest_share, performance_share, strategy_review, discussion
+    title = Column(String, nullable=False)
+    content = Column(String, nullable=True)
+    backtest_data = Column(String, nullable=True)  # JSON string
+    performance_data = Column(String, nullable=True)  # JSON string
+    strategy_name = Column(String, nullable=True)
+    rating = Column(Integer, nullable=True)  # 1-5 for strategy_review
+    like_count = Column(Integer, default=0)
+    comment_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    updated_at = Column(DateTime, default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow())
+    is_deleted = Column(Boolean, default=False)
+
+    author = relationship("User", back_populates="posts")
+    comments = relationship("PostComment", back_populates="post")
+    likes = relationship("PostLike", back_populates="post")
+
+
+class PostComment(Base):
+    __tablename__ = "post_comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("community_posts.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    is_deleted = Column(Boolean, default=False)
+
+    post = relationship("CommunityPost", back_populates="comments")
+    author = relationship("User")
+
+
+class PostLike(Base):
+    __tablename__ = "post_likes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("community_posts.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+
+    post = relationship("CommunityPost", back_populates="likes")
+
+    __table_args__ = (
+        UniqueConstraint('post_id', 'user_id', name='uq_post_like_user'),
+    )
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    content = Column(String, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow(), index=True)
+
+    author = relationship("User")

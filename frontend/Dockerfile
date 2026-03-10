@@ -15,7 +15,7 @@ ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=512"
-RUN npm run build
+RUN mkdir -p public && npm run build
 
 # Stage 2: Serve (standalone output - minimal image)
 FROM node:18-alpine AS runner
@@ -30,7 +30,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy standalone output (includes only needed node_modules)
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public 2>/dev/null || true
+COPY --from=builder /app/public ./public
 
 USER nextjs
 

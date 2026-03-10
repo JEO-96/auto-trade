@@ -1,15 +1,15 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
 import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS } from '@/lib/constants';
-import { runPortfolioBacktest, getBacktestStatus } from '@/lib/api/backtest';
+import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity } from '@/lib/api/backtest';
 import { getErrorMessage } from '@/lib/utils';
-import type { BacktestResult, BacktestTrade, EquityCurvePoint } from '@/types/backtest';
+import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryItem } from '@/types/backtest';
 
 export default function BacktestPage() {
     const [loading, setLoading] = useState(false);
@@ -19,11 +19,76 @@ export default function BacktestPage() {
     const [progressMessage, setProgressMessage] = useState('');
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // 기록 탭 상태
+    const [activeTab, setActiveTab] = useState<'run' | 'history'>('run');
+    const [historyList, setHistoryList] = useState<BacktestHistoryItem[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [viewingHistoryId, setViewingHistoryId] = useState<number | null>(null);
+
+    // 공유 모달 상태
+    const [shareModal, setShareModal] = useState<{ historyId: number } | null>(null);
+    const [shareTitle, setShareTitle] = useState('');
+    const [shareContent, setShareContent] = useState('');
+    const [sharing, setSharing] = useState(false);
+    const [shareSuccess, setShareSuccess] = useState(false);
+
+    const fetchHistory = useCallback(async () => {
+        setHistoryLoading(true);
+        try {
+            const data = await getBacktestHistory(1, 50);
+            setHistoryList(data);
+        } catch (err) {
+            console.error('백테스트 기록 로드 실패', err);
+        } finally {
+            setHistoryLoading(false);
+        }
+    }, []);
+
+    const loadHistoryDetail = async (id: number) => {
+        try {
+            const detail = await getBacktestHistoryDetail(id);
+            if (detail.result_data) {
+                setResult(detail.result_data);
+                setViewingHistoryId(id);
+                setActiveTab('run');
+            }
+        } catch (err) {
+            console.error('백테스트 상세 로드 실패', err);
+        }
+    };
+
+    const handleShare = async () => {
+        if (!shareModal || !shareTitle.trim()) return;
+        setSharing(true);
+        try {
+            await shareBacktestToCommunity(
+                shareModal.historyId,
+                shareTitle.trim(),
+                shareContent.trim() || undefined,
+            );
+            setShareSuccess(true);
+            setTimeout(() => {
+                setShareModal(null);
+                setShareTitle('');
+                setShareContent('');
+                setShareSuccess(false);
+            }, 1500);
+        } catch (err) {
+            console.error('공유 실패', err);
+        } finally {
+            setSharing(false);
+        }
+    };
+
     useEffect(() => {
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
     }, []);
+
+    useEffect(() => {
+        if (activeTab === 'history') fetchHistory();
+    }, [activeTab, fetchHistory]);
 
     const [form, setForm] = useState({
         symbols: ['BTC/KRW'],
@@ -115,14 +180,140 @@ export default function BacktestPage() {
 
     return (
         <PageContainer>
-            <header className="mb-8">
+            <header className="mb-6">
                 <h1 className="text-2xl font-bold mb-1 text-white">전략 백테스팅</h1>
-                <p className="text-sm text-gray-500 max-w-xl">
+                <p className="text-sm text-gray-500 max-w-xl mb-4">
                     모멘텀 돌파 알고리즘의 과거 성과를 분석하고 포트폴리오 시뮬레이션으로 검증하세요.
                 </p>
+                <div className="flex gap-1.5 bg-white/[0.02] p-1 rounded-xl border border-white/[0.04] w-fit">
+                    <button
+                        onClick={() => setActiveTab('run')}
+                        className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${activeTab === 'run' ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:text-white'}`}
+                    >
+                        <Play className="w-3.5 h-3.5" /> 실행
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${activeTab === 'history' ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:text-white'}`}
+                    >
+                        <History className="w-3.5 h-3.5" /> 기록
+                    </button>
+                </div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* 공유 모달 */}
+            {shareModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="glass-panel rounded-2xl p-6 w-full max-w-md mx-4">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-base font-bold text-white">커뮤니티에 공유</h3>
+                            <button onClick={() => setShareModal(null)} className="text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
+                        </div>
+                        {shareSuccess ? (
+                            <div className="text-center py-8">
+                                <CheckCircle2 className="w-10 h-10 text-secondary mx-auto mb-3" />
+                                <p className="text-sm text-secondary font-semibold">커뮤니티에 공유되었습니다!</p>
+                            </div>
+                        ) : (
+                            <>
+                                <input
+                                    value={shareTitle}
+                                    onChange={(e) => setShareTitle(e.target.value)}
+                                    placeholder="제목을 입력하세요"
+                                    maxLength={100}
+                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-3 focus:border-primary/30 transition-colors"
+                                />
+                                <textarea
+                                    value={shareContent}
+                                    onChange={(e) => setShareContent(e.target.value)}
+                                    placeholder="소감이나 분석 내용을 작성하세요 (선택)"
+                                    rows={3}
+                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-4 resize-none focus:border-primary/30 transition-colors"
+                                />
+                                <div className="flex gap-2">
+                                    <Button onClick={handleShare} loading={sharing} disabled={!shareTitle.trim()} size="sm">
+                                        <Share2 className="w-3.5 h-3.5" /> 공유하기
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => setShareModal(null)}>취소</Button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* 기록 탭 */}
+            {activeTab === 'history' && (
+                <div className="glass-panel rounded-2xl p-6">
+                    <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                        <History className="w-5 h-5 text-primary" />
+                        백테스트 기록
+                    </h3>
+                    {historyLoading ? (
+                        <div className="flex justify-center py-12"><LoadingSpinner message="기록 불러오는 중..." /></div>
+                    ) : historyList.length === 0 ? (
+                        <EmptyState icon={<History className="w-12 h-12" />} title="백테스트 기록이 없습니다" description="백테스트를 실행하면 자동으로 기록됩니다." />
+                    ) : (
+                        <div className="space-y-2">
+                            {historyList.map((h) => {
+                                const pnlPct = h.final_capital && h.initial_capital
+                                    ? ((h.final_capital - h.initial_capital) / h.initial_capital * 100)
+                                    : null;
+                                const isProfit = pnlPct !== null && pnlPct >= 0;
+                                return (
+                                    <div key={h.id} className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors group">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Badge variant={h.status === 'completed' ? 'success' : h.status === 'failed' ? 'danger' : 'warning'}>
+                                                    {h.status === 'completed' ? '완료' : h.status === 'failed' ? '실패' : '진행중'}
+                                                </Badge>
+                                                <span className="text-xs text-gray-400 font-medium">{h.strategy_name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                                                <span>{(h.symbols || []).join(', ')}</span>
+                                                <span>{h.timeframe}</span>
+                                                <span>₩{h.initial_capital.toLocaleString()}</span>
+                                                <span>{new Date(h.created_at).toLocaleDateString('ko-KR')}</span>
+                                            </div>
+                                        </div>
+                                        {pnlPct !== null && (
+                                            <div className="text-right shrink-0">
+                                                <p className={`text-sm font-bold ${isProfit ? 'text-secondary' : 'text-red-400'}`}>
+                                                    {isProfit ? '+' : ''}{pnlPct.toFixed(2)}%
+                                                </p>
+                                                <p className="text-[10px] text-gray-500">{h.total_trades}회 거래</p>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            {h.status === 'completed' && (
+                                                <>
+                                                    <button
+                                                        onClick={() => loadHistoryDetail(h.id)}
+                                                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
+                                                    >
+                                                        상세보기
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setShareModal({ historyId: h.id });
+                                                            setShareTitle(`${h.strategy_name} 백테스트 결과 (${(h.symbols || []).join(', ')})`);
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors flex items-center gap-1"
+                                                    >
+                                                        <Share2 className="w-3 h-3" /> 공유
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {activeTab === 'run' && <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Configuration */}
                 <div className="lg:col-span-4">
                     <div className="glass-panel p-6 rounded-2xl">
@@ -317,10 +508,23 @@ export default function BacktestPage() {
 
                     {result && (
                         <>
-                            {/* Backtest disclaimer */}
-                            <p className="text-xs text-gray-500">
-                                * 이 결과는 과거 데이터 시뮬레이션이며 실제 수익을 보장하지 않습니다.
-                            </p>
+                            {/* Backtest disclaimer + share button */}
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs text-gray-500">
+                                    * 이 결과는 과거 데이터 시뮬레이션이며 실제 수익을 보장하지 않습니다.
+                                </p>
+                                {viewingHistoryId && (
+                                    <button
+                                        onClick={() => {
+                                            setShareModal({ historyId: viewingHistoryId });
+                                            setShareTitle('백테스트 결과 공유');
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/20"
+                                    >
+                                        <Share2 className="w-3.5 h-3.5" /> 커뮤니티 공유
+                                    </button>
+                                )}
+                            </div>
 
                             {/* Stats */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -427,7 +631,7 @@ export default function BacktestPage() {
                         </>
                     )}
                 </div>
-            </div>
+            </div>}
         </PageContainer>
     );
 }

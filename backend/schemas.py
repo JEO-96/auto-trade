@@ -143,3 +143,105 @@ class BacktestTaskResponse(BaseModel):
     progress: float  # 0 to 100
     message: Optional[str] = None
     result: Optional[BacktestResponse] = None
+
+
+# -------- Backtest History Schemas --------
+class BacktestHistoryResponse(BaseModel):
+    id: int
+    symbols: List[str]
+    timeframe: str
+    strategy_name: str
+    initial_capital: float
+    final_capital: Optional[float] = None
+    total_trades: Optional[int] = None
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class BacktestHistoryDetailResponse(BacktestHistoryResponse):
+    result_data: Optional[dict] = None
+
+
+# -------- Community Schemas --------
+class NicknameUpdate(BaseModel):
+    nickname: str
+
+
+class UserProfileResponse(BaseModel):
+    id: int
+    nickname: Optional[str] = None
+    email: str
+    created_at: Optional[datetime] = None
+    post_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class PostCreate(BaseModel):
+    post_type: str  # backtest_share, performance_share, strategy_review, discussion
+    title: str
+    content: Optional[str] = None
+    backtest_data: Optional[dict] = None
+    performance_data: Optional[dict] = None
+    strategy_name: Optional[str] = None
+    rating: Optional[int] = None  # 1-5
+
+
+class PostResponse(BaseModel):
+    id: int
+    user_id: int
+    author_nickname: Optional[str] = None
+    post_type: str
+    title: str
+    content: Optional[str] = None
+    backtest_data: Optional[dict] = None
+    performance_data: Optional[dict] = None
+    strategy_name: Optional[str] = None
+    rating: Optional[int] = None
+    like_count: int = 0
+    comment_count: int = 0
+    is_liked: bool = False
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PostListResponse(BaseModel):
+    posts: List[PostResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class CommentCreate(BaseModel):
+    content: str
+
+
+class CommentResponse(BaseModel):
+    id: int
+    user_id: int
+    author_nickname: Optional[str] = None
+    content: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ChatMessageCreate(BaseModel):
+    content: str
+
+
+class ChatMessageResponse(BaseModel):
+    id: int
+    user_id: int
+    author_nickname: Optional[str] = None
+    content: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

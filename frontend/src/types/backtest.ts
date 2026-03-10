@@ -38,3 +38,19 @@ export interface BacktestTaskStatus {
     message: string;
     result?: BacktestResult;
 }
+
+export interface BacktestHistoryItem {
+    id: number;
+    symbols: string[];
+    timeframe: string;
+    strategy_name: string;
+    initial_capital: number;
+    final_capital: number | null;
+    total_trades: number | null;
+    status: string;
+    created_at: string;
+}
+
+export interface BacktestHistoryDetail extends BacktestHistoryItem {
+    result_data: BacktestResult | null;
+}

@@ -9,3 +9,4 @@ export * from './bot';
 export * from './backtest';
 export * from './keys';
 export * from './admin';
+export * from './community';

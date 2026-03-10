@@ -10,8 +10,21 @@ export type {
     BacktestResult,
     BacktestFormParams,
     BacktestTaskStatus,
+    BacktestHistoryItem,
+    BacktestHistoryDetail,
 } from './backtest';
 export type {
     ExchangeKeyPreview,
     ExchangeKeyCreateRequest,
 } from './keys';
+export type {
+    PostType,
+    CommunityPost,
+    PerformanceData,
+    PostListResponse,
+    PostCreateRequest,
+    PostComment,
+    ChatMessage,
+    UserProfile,
+    StrategyRating,
+} from './community';
