@@ -1,14 +1,19 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
+from datetime import datetime
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    is_active = Column(Boolean, default=True)
+    nickname = Column(String, nullable=True) # Kakao nickname
+    hashed_password = Column(String, nullable=True) # Optional for OAuth users
+    kakao_id = Column(String, unique=True, index=True, nullable=True)
+    kakao_access_token = Column(String, nullable=True) # For "Send to Me" messages
+    is_active = Column(Boolean, default=False) # Changed to False by default
+    created_at = Column(DateTime, default=datetime.utcnow) # Added registration time
 
     bots = relationship("BotConfig", back_populates="owner")
     api_keys = relationship("ExchangeKey", back_populates="owner")

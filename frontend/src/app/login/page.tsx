@@ -1,44 +1,21 @@
 'use client';
-import { useState } from 'react';
-import { ArrowRight, Lock, Mail } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import KakaoLoginButton from '@/components/KakaoLoginButton';
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-
-        try {
-            const formData = new FormData();
-            formData.append('username', email);
-            formData.append('password', password);
-
-            const response = await api.post('/auth/token', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
-
-            // 토큰 저장 (보안을 위해서는 HttpOnly 쿠키 권장, 여기선 구현 편의를 위해 LocalStorage 사용)
-            localStorage.setItem('access_token', response.data.access_token);
-
-            // 대시보드로 이동
+    useEffect(() => {
+        if (typeof window !== 'undefined' && localStorage.getItem('access_token')) {
             router.push('/dashboard');
-        } catch (err: any) {
-            setError(err.response?.data?.detail || '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [router]);
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#0B0F19]">
@@ -56,62 +33,16 @@ export default function LoginPage() {
                     </div>
                 )}
 
-                <form onSubmit={handleLogin} className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300 ml-1">이메일 주소</label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Mail className="h-5 w-5 text-gray-500" />
-                            </div>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-surface/50 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors disabled:opacity-50"
-                                placeholder="you@example.com"
-                                required
-                                disabled={loading}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center ml-1">
-                            <label className="text-sm font-medium text-gray-300">비밀번호</label>
-                            <a href="#" className="text-xs text-primary hover:text-blue-400">비밀번호를 잊으셨나요?</a>
-                        </div>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Lock className="h-5 w-5 text-gray-500" />
-                            </div>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-surface/50 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors disabled:opacity-50"
-                                placeholder="••••••••"
-                                required
-                                disabled={loading}
-                            />
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-primary hover:bg-blue-600 disabled:bg-primary/50 text-white font-semibold py-3 px-4 rounded-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all flex items-center justify-center gap-2 group"
-                    >
-                        {loading ? '로그인 중...' : '로그인'}
-                        {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
-                    </button>
-                </form>
-
-                <p className="mt-8 text-center text-sm text-gray-400">
-                    계정이 없으신가요?{' '}
-                    <Link href="/register" className="text-primary hover:text-blue-400 font-medium">
-                        회원가입
-                    </Link>
-                </p>
+                <div className="space-y-6">
+                    <p className="text-gray-400 text-center mb-6">
+                        카카오 계정으로 간편하게 시작하세요. <br />
+                        <span className="text-xs text-amber-500/80 mt-2 block">
+                            * 첫 접속 시 자동으로 가입 신청되며, <br />
+                            관리자 승인 완료 후 이용 가능합니다.
+                        </span>
+                    </p>
+                    <KakaoLoginButton />
+                </div>
             </div>
         </div>
     );

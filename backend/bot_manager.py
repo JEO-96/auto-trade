@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict
+from typing import Dict, Any
 from datetime import datetime
 from core.strategy import MomentumBreakoutStrategy
 from core.data_fetcher import DataFetcher
@@ -7,10 +7,11 @@ from core.execution import ExecutionEngine
 from core import config
 from sqlalchemy.orm import Session
 import database, models
+from notifications import send_kakao_message
 
 # Global dictionary to store currently running tasks (Simple In-Memory Queue)
 # In production, use Celery + Redis for scaling.
-active_bots: Dict[int, asyncio.Task] = {}
+active_bots: dict[int, asyncio.Task] = {}
 
 def save_trade_log(bot_id: int, symbol: str, side: str, price: float, amount: float, reason: str, pnl: float = None):
     db: Session = database.SessionLocal()
@@ -125,6 +126,11 @@ async def run_bot_loop(bot_config_id: int):
                                 pnl = (exit_price - pos['entry_price']) * pos['position_amount']
                                 liquid_capital += (pos['position_amount'] * exit_price)
                                 save_trade_log(bot_config_id, symbol, "SELL", exit_price, pos['position_amount'], f"{reason} (Portfolio)", pnl)
+                                
+                                # Send Kakao Notification
+                                msg = f"🔔 [거래 알림 - SELL]\n종목: {symbol}\n가격: {exit_price:,.0f} KRW\n수익률: {(pnl / (pos['entry_price'] * pos['position_amount']) * 100):.2f}%\n사유: {reason}"
+                                asyncio.create_task(send_kakao_message(bot_config.user_id, msg))
+                                
                                 del active_positions[symbol]
                             else:
                                 # B. Trailing Stop Update
@@ -167,6 +173,10 @@ async def run_bot_loop(bot_config_id: int):
                                                 'take_profit': tp
                                             }
                                             save_trade_log(bot_config_id, symbol, "BUY", entry_price, qty, "Portfolio Entry")
+                                            
+                                            # Send Kakao Notification
+                                            msg = f"🚀 [거래 알림 - BUY]\n종목: {symbol}\n가격: {entry_price:,.0f} KRW\n수량: {qty:.4f}\n상태: 진입 완료"
+                                            asyncio.create_task(send_kakao_message(bot_config.user_id, msg))
                                 else:
                                     print(f"[Bot {bot_config_id}] Risk calculation failed for {symbol} (risk <= 0)")
                 

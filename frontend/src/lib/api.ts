@@ -32,10 +32,6 @@ api.interceptors.response.use(
             // Option to handle logout if token is expired
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('access_token');
-                // Avoid infinite loops by not redirecting if already on login page
-                if (window.location.pathname !== '/login') {
-                    window.location.href = '/login';
-                }
             }
         }
         return Promise.reject(error);

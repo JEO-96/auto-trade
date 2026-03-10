@@ -15,3 +15,7 @@ pandas-ta>=0.3.14b0
 ccxt
 matplotlib
 schedule
+httpx
+python-dotenv
+vectorbt
+numba

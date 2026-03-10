@@ -10,6 +10,7 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: int
+    nickname: Optional[str] = None
     is_active: bool
 
     class Config:
@@ -19,6 +20,10 @@ class UserResponse(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class KakaoLogin(BaseModel):
+    code: str
+    redirect_uri: str
 
 # -------- API Key Schemas --------
 class ExchangeKeyCreate(BaseModel):
@@ -66,28 +71,26 @@ class TradeLogResponse(BaseModel):
         from_attributes = True
 
 # -------- Backtest Schemas --------
-from pydantic import BaseModel
-from typing import List, Optional
-
 class BacktestRequest(BaseModel):
     symbol: str = "BTC/KRW"
     timeframe: str = "1h"
-    strategy_name: str = "james_basic"
+    strategy_name: str = "james_pro_elite"
     limit: Optional[int] = 1000
-    start_date: Optional[str] = None # YYYY-MM-DD
-    end_date: Optional[str] = None   # YYYY-MM-DD
+    start_date: Optional[str] = None  # YYYY-MM-DD
+    end_date: Optional[str] = None    # YYYY-MM-DD
     initial_capital: float = 1000000.0
 
 class PortfolioBacktestRequest(BaseModel):
     symbols: List[str] = ["BTC/KRW"]
     timeframe: str = "1h"
-    strategy_name: str = "james_basic"
+    strategy_name: str = "james_pro_elite"
     limit: Optional[int] = 1000
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     initial_capital: float = 1000000.0
 
 class BacktestTradeResponse(BaseModel):
+    symbol: str
     side: str
     price: float
     capital: float
@@ -95,10 +98,23 @@ class BacktestTradeResponse(BaseModel):
     reason: str
     pnl: float
 
+class EquityPoint(BaseModel):
+    time: str
+    value: float
+
 class BacktestResponse(BaseModel):
     status: str
+    task_id: Optional[str] = None
     message: Optional[str] = None
     initial_capital: Optional[float] = None
     final_capital: Optional[float] = None
     total_trades: Optional[int] = None
-    trades: Optional[list[BacktestTradeResponse]] = None
+    trades: Optional[List[BacktestTradeResponse]] = None
+    equity_curve: Optional[List[EquityPoint]] = None
+
+class BacktestTaskResponse(BaseModel):
+    task_id: str
+    status: str  # 'running', 'completed', 'failed'
+    progress: float  # 0 to 100
+    message: Optional[str] = None
+    result: Optional[BacktestResponse] = None
