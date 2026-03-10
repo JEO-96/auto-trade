@@ -90,17 +90,21 @@ export default function BacktestPage() {
         if (activeTab === 'history') fetchHistory();
     }, [activeTab, fetchHistory]);
 
-    const [form, setForm] = useState({
-        symbols: ['BTC/KRW'],
-        timeframe: '1h',
-        strategy_name: 'james_pro_elite',
-        limit: 1000,
-        initial_capital: 1000000,
-        start_date: '',
-        end_date: '',
-        commission_rate_pct: 0.05,
+    const [form, setForm] = useState(() => {
+        const end = new Date();
+        const start = new Date();
+        start.setMonth(start.getMonth() - 3);
+        return {
+            symbols: ['BTC/KRW'],
+            timeframe: '1h',
+            strategy_name: 'james_pro_elite',
+            initial_capital: 1000000,
+            start_date: start.toISOString().split('T')[0],
+            end_date: end.toISOString().split('T')[0],
+            commission_rate_pct: 0.05,
+            period_preset: '3m' as string,
+        };
     });
-    const [useDateRange, setUseDateRange] = useState(false);
 
     const toggleSymbol = (symbol: string) => {
         setForm(prev => {
@@ -113,11 +117,19 @@ export default function BacktestPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        if (name === 'limit') {
-            setForm({ ...form, [name]: Number(value) });
-        } else {
-            setForm({ ...form, [name]: value });
-        }
+        setForm({ ...form, [name]: value, period_preset: '' });
+    };
+
+    const setPeriodPreset = (key: string, months: number) => {
+        const end = new Date();
+        const start = new Date();
+        start.setMonth(start.getMonth() - months);
+        setForm({
+            ...form,
+            start_date: start.toISOString().split('T')[0],
+            end_date: end.toISOString().split('T')[0],
+            period_preset: key,
+        });
     };
 
     const pollStatus = async (taskId: string) => {
@@ -158,9 +170,9 @@ export default function BacktestPage() {
                 symbols: form.symbols,
                 timeframe: form.timeframe,
                 strategy_name: form.strategy_name,
-                limit: useDateRange ? null : Number(form.limit),
-                start_date: useDateRange ? form.start_date : null,
-                end_date: useDateRange ? form.end_date : null,
+                limit: null,
+                start_date: form.start_date || null,
+                end_date: form.end_date || null,
                 initial_capital: Number(form.initial_capital),
                 commission_rate: form.commission_rate_pct / 100,
             });
@@ -381,152 +393,61 @@ export default function BacktestPage() {
                                 </div>
                             </div>
 
-                            {/* Data Range Mode */}
+                            {/* 테스트 기간 */}
                             <div>
-                                <label className="text-xs text-gray-500 font-medium mb-2 block">데이터 범위</label>
-                                <div className="flex gap-1.5 bg-white/[0.02] p-1 rounded-xl border border-white/[0.04] mb-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setUseDateRange(false)}
-                                        className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${!useDateRange ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                                    >
-                                        캔들 갯수
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setUseDateRange(true)}
-                                        className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${useDateRange ? 'bg-primary text-white' : 'text-gray-500 hover:text-gray-300'}`}
-                                    >
-                                        기간 지정
-                                    </button>
+                                <label className="text-xs text-gray-500 font-medium mb-2 block">테스트 기간</label>
+                                <div className="grid grid-cols-3 gap-1.5 mb-3">
+                                    {[
+                                        { key: '1m', label: '1개월', months: 1 },
+                                        { key: '3m', label: '3개월', months: 3 },
+                                        { key: '6m', label: '6개월', months: 6 },
+                                        { key: '1y', label: '1년', months: 12 },
+                                        { key: '2y', label: '2년', months: 24 },
+                                        { key: '3y', label: '3년', months: 36 },
+                                    ].map(preset => (
+                                        <button
+                                            key={preset.key}
+                                            type="button"
+                                            onClick={() => setPeriodPreset(preset.key, preset.months)}
+                                            className={`py-2 text-xs font-semibold rounded-lg transition-all border ${
+                                                form.period_preset === preset.key
+                                                    ? 'bg-primary/10 border-primary/30 text-primary'
+                                                    : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:text-gray-300 hover:border-white/10'
+                                            }`}
+                                        >
+                                            {preset.label}
+                                        </button>
+                                    ))}
                                 </div>
-
-                                {!useDateRange ? (
+                                <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        {/* Quick presets */}
-                                        <div className="grid grid-cols-4 gap-1.5 mb-3">
-                                            {[
-                                                { label: '500', value: 500 },
-                                                { label: '1K', value: 1000 },
-                                                { label: '3K', value: 3000 },
-                                                { label: '5K', value: 5000 },
-                                            ].map(preset => (
-                                                <button
-                                                    key={preset.value}
-                                                    type="button"
-                                                    onClick={() => setForm({ ...form, limit: preset.value })}
-                                                    className={`py-1.5 text-[11px] font-semibold rounded-lg transition-all border ${
-                                                        form.limit === preset.value
-                                                            ? 'bg-primary/10 border-primary/30 text-primary'
-                                                            : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:text-gray-300 hover:border-white/10'
-                                                    }`}
-                                                >
-                                                    {preset.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        {/* Slider + input */}
-                                        <div className="flex items-center gap-3">
-                                            <input
-                                                type="range"
-                                                name="limit"
-                                                value={form.limit}
-                                                onChange={handleChange}
-                                                min="100"
-                                                max="10000"
-                                                step="100"
-                                                className="flex-1 accent-primary h-1.5 bg-white/[0.06] rounded-full appearance-none cursor-pointer"
-                                            />
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                value={form.limit}
-                                                onChange={(e) => {
-                                                    const val = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10);
-                                                    if (!isNaN(val) && val >= 100 && val <= 10000) {
-                                                        setForm({ ...form, limit: val });
-                                                    } else if (e.target.value === '') {
-                                                        setForm({ ...form, limit: 100 });
-                                                    }
-                                                }}
-                                                className="w-[72px] bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1.5 text-xs font-bold text-primary text-center font-mono focus:border-primary/30 transition-colors"
-                                            />
-                                        </div>
-                                        <div className="flex justify-between mt-1.5 text-[10px] text-gray-600">
-                                            <span>100개</span>
-                                            <span>10,000개</span>
-                                        </div>
+                                        <label className="text-[10px] text-gray-500 font-medium mb-1 block">시작일</label>
+                                        <input
+                                            type="date"
+                                            name="start_date"
+                                            value={form.start_date}
+                                            onChange={handleChange}
+                                            className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5 text-xs text-white focus:border-primary/30 transition-colors [color-scheme:dark]"
+                                        />
                                     </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {/* Quick period presets */}
-                                        <div className="grid grid-cols-4 gap-1.5 mb-1">
-                                            {[
-                                                { label: '1개월', months: 1 },
-                                                { label: '3개월', months: 3 },
-                                                { label: '6개월', months: 6 },
-                                                { label: '1년', months: 12 },
-                                            ].map(preset => (
-                                                <button
-                                                    key={preset.months}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const end = new Date();
-                                                        const start = new Date();
-                                                        start.setMonth(start.getMonth() - preset.months);
-                                                        setForm({
-                                                            ...form,
-                                                            start_date: start.toISOString().split('T')[0],
-                                                            end_date: end.toISOString().split('T')[0],
-                                                        });
-                                                    }}
-                                                    className={`py-1.5 text-[11px] font-semibold rounded-lg transition-all border ${
-                                                        (() => {
-                                                            const end = new Date();
-                                                            const start = new Date();
-                                                            start.setMonth(start.getMonth() - preset.months);
-                                                            return form.start_date === start.toISOString().split('T')[0]
-                                                                && form.end_date === end.toISOString().split('T')[0];
-                                                        })()
-                                                            ? 'bg-primary/10 border-primary/30 text-primary'
-                                                            : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:text-gray-300 hover:border-white/10'
-                                                    }`}
-                                                >
-                                                    {preset.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="text-[10px] text-gray-500 font-medium mb-1 block">시작일</label>
-                                                <input
-                                                    type="date"
-                                                    name="start_date"
-                                                    value={form.start_date}
-                                                    onChange={handleChange}
-                                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5 text-xs text-white focus:border-primary/30 transition-colors [color-scheme:dark]"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] text-gray-500 font-medium mb-1 block">종료일</label>
-                                                <input
-                                                    type="date"
-                                                    name="end_date"
-                                                    value={form.end_date}
-                                                    onChange={handleChange}
-                                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5 text-xs text-white focus:border-primary/30 transition-colors [color-scheme:dark]"
-                                                />
-                                            </div>
-                                        </div>
-                                        {form.start_date && form.end_date && (
-                                            <p className="text-[10px] text-gray-500 text-center">
-                                                {form.start_date} ~ {form.end_date}
-                                                <span className="ml-1.5 text-primary font-semibold">
-                                                    ({Math.ceil((new Date(form.end_date).getTime() - new Date(form.start_date).getTime()) / 86400000)}일)
-                                                </span>
-                                            </p>
-                                        )}
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 font-medium mb-1 block">종료일</label>
+                                        <input
+                                            type="date"
+                                            name="end_date"
+                                            value={form.end_date}
+                                            onChange={handleChange}
+                                            className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2.5 text-xs text-white focus:border-primary/30 transition-colors [color-scheme:dark]"
+                                        />
                                     </div>
+                                </div>
+                                {form.start_date && form.end_date && (
+                                    <p className="text-[10px] text-gray-500 text-center mt-2">
+                                        {form.start_date} ~ {form.end_date}
+                                        <span className="ml-1.5 text-primary font-semibold">
+                                            ({Math.ceil((new Date(form.end_date).getTime() - new Date(form.start_date).getTime()) / 86400000)}일)
+                                        </span>
+                                    </p>
                                 )}
                             </div>
 
