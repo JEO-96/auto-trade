@@ -25,6 +25,18 @@ class KakaoLogin(BaseModel):
     code: str
     redirect_uri: str
 
+class KakaoEmailRequired(BaseModel):
+    requires_email: bool = True
+    kakao_id: str
+    kakao_token: str
+    nickname: Optional[str] = None
+
+class KakaoCompleteRegister(BaseModel):
+    kakao_id: str
+    kakao_token: str
+    email: EmailStr
+    nickname: Optional[str] = None
+
 # -------- API Key Schemas --------
 class ExchangeKeyCreate(BaseModel):
     exchange_name: str

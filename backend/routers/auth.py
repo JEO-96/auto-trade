@@ -72,9 +72,12 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
         email = kakao_account.get("email")
 
         if not email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email permission is required. Please allow email access in Kakao and try again."
+            # Email not provided by Kakao — require manual input from user
+            return schemas.KakaoEmailRequired(
+                requires_email=True,
+                kakao_id=kakao_id,
+                kakao_token=kakao_token,
+                nickname=nickname,
             )
 
         # 3. Check if user exists or create new
@@ -112,6 +115,48 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
         )
 
         return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/kakao/complete", response_model=schemas.Token)
+@limiter.limit("10/minute")
+async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteRegister, db: Session = Depends(get_db)):
+    """카카오 로그인 시 이메일 미제공 유저가 이메일 직접 입력 후 가입 완료하는 엔드포인트"""
+    # Verify kakao_token is still valid by calling Kakao API
+    async with httpx.AsyncClient() as client:
+        user_info_response = await client.get(
+            "https://kapi.kakao.com/v2/user/me",
+            headers={"Authorization": f"Bearer {data.kakao_token}"}
+        )
+        if user_info_response.status_code != 200:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Kakao token. Please login again.")
+
+        kakao_id_from_token = str(user_info_response.json().get("id"))
+        if kakao_id_from_token != data.kakao_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Kakao ID mismatch.")
+
+    # Check email uniqueness
+    if db.query(models.User).filter(models.User.email == data.email).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 사용 중인 이메일입니다.")
+
+    # Create or link user
+    user = db.query(models.User).filter(models.User.kakao_id == data.kakao_id).first()
+    if not user:
+        user = models.User(email=data.email, kakao_id=data.kakao_id, nickname=data.nickname)
+        db.add(user)
+    else:
+        user.email = data.email
+
+    user.kakao_access_token = data.kakao_token
+    db.commit()
+    db.refresh(user)
+
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="승인 대기 중입니다. 관리자에게 문의하세요.")
+
+    access_token = auth.create_access_token(
+        data={"sub": user.email},
+        expires_delta=auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me", response_model=schemas.UserResponse)
 def get_me(current_user: models.User = Depends(get_current_user)):

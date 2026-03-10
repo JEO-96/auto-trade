@@ -27,10 +27,19 @@ export default function KakaoCallbackPage() {
                 redirect_uri: redirect_uri
             });
 
-            // 토큰 저장
-            localStorage.setItem('access_token', response.data.access_token);
+            // 이메일 미제공 → 이메일 입력 페이지로 이동
+            if (response.data.requires_email) {
+                const params = new URLSearchParams({
+                    kakao_id: response.data.kakao_id,
+                    kakao_token: response.data.kakao_token,
+                    nickname: response.data.nickname || '',
+                });
+                router.push(`/auth/register-email?${params.toString()}`);
+                return;
+            }
 
-            // 대시보드로 이동
+            // 토큰 저장 후 대시보드로 이동
+            localStorage.setItem('access_token', response.data.access_token);
             router.push('/dashboard');
         } catch (err: any) {
             console.error('Kakao login error:', err);
