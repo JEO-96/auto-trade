@@ -29,9 +29,12 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Option to handle logout if token is expired
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('access_token');
+                // 로그인 페이지가 아닌 경우에만 리다이렉트
+                if (window.location.pathname !== '/login') {
+                    window.location.href = '/login';
+                }
             }
         }
         return Promise.reject(error);

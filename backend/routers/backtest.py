@@ -1,8 +1,11 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import models, schemas
 from dependencies import get_db, get_current_user
 from core.vector_backtester import VectorBacktester, backtest_tasks
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/backtest", tags=["backtest"])
 
@@ -24,7 +27,7 @@ def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depen
         backtest_tasks[task_id]["user_id"] = current_user.id
         return {"status": "running", "task_id": task_id}
     except Exception as e:
-        print(f"Backtest startup error: {e}")
+        logger.error("Backtest startup error: %s", e)
         raise HTTPException(status_code=500, detail="Backtest failed to start")
 
 @router.post("/portfolio", response_model=schemas.BacktestResponse)
@@ -44,7 +47,7 @@ def run_portfolio_backtest(req: schemas.PortfolioBacktestRequest, current_user: 
         backtest_tasks[task_id]["user_id"] = current_user.id
         return {"status": "running", "task_id": task_id}
     except Exception as e:
-        print(f"Portfolio Backtest startup error: {e}")
+        logger.error("Portfolio Backtest startup error: %s", e)
         raise HTTPException(status_code=500, detail="Backtest failed to start")
 
 @router.get("/status/{task_id}", response_model=schemas.BacktestTaskResponse)

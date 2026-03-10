@@ -13,16 +13,14 @@ import {
     Search,
     RefreshCw,
 } from 'lucide-react';
-import api from '@/lib/api';
-
-interface User {
-    id: number;
-    email: string;
-    nickname: string;
-    is_active: boolean;
-    is_admin: boolean;
-    created_at: string;
-}
+import Button from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EmptyState from '@/components/ui/EmptyState';
+import PageContainer from '@/components/ui/PageContainer';
+import { isAxiosError } from 'axios';
+import { getUsers, getPendingUsers, approveUser, rejectUser } from '@/lib/api/admin';
+import type { User } from '@/types/user';
 
 type TabFilter = 'all' | 'pending' | 'approved' | 'rejected';
 
@@ -39,14 +37,14 @@ export default function AdminPage() {
 
     const fetchUsers = useCallback(async () => {
         try {
-            const [allRes, pendingRes] = await Promise.all([
-                api.get('/admin/users'),
-                api.get('/admin/users/pending'),
+            const [allUsers, pending] = await Promise.all([
+                getUsers(),
+                getPendingUsers(),
             ]);
-            setUsers(allRes.data);
-            setPendingUsers(pendingRes.data);
-        } catch (err: any) {
-            if (err.response?.status === 403) {
+            setUsers(allUsers);
+            setPendingUsers(pending);
+        } catch (err: unknown) {
+            if (isAxiosError(err) && err.response?.status === 403) {
                 setForbidden(true);
             }
         } finally {
@@ -67,7 +65,7 @@ export default function AdminPage() {
     const handleApprove = async (userId: number) => {
         setActionLoading(prev => ({ ...prev, [userId]: 'approve' }));
         try {
-            await api.post(`/admin/users/${userId}/approve`);
+            await approveUser(userId);
             setUsers(prev =>
                 prev.map(u => u.id === userId ? { ...u, is_active: true } : u)
             );
@@ -87,7 +85,7 @@ export default function AdminPage() {
         if (!confirm('이 사용자를 거부하시겠습니까?')) return;
         setActionLoading(prev => ({ ...prev, [userId]: 'reject' }));
         try {
-            await api.post(`/admin/users/${userId}/reject`);
+            await rejectUser(userId);
             setUsers(prev =>
                 prev.map(u => u.id === userId ? { ...u, is_active: false } : u)
             );
@@ -107,25 +105,25 @@ export default function AdminPage() {
         const isPending = pendingUsers.some(p => p.id === user.id);
         if (isPending) {
             return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 text-[10px] font-semibold">
+                <Badge variant="warning">
                     <Clock className="w-3 h-3" />
                     대기중
-                </span>
+                </Badge>
             );
         }
         if (user.is_active) {
             return (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/10 text-secondary text-[10px] font-semibold">
+                <Badge variant="success">
                     <CheckCircle2 className="w-3 h-3" />
                     승인됨
-                </span>
+                </Badge>
             );
         }
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 text-[10px] font-semibold">
+            <Badge variant="danger">
                 <XCircle className="w-3 h-3" />
                 거부됨
-            </span>
+            </Badge>
         );
     };
 
@@ -146,7 +144,7 @@ export default function AdminPage() {
             list = list.filter(
                 u =>
                     u.email.toLowerCase().includes(q) ||
-                    u.nickname.toLowerCase().includes(q) ||
+                    (u.nickname ?? '').toLowerCase().includes(q) ||
                     String(u.id).includes(q)
             );
         }
@@ -158,10 +156,7 @@ export default function AdminPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-[80vh]">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-                    <p className="text-gray-500 text-sm font-medium">사용자 데이터 불러오는 중...</p>
-                </div>
+                <LoadingSpinner message="사용자 데이터 불러오는 중..." />
             </div>
         );
     }
@@ -177,12 +172,13 @@ export default function AdminPage() {
                     <p className="text-sm text-gray-500 mb-6">
                         이 페이지는 관리자만 접근할 수 있습니다.
                     </p>
-                    <button
+                    <Button
+                        variant="primary"
+                        size="md"
                         onClick={() => router.push('/dashboard')}
-                        className="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold text-sm transition-colors"
                     >
                         대시보드로 돌아가기
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -209,7 +205,7 @@ export default function AdminPage() {
     };
 
     return (
-        <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in-up">
+        <PageContainer>
             {/* Header */}
             <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -369,7 +365,7 @@ export default function AdminPage() {
                                             <span className="text-sm text-gray-400">{user.email}</span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-xs text-gray-500">{formatDate(user.created_at)}</span>
+                                            <span className="text-xs text-gray-500">{formatDate(user.created_at ?? '')}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             {getStatusBadge(user)}
@@ -433,10 +429,10 @@ export default function AdminPage() {
                             }) : (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-16 text-center">
-                                        <Users className="w-10 h-10 mx-auto mb-3 text-gray-700" />
-                                        <p className="text-sm font-semibold text-gray-400">
-                                            {searchQuery ? '검색 결과가 없습니다' : '사용자가 없습니다'}
-                                        </p>
+                                        <EmptyState
+                                            icon={<Users className="w-10 h-10" />}
+                                            title={searchQuery ? '검색 결과가 없습니다' : '사용자가 없습니다'}
+                                        />
                                     </td>
                                 </tr>
                             )}
@@ -469,7 +465,7 @@ export default function AdminPage() {
 
                                 <div className="flex items-center gap-4 text-[11px] text-gray-500 mb-3">
                                     <span>ID: #{user.id}</span>
-                                    <span>가입: {formatDate(user.created_at)}</span>
+                                    <span>가입: {formatDate(user.created_at ?? '')}</span>
                                     {user.is_admin && (
                                         <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">ADMIN</span>
                                     )}
@@ -531,14 +527,14 @@ export default function AdminPage() {
                         );
                     }) : (
                         <div className="py-12 text-center">
-                            <Users className="w-10 h-10 mx-auto mb-3 text-gray-700" />
-                            <p className="text-sm font-semibold text-gray-400">
-                                {searchQuery ? '검색 결과가 없습니다' : '사용자가 없습니다'}
-                            </p>
+                            <EmptyState
+                                icon={<Users className="w-10 h-10" />}
+                                title={searchQuery ? '검색 결과가 없습니다' : '사용자가 없습니다'}
+                            />
                         </div>
                     )}
                 </div>
             </div>
-        </div>
+        </PageContainer>
     );
 }

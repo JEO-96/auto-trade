@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import api from '@/lib/api';
+import { completeRegistration } from '@/lib/api/auth';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function RegisterEmailPage() {
     const router = useRouter();
@@ -27,18 +28,17 @@ export default function RegisterEmailPage() {
         setLoading(true);
 
         try {
-            const response = await api.post('/auth/kakao/complete', {
+            const data = await completeRegistration({
                 kakao_id: kakaoId,
                 kakao_token: kakaoToken,
                 email,
-                nickname,
+                nickname: nickname || undefined,
             });
 
-            localStorage.setItem('access_token', response.data.access_token);
+            localStorage.setItem('access_token', data.access_token);
             router.push('/dashboard');
         } catch (err: unknown) {
-            const axiosErr = err as { response?: { data?: { detail?: string } } };
-            setError(axiosErr.response?.data?.detail || '이메일 등록에 실패했습니다.');
+            setError(getErrorMessage(err, '이메일 등록에 실패했습니다.'));
         } finally {
             setLoading(false);
         }

@@ -1,9 +1,10 @@
 import pandas as pd
-import pandas_ta as ta
 import numpy as np
 from core import config
+from core.strategies.base import BaseStrategy
 
-class MomentumBreakoutEliteStrategy:
+
+class MomentumBreakoutEliteStrategy(BaseStrategy):
     """
     Momentum Breakout Elite (Hyper-Growth)
     - Optimized for Crypto Bull Markets (2020-2026+)
@@ -11,45 +12,60 @@ class MomentumBreakoutEliteStrategy:
     - Dynamic risk-reward (1:4 to 1:6)
     - ATR-based trend trailing for maximum profit run
     """
+
     def __init__(self):
+        super().__init__()
         self.use_trailing_stop = True
 
+        # Elite uses hardcoded indicator params (not config)
+        self.rsi_period = 14
+        self.macd_fast = 12
+        self.macd_slow = 26
+        self.macd_signal = 9
+        self.volume_ma_period = 20
+
+        # Signal thresholds (very loose for maximum entries)
+        self.rsi_threshold = 52
+        self.adx_threshold = 25
+        self.volume_multiplier = 1.3
+
+        # Exit parameters (tight SL, very ambitious TP - 1:5)
+        self.atr_sl_multiplier = 1.5
+        self.atr_tp_multiplier = 5.0
+        self.trailing_stop_multiplier = 2.0
+
+        # Trend rider parameters
+        self.trend_rider_rsi_min = 50
+        self.trend_rider_adx_min = 25
+
+        # Bull pullback RSI threshold
+        self.pullback_rsi_min = 45
+
+        # Risk scaling
+        self.risk_adx_threshold = 35
+        self.risk_high_multiplier = 2.5
+        self.risk_default_multiplier = 1.2
+
     def apply_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
-        df.ta.rsi(length=14, append=True)
-        df.ta.macd(fast=12, slow=26, signal=9, append=True)
-        df['VOL_SMA_20'] = df.ta.sma(close=df['volume'], length=20)
-
-        # Trend filters
-        df['EMA_200'] = df.ta.ema(length=200)
+        """Elite adds EMA_100 on top of the standard indicator set."""
+        df = super().apply_indicators(df)
         df['EMA_100'] = df.ta.ema(length=100)
-        df['EMA_50'] = df.ta.ema(length=50)
-        df['EMA_20'] = df.ta.ema(length=20)
-
-        # Volatility and Trend Strength
-        atr_result = df.ta.atr(length=14)
-        if atr_result is not None:
-            df['ATR_14'] = atr_result
-        adx_df = df.ta.adx(length=14)
-        if adx_df is not None:
-            df['ADX_14'] = adx_df['ADX_14']
-            df['DMP_14'] = adx_df['DMP_14']
-            df['DMN_14'] = adx_df['DMN_14']
-
         return df
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
-        if current_idx < 200: return False
+        if current_idx < 200:
+            return False
 
         current = df.iloc[current_idx]
         prev = df.iloc[current_idx - 1]
 
-        rsi_val = current.get('RSI_14', None)
+        rsi_val = current.get(self.rsi_col, None)
         adx_val = current.get('ADX_14', None)
         dmp_val = current.get('DMP_14', None)
         dmn_val = current.get('DMN_14', None)
-        macd_val = current.get('MACD_12_26_9', None)
-        macds_val = current.get('MACDs_12_26_9', None)
-        vol_avg = current.get('VOL_SMA_20', None)
+        macd_val = current.get(self.macd_col, None)
+        macds_val = current.get(self.macds_col, None)
+        vol_avg = current.get(self.vol_ma_col, None)
         ema_200 = current.get('EMA_200', None)
         ema_100 = current.get('EMA_100', None)
         ema_50 = current.get('EMA_50', None)
@@ -64,9 +80,9 @@ class MomentumBreakoutEliteStrategy:
 
         # 1. CORE BREAKOUT: Volume + RSI + MACD
         breakout = (
-            rsi_val > 52 and
+            rsi_val > self.rsi_threshold and
             macd_val > macds_val and
-            current['volume'] > vol_avg * 1.3 and
+            current['volume'] > vol_avg * self.volume_multiplier and
             current['close'] > ema_100
         )
 
@@ -77,11 +93,11 @@ class MomentumBreakoutEliteStrategy:
             prev_ema20 = prev.get('EMA_20', None)
             if prev_ema20 is not None and not pd.isna(prev_ema20):
                 trend_rider = (
-                    adx_val > 25 and
+                    adx_val > self.trend_rider_adx_min and
                     dmp_val > dmn_val and
                     current['close'] > ema_20 and
                     prev['close'] < prev_ema20 and
-                    rsi_val > 50
+                    rsi_val > self.trend_rider_rsi_min
                 )
 
         # 3. PULLBACK ENTRY: Simple EMA touch in bull market
@@ -91,34 +107,25 @@ class MomentumBreakoutEliteStrategy:
                 current['close'] > ema_200 and
                 prev['low'] < ema_50 and
                 current['close'] > ema_50 and
-                rsi_val > 45
+                rsi_val > self.pullback_rsi_min
             )
 
         return breakout or trend_rider or bull_pullback
 
     def calculate_exit_levels(self, df: pd.DataFrame, entry_idx: int, entry_price: float):
-        atr = df.iloc[entry_idx].get('ATR_14', None)
-        if atr is None or pd.isna(atr) or atr <= 0:
-            atr = entry_price * 0.02
+        atr = self._get_atr_or_fallback(df, entry_idx, entry_price)
         # Tight Stop Loss for high Reward/Risk ratio
-        stop_loss = entry_price - (atr * 1.5)
+        stop_loss = entry_price - (atr * self.atr_sl_multiplier)
         risk = entry_price - stop_loss
-
         # Ambitious Take Profit (1:5 ratio) for elite returns
-        take_profit = entry_price + (risk * 5.0)
+        take_profit = entry_price + (risk * self.atr_tp_multiplier)
         return stop_loss, take_profit
 
-    def get_risk_multiplier(self, df: pd.DataFrame, current_idx: int):
-        # Double the risk in extreme bull markets (ADX > 35)
+    def get_risk_multiplier(self, df: pd.DataFrame, current_idx: int) -> float:
+        """Double the risk in extreme bull markets (ADX > 35)."""
         adx = df.iloc[current_idx].get('ADX_14', 0)
         if adx is None or pd.isna(adx):
             return 1.0
-        if adx > 35:
-            return 2.5
-        return 1.2
-
-    def update_trailing_stop(self, current_price: float, current_atr: float, current_sl: float):
-        if current_atr <= 0 or pd.isna(current_atr):
-            return current_sl
-        new_sl = current_price - (current_atr * 2.0)
-        return max(current_sl, new_sl)
+        if adx > self.risk_adx_threshold:
+            return self.risk_high_multiplier
+        return self.risk_default_multiplier

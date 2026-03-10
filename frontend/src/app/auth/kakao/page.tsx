@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import api from '@/lib/api';
+import { loginWithKakao } from '@/lib/api/auth';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function KakaoCallbackPage() {
     const router = useRouter();
@@ -12,29 +13,27 @@ export default function KakaoCallbackPage() {
     const handleKakaoLogin = useCallback(async (code: string) => {
         try {
             const redirectUri = window.location.origin + '/auth/kakao';
-            const response = await api.post('/auth/kakao', {
-                code,
-                redirect_uri: redirectUri
-            });
+            const data = await loginWithKakao(code, redirectUri);
 
-            // 이메일 미제공 → 이메일 입력 페이지로 이동
-            if (response.data.requires_email) {
+            // 이메일 미제공 -> 이메일 입력 페이지로 이동
+            if (data.requires_email) {
                 const params = new URLSearchParams({
-                    kakao_id: response.data.kakao_id,
-                    kakao_token: response.data.kakao_token,
-                    nickname: response.data.nickname || '',
+                    kakao_id: data.kakao_id || '',
+                    kakao_token: data.kakao_token || '',
+                    nickname: data.nickname || '',
                 });
                 router.push(`/auth/register-email?${params.toString()}`);
                 return;
             }
 
             // 토큰 저장 후 대시보드로 이동
-            localStorage.setItem('access_token', response.data.access_token);
+            if (data.access_token) {
+                localStorage.setItem('access_token', data.access_token);
+            }
             router.push('/dashboard');
         } catch (err: unknown) {
-            const axiosErr = err as { response?: { data?: { detail?: string } } };
             console.error('Kakao login error:', err);
-            setError(axiosErr.response?.data?.detail || '카카오 로그인에 실패했습니다.');
+            setError(getErrorMessage(err, '카카오 로그인에 실패했습니다.'));
         }
     }, [router]);
 

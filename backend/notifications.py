@@ -1,9 +1,12 @@
 import httpx
 import json
+import logging
 from models import User
 from sqlalchemy.orm import Session
 import database
 from core import config
+
+logger = logging.getLogger(__name__)
 
 
 async def _refresh_kakao_token(user_id: int, refresh_token: str) -> str | None:
@@ -23,7 +26,7 @@ async def _refresh_kakao_token(user_id: int, refresh_token: str) -> str | None:
             )
 
             if response.status_code != 200:
-                print(f"[Kakao] Token refresh failed for user {user_id}: {response.text}")
+                logger.warning("[Kakao] Token refresh failed for user %d: %s", user_id, response.text)
                 return None
 
             token_data = response.json()
@@ -42,17 +45,17 @@ async def _refresh_kakao_token(user_id: int, refresh_token: str) -> str | None:
                     if new_refresh_token:
                         user.kakao_refresh_token = new_refresh_token
                     db.commit()
-                    print(f"[Kakao] Token refreshed for user {user_id}")
+                    logger.info("[Kakao] Token refreshed for user %d", user_id)
             except Exception as e:
                 db.rollback()
-                print(f"[Kakao] Failed to save refreshed token: {e}")
+                logger.error("[Kakao] Failed to save refreshed token: %s", e)
             finally:
                 db.close()
 
             return new_access_token
 
     except Exception as e:
-        print(f"[Kakao] Token refresh error for user {user_id}: {e}")
+        logger.error("[Kakao] Token refresh error for user %d: %s", user_id, e)
         return None
 
 
@@ -86,13 +89,13 @@ async def send_kakao_message(user_id: int, message: str) -> bool:
         db = database.SessionLocal()
         user = db.query(User).filter(User.id == user_id).first()
         if not user or not user.kakao_access_token:
-            print(f"[Kakao] User {user_id}: no access token")
+            logger.warning("[Kakao] User %d: no access token", user_id)
             return False
 
         kakao_token = user.kakao_access_token
         refresh_token = user.kakao_refresh_token
     except Exception as e:
-        print(f"[Kakao] DB error for user {user_id}: {e}")
+        logger.error("[Kakao] DB error for user %d: %s", user_id, e)
         return False
     finally:
         if db:
@@ -103,29 +106,29 @@ async def send_kakao_message(user_id: int, message: str) -> bool:
         status_code = await _send_message(kakao_token, message)
 
         if status_code == 200:
-            print(f"[Kakao] Message sent to user {user_id}")
+            logger.info("[Kakao] Message sent to user %d", user_id)
             return True
 
         # 401 = 토큰 만료 → refresh 시도
         if status_code == 401 and refresh_token:
-            print(f"[Kakao] Token expired for user {user_id}, refreshing...")
+            logger.info("[Kakao] Token expired for user %d, refreshing...", user_id)
             new_token = await _refresh_kakao_token(user_id, refresh_token)
 
             if new_token:
                 # 2차 시도 (갱신된 토큰으로)
                 retry_status = await _send_message(new_token, message)
                 if retry_status == 200:
-                    print(f"[Kakao] Message sent after token refresh for user {user_id}")
+                    logger.info("[Kakao] Message sent after token refresh for user %d", user_id)
                     return True
                 else:
-                    print(f"[Kakao] Retry failed for user {user_id}: status {retry_status}")
+                    logger.warning("[Kakao] Retry failed for user %d: status %d", user_id, retry_status)
             else:
-                print(f"[Kakao] Token refresh failed for user {user_id}")
+                logger.warning("[Kakao] Token refresh failed for user %d", user_id)
         else:
-            print(f"[Kakao] Send failed for user {user_id}: status {status_code}")
+            logger.warning("[Kakao] Send failed for user %d: status %d", user_id, status_code)
 
         return False
 
     except Exception as e:
-        print(f"[Kakao] Error sending message to user {user_id}: {e}")
+        logger.error("[Kakao] Error sending message to user %d: %s", user_id, e)
         return False

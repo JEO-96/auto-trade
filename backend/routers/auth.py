@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -8,6 +9,8 @@ import httpx
 from core import config
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+logger = logging.getLogger(__name__)
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -43,7 +46,7 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
         token_response = await client.post(token_url, data=token_params)
 
         if token_response.status_code != 200:
-            print(f"Kakao token error: {token_response.text}")
+            logger.warning("Kakao token error: %s", token_response.text)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Authentication failed"

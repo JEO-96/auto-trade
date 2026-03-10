@@ -1,13 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { KeyRound, Plus, Save, Trash2, ShieldCheck, Eye, EyeOff, ExternalLink } from 'lucide-react';
-import api from '@/lib/api';
-
-type ExchangeKeyPreview = {
-    id: number;
-    exchange_name: string;
-    api_key_preview: string;
-}
+import Button from '@/components/ui/Button';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EmptyState from '@/components/ui/EmptyState';
+import { SelectInput } from '@/components/ui/Input';
+import { getKeys, saveKey } from '@/lib/api/keys';
+import type { ExchangeKeyPreview } from '@/types/keys';
 
 export default function ApiKeysPage() {
     const [keys, setKeys] = useState<ExchangeKeyPreview[]>([]);
@@ -21,8 +20,8 @@ export default function ApiKeysPage() {
 
     const fetchKeys = async () => {
         try {
-            const res = await api.get('/keys/');
-            setKeys(res.data);
+            const data = await getKeys();
+            setKeys(data);
         } catch (err) {
             console.error("Failed to fetch API keys", err);
         } finally {
@@ -38,10 +37,10 @@ export default function ApiKeysPage() {
         e.preventDefault();
         setSaving(true);
         try {
-            await api.post('/keys/', {
+            await saveKey({
                 exchange_name: exchangeName,
                 api_key: apiKey,
-                api_secret: apiSecret
+                api_secret: apiSecret,
             });
             alert('API 키가 안전하게 저장되었습니다.');
             setApiKey('');
@@ -55,7 +54,7 @@ export default function ApiKeysPage() {
     };
 
     return (
-        <div className="p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in-up">
+        <div className="p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in-up" role="main">
             <header className="mb-8">
                 <h1 className="text-2xl font-bold mb-1 flex items-center gap-2.5">
                     <KeyRound className="w-6 h-6 text-secondary" />
@@ -74,18 +73,16 @@ export default function ApiKeysPage() {
                     </h3>
 
                     <form onSubmit={handleSaveKey} className="space-y-4">
-                        <div>
-                            <label className="text-xs text-gray-500 font-medium mb-1.5 block">거래소 선택</label>
-                            <select
-                                value={exchangeName}
-                                onChange={(e) => setExchangeName(e.target.value)}
-                                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 text-sm text-white focus:border-primary/30 transition-colors"
-                            >
-                                <option value="upbit">Upbit (업비트)</option>
-                                <option value="binance">Binance (바이낸스)</option>
-                                <option value="bybit">Bybit (바이비트)</option>
-                            </select>
-                        </div>
+                        <SelectInput
+                            type="select"
+                            label="거래소 선택"
+                            value={exchangeName}
+                            onChange={(e) => setExchangeName(e.target.value)}
+                        >
+                            <option value="upbit">Upbit (업비트)</option>
+                            <option value="binance">Binance (바이낸스)</option>
+                            <option value="bybit">Bybit (바이비트)</option>
+                        </SelectInput>
 
                         <div>
                             <label className="text-xs text-gray-500 font-medium mb-1.5 block">API Key (Access Key)</label>
@@ -125,14 +122,16 @@ export default function ApiKeysPage() {
                             </p>
                         </div>
 
-                        <button
+                        <Button
                             type="submit"
-                            disabled={saving}
-                            className="w-full bg-primary hover:bg-primary-dark disabled:opacity-40 text-white font-semibold text-sm py-3 rounded-xl flex justify-center items-center gap-2 transition-colors"
+                            variant="primary"
+                            size="lg"
+                            fullWidth
+                            loading={saving}
                         >
                             <Save className="w-4 h-4" />
                             {saving ? "저장 중..." : "저장하기"}
-                        </button>
+                        </Button>
                     </form>
                 </div>
 
@@ -145,13 +144,14 @@ export default function ApiKeysPage() {
 
                     {loading ? (
                         <div className="py-8 text-center">
-                            <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-3" />
-                            <p className="text-sm text-gray-500">불러오는 중...</p>
+                            <LoadingSpinner size="sm" message="불러오는 중..." />
                         </div>
                     ) : keys.length === 0 ? (
                         <div className="text-center py-10 bg-white/[0.02] rounded-xl border border-dashed border-white/[0.06]">
-                            <KeyRound className="w-10 h-10 text-gray-700 mx-auto mb-3" />
-                            <p className="text-sm text-gray-500">등록된 API 키가 없습니다.</p>
+                            <EmptyState
+                                icon={<KeyRound className="w-10 h-10" />}
+                                title="등록된 API 키가 없습니다."
+                            />
                         </div>
                     ) : (
                         <div className="space-y-3">

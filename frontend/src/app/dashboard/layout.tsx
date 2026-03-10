@@ -1,9 +1,10 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield } from 'lucide-react';
 import NavItem from '@/components/ui/NavItem';
 import AuthGuard from '@/components/AuthGuard';
-import api from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { getInitials } from '@/lib/utils';
 
 export default function DashboardLayout({
     children,
@@ -11,18 +12,9 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [user, setUser] = useState<{ email: string; nickname: string; is_admin?: boolean } | null>(null);
+    const { user, logout } = useAuth();
 
-    useEffect(() => {
-        api.get('/auth/me').then(res => {
-            setUser(res.data);
-        }).catch(() => {});
-    }, []);
-
-    const initials = user?.nickname
-        ? user.nickname.slice(0, 2).toUpperCase()
-        : user?.email?.slice(0, 2).toUpperCase() || '??';
-
+    const initials = getInitials(user?.nickname, user?.email);
     const displayName = user?.nickname || user?.email || '사용자';
 
     return (
@@ -84,10 +76,7 @@ export default function DashboardLayout({
                         </div>
 
                         <button
-                            onClick={() => {
-                                localStorage.removeItem('access_token');
-                                window.location.href = '/';
-                            }}
+                            onClick={logout}
                             aria-label="로그아웃"
                             className="flex items-center gap-2.5 w-full px-4 py-2.5 text-gray-500 hover:text-red-400 hover:bg-red-500/[0.06] rounded-lg transition-colors mt-1"
                         >

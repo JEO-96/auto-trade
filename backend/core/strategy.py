@@ -3,14 +3,29 @@ from core.strategies.momentum_breakout_pro_stable import MomentumBreakoutProStab
 from core.strategies.momentum_breakout_pro_aggressive import MomentumBreakoutProAggressiveStrategy
 from core.strategies.momentum_breakout_elite import MomentumBreakoutEliteStrategy
 
-def get_strategy(name="momentum_stable"):
-    if name == "james_pro_elite" or name == "momentum_elite":
-        return MomentumBreakoutEliteStrategy()
-    if name == "james_pro_stable" or name == "momentum_stable":
-        return MomentumBreakoutProStableStrategy()
-    if name == "james_pro_aggressive" or name == "momentum_aggressive":
-        return MomentumBreakoutProAggressiveStrategy()
+# Strategy name -> class mapping
+STRATEGY_MAP = {
+    "james_pro_elite": MomentumBreakoutEliteStrategy,
+    "momentum_elite": MomentumBreakoutEliteStrategy,
+    "james_pro_stable": MomentumBreakoutProStableStrategy,
+    "momentum_stable": MomentumBreakoutProStableStrategy,
+    "james_pro_aggressive": MomentumBreakoutProAggressiveStrategy,
+    "momentum_aggressive": MomentumBreakoutProAggressiveStrategy,
+}
+
+DEFAULT_STRATEGY = "momentum_stable"
+
+
+def get_strategy(name: str = DEFAULT_STRATEGY):
+    """
+    Factory function: returns a strategy instance by name.
+    Falls back to MomentumBreakoutBasicStrategy for unknown names.
+    """
+    strategy_cls = STRATEGY_MAP.get(name)
+    if strategy_cls is not None:
+        return strategy_cls()
     return MomentumBreakoutBasicStrategy()
+
 
 # Alias for backward compatibility
 MomentumBreakoutStrategy = MomentumBreakoutBasicStrategy

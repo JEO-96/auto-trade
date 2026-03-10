@@ -1,11 +1,14 @@
 import asyncio
 import ccxt
+import logging
 import pandas as pd
 import time
 from core import config
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 import models
+
+logger = logging.getLogger(__name__)
 
 class DataFetcher:
     def __init__(self):
@@ -65,7 +68,7 @@ class DataFetcher:
             # Simplified Logic: If no DB data or data is insufficient, fetch everything from API for that range
             # In a production app, we would fetch only the GAPS.
             if len(ohlcv) < (limit if limit else 10):
-                print(f"Cache miss for {symbol} {timeframe}. Fetching from exchange...")
+                logger.info("Cache miss for %s %s. Fetching from exchange...", symbol, timeframe)
                 # Use existing robust fetch logic
                 ohlcv_api = self._fetch_from_api_robust(symbol, timeframe, limit, since, until)
 
@@ -75,7 +78,7 @@ class DataFetcher:
 
                 ohlcv = ohlcv_api
             else:
-                print(f"Loading {len(ohlcv)} candles from DB cache for {symbol} {timeframe}.")
+                logger.info("Loading %d candles from DB cache for %s %s.", len(ohlcv), symbol, timeframe)
 
             if not ohlcv: return None
 
@@ -90,7 +93,7 @@ class DataFetcher:
 
             return df
         except Exception as e:
-            print(f"Error fetching data: {e}")
+            logger.error("Error fetching data: %s", e)
             return None
 
     async def fetch_ohlcv_async(self, symbol=config.SYMBOL, timeframe=config.TIMEFRAME, limit=config.LIMIT, start_date=None, end_date=None, db: Session = None):
@@ -150,7 +153,7 @@ class DataFetcher:
                     time.sleep(max(0.2, self.exchange.rateLimit / 1000))
             return ohlcv
         except Exception as e:
-            print(f"API fetch error: {e}")
+            logger.error("API fetch error: %s", e)
             return []
 
     def _save_to_db(self, db: Session, symbol: str, timeframe: str, data: list):
@@ -181,15 +184,15 @@ class DataFetcher:
             )
             db.execute(stmt)
             db.commit()
-            print(f"Saved up to {len(rows)} new candles to DB cache (duplicates skipped).")
+            logger.info("Saved up to %d new candles to DB cache (duplicates skipped).", len(rows))
         except Exception as e:
             db.rollback()
-            print(f"Failed to save OHLCV to DB: {e}")
+            logger.error("Failed to save OHLCV to DB: %s", e)
 
 if __name__ == "__main__":
     # Test Data Fetcher
     fetcher = DataFetcher()
     df = fetcher.fetch_ohlcv()
     if df is not None:
-        print(f"Successfully fetched {len(df)} candles for {config.SYMBOL}.")
-        print(df.tail())
+        logger.info("Successfully fetched %d candles for %s.", len(df), config.SYMBOL)
+        logger.info("\n%s", df.tail())

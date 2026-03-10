@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import asyncio
@@ -5,16 +6,25 @@ import models, schemas, bot_manager
 from dependencies import get_db, get_current_user
 from typing import List
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/bot", tags=["bots"])
+
+
+def _get_user_bot(bot_id: int, user_id: int, db: Session) -> models.BotConfig:
+    """Fetch a bot config owned by the given user, or raise 404."""
+    bot = db.query(models.BotConfig).filter(
+        models.BotConfig.id == bot_id,
+        models.BotConfig.user_id == user_id,
+    ).first()
+    if not bot:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bot configuration not found.")
+    return bot
+
 
 @router.post("/start/{bot_id}")
 async def start_bot(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    bot_config = db.query(models.BotConfig).filter(
-        models.BotConfig.id == bot_id,
-        models.BotConfig.user_id == current_user.id
-    ).first()
-    if not bot_config:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bot configuration not found.")
+    _get_user_bot(bot_id, current_user.id, db)
 
     if bot_id in bot_manager.active_bots and not bot_manager.active_bots[bot_id].done():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bot already running.")
@@ -26,12 +36,7 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
 
 @router.post("/stop/{bot_id}")
 async def stop_bot(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    bot_config = db.query(models.BotConfig).filter(
-        models.BotConfig.id == bot_id,
-        models.BotConfig.user_id == current_user.id
-    ).first()
-    if not bot_config:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bot configuration not found.")
+    _get_user_bot(bot_id, current_user.id, db)
 
     if bot_id in bot_manager.active_bots:
         task = bot_manager.active_bots.pop(bot_id)
@@ -41,24 +46,14 @@ async def stop_bot(bot_id: int, current_user: models.User = Depends(get_current_
 
 @router.get("/status/{bot_id}")
 def status_bot(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    bot_config = db.query(models.BotConfig).filter(
-        models.BotConfig.id == bot_id,
-        models.BotConfig.user_id == current_user.id
-    ).first()
-    if not bot_config:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bot configuration not found.")
+    _get_user_bot(bot_id, current_user.id, db)
 
     bot_status = bot_manager.get_bot_status(bot_id)
     return {"status": "success", "bot_status": bot_status}
 
 @router.get("/logs/{bot_id}", response_model=list[schemas.TradeLogResponse])
 def get_bot_trade_logs(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    bot_config = db.query(models.BotConfig).filter(
-        models.BotConfig.id == bot_id,
-        models.BotConfig.user_id == current_user.id
-    ).first()
-    if not bot_config:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bot configuration not found.")
+    _get_user_bot(bot_id, current_user.id, db)
 
     logs = db.query(models.TradeLog).filter(
         models.TradeLog.bot_id == bot_id

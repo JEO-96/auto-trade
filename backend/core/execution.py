@@ -1,12 +1,15 @@
 import ccxt
+import logging
 from core import config
+
+logger = logging.getLogger(__name__)
 
 class ExecutionEngine:
     def __init__(self, api_key=None, api_secret=None, exchange_name='binance', paper_trading=True):
         self.paper_trading = paper_trading
         self.exchange = None
 
-        print(f"Execution Engine initialized. Paper Trading: {self.paper_trading}")
+        logger.info("Execution Engine initialized. Paper Trading: %s", self.paper_trading)
 
         if not self.paper_trading and api_key and api_secret:
             try:
@@ -18,9 +21,9 @@ class ExecutionEngine:
                 })
                 # Check connection
                 self.exchange.fetch_balance()
-                print(f"[{exchange_name.upper()}] Live trading connected successfully!")
+                logger.info("[%s] Live trading connected successfully!", exchange_name.upper())
             except Exception as e:
-                print(f"Failed to connect to {exchange_name}: {e}")
+                logger.error("Failed to connect to %s: %s", exchange_name, e)
                 self.exchange = None
 
     @staticmethod
@@ -43,31 +46,31 @@ class ExecutionEngine:
         Executes a Buy order.
         """
         if price <= 0:
-            print(f"[ERROR] Cannot execute BUY for {symbol}: price is {price}")
+            logger.error("Cannot execute BUY for %s: price is %s", symbol, price)
             return {"status": "error", "message": "Invalid price (<=0)"}
 
         amount = amount_usd / price
 
         if amount <= 0:
-            print(f"[ERROR] Cannot execute BUY for {symbol}: computed amount is {amount}")
+            logger.error("Cannot execute BUY for %s: computed amount is %s", symbol, amount)
             return {"status": "error", "message": "Invalid amount (<=0)"}
 
         if self.paper_trading or not self.exchange:
-            print(f"[PAPER] BUY executed for {symbol} at {price:.2f}. Amount: {amount:.4f}")
+            logger.info("[PAPER] BUY executed for %s at %.2f. Amount: %.4f", symbol, price, amount)
             return {"status": "success", "price": price, "amount": amount}
         else:
             try:
                 # CCXT real market order
-                print(f"[LIVE] Executing BUY Market order for {symbol}...")
+                logger.info("[LIVE] Executing BUY Market order for %s...", symbol)
                 order = self.exchange.create_market_buy_order(symbol, amount)
                 executed_price = self._resolve_executed_price(order, price)
                 filled = order.get('filled')
                 if filled is None or filled <= 0:
                     filled = amount
-                print(f"[LIVE] BUY Order Successful! ID: {order['id']}")
+                logger.info("[LIVE] BUY Order Successful! ID: %s", order['id'])
                 return {"status": "success", "price": executed_price, "amount": filled}
             except Exception as e:
-                print(f"[LIVE] Error executing BUY: {e}")
+                logger.error("[LIVE] Error executing BUY: %s", e)
                 return {"status": "error", "message": str(e)}
 
     def execute_sell(self, symbol, price, amount, reason="Take Profit"):
@@ -75,22 +78,22 @@ class ExecutionEngine:
         Executes a Sell order (Full Exit).
         """
         if amount <= 0:
-            print(f"[ERROR] Cannot execute SELL for {symbol}: amount is {amount}")
+            logger.error("Cannot execute SELL for %s: amount is %s", symbol, amount)
             return {"status": "error", "message": "Invalid amount (<=0)"}
 
         if self.paper_trading or not self.exchange:
             pnl_usd = price * amount
-            print(f"[PAPER] SELL ({reason}) executed for {symbol} at {price:.2f}. Returns: {pnl_usd:.2f} USD")
+            logger.info("[PAPER] SELL (%s) executed for %s at %.2f. Returns: %.2f USD", reason, symbol, price, pnl_usd)
             return {"status": "success", "price": price}
         else:
             try:
-                print(f"[LIVE] Executing SELL Market order for {symbol}...")
+                logger.info("[LIVE] Executing SELL Market order for %s...", symbol)
                 order = self.exchange.create_market_sell_order(symbol, amount)
                 executed_price = self._resolve_executed_price(order, price)
-                print(f"[LIVE] SELL Order Successful! ID: {order['id']}")
+                logger.info("[LIVE] SELL Order Successful! ID: %s", order['id'])
                 return {"status": "success", "price": executed_price}
             except Exception as e:
-                print(f"[LIVE] Error executing SELL: {e}")
+                logger.error("[LIVE] Error executing SELL: %s", e)
                 return {"status": "error", "message": str(e)}
 
     def check_active_orders(self):

@@ -1,5 +1,6 @@
-from dotenv import load_dotenv
-load_dotenv()
+import logging
+from log_config import setup_logging
+setup_logging(level=logging.INFO)
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +9,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import models, database
 from routers import auth, bots, keys, backtest, admin
+from settings import settings
 
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -20,11 +22,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://jooeunoh.com",
-        "https://jooeunoh.com",
-    ],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

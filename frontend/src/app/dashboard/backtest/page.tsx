@@ -1,11 +1,19 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings } from 'lucide-react';
-import api from '@/lib/api';
+import Button from '@/components/ui/Button';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EmptyState from '@/components/ui/EmptyState';
+import Badge from '@/components/ui/Badge';
+import PageContainer from '@/components/ui/PageContainer';
+import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS } from '@/lib/constants';
+import { runPortfolioBacktest, getBacktestStatus } from '@/lib/api/backtest';
+import { getErrorMessage } from '@/lib/utils';
+import type { BacktestResult, BacktestTrade, EquityCurvePoint } from '@/types/backtest';
 
 export default function BacktestPage() {
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<BacktestResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [progress, setProgress] = useState(0);
     const [progressMessage, setProgressMessage] = useState('');
@@ -49,27 +57,26 @@ export default function BacktestPage() {
     const pollStatus = async (taskId: string) => {
         intervalRef.current = setInterval(async () => {
             try {
-                const res = await api.get(`/backtest/status/${taskId}`);
-                const { status, progress: prog, message, result: resData } = res.data;
+                const data = await getBacktestStatus(taskId);
 
-                setProgress(prog);
-                setProgressMessage(message);
+                setProgress(data.progress);
+                setProgressMessage(data.message);
 
-                if (status === 'completed') {
+                if (data.status === 'completed') {
                     if (intervalRef.current) clearInterval(intervalRef.current);
-                    setResult(resData);
+                    setResult(data.result ?? null);
                     setLoading(false);
-                } else if (status === 'failed') {
+                } else if (data.status === 'failed') {
                     if (intervalRef.current) clearInterval(intervalRef.current);
-                    setError(message || '백테스트 중 오류가 발생했습니다.');
+                    setError(data.message || '백테스트 중 오류가 발생했습니다.');
                     setLoading(false);
                 }
-            } catch (err) {
+            } catch {
                 if (intervalRef.current) clearInterval(intervalRef.current);
                 setError('상태 확인 중 오류가 발생했습니다.');
                 setLoading(false);
             }
-        }, 1000);
+        }, BACKTEST_POLL_INTERVAL_MS);
     };
 
     const runBacktest = async (e: React.FormEvent) => {
@@ -81,34 +88,33 @@ export default function BacktestPage() {
         setProgressMessage('백테스트 작업을 시작합니다...');
 
         try {
-            const res = await api.post('/backtest/portfolio', {
+            const data = await runPortfolioBacktest({
                 symbols: form.symbols,
                 timeframe: form.timeframe,
                 strategy_name: form.strategy_name,
                 limit: useDateRange ? null : Number(form.limit),
                 start_date: useDateRange ? form.start_date : null,
                 end_date: useDateRange ? form.end_date : null,
-                initial_capital: Number(form.initial_capital)
+                initial_capital: Number(form.initial_capital),
             });
 
-            if (res.data.status === 'running' && res.data.task_id) {
-                pollStatus(res.data.task_id);
-            } else if (res.data.status === 'success') {
-                setResult(res.data);
+            if (data.status === 'running' && data.task_id) {
+                pollStatus(data.task_id);
+            } else if (data.status === 'success') {
+                setResult(data as unknown as BacktestResult);
                 setLoading(false);
             } else {
-                setError(res.data.message || '백테스트 중 오류가 발생했습니다.');
+                setError(data.message || '백테스트 중 오류가 발생했습니다.');
                 setLoading(false);
             }
         } catch (err: unknown) {
-            const axiosErr = err as { response?: { data?: { detail?: string } } };
-            setError(axiosErr.response?.data?.detail || '서버와의 통신에 실패했습니다.');
+            setError(getErrorMessage(err, '서버와의 통신에 실패했습니다.'));
             setLoading(false);
         }
     };
 
     return (
-        <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in-up">
+        <PageContainer>
             <header className="mb-8">
                 <h1 className="text-2xl font-bold mb-1 text-white">전략 백테스팅</h1>
                 <p className="text-sm text-gray-500 max-w-xl">
@@ -130,7 +136,7 @@ export default function BacktestPage() {
                             <div>
                                 <label className="text-xs text-gray-500 font-medium mb-2 block">분석 대상 자산</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {['BTC/KRW', 'ETH/KRW', 'SOL/KRW', 'XRP/KRW'].map(s => (
+                                    {SYMBOLS.map(s => (
                                         <button
                                             key={s}
                                             type="button"
@@ -270,17 +276,15 @@ export default function BacktestPage() {
                                 </div>
                             </div>
 
-                            <button
+                            <Button
                                 type="submit"
-                                disabled={loading}
-                                className="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-dark text-white font-semibold text-sm transition-all shadow-glow-primary disabled:opacity-40 flex items-center justify-center gap-2"
+                                variant="primary"
+                                size="lg"
+                                fullWidth
+                                loading={loading}
                             >
-                                {loading ? (
-                                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                ) : (
-                                    <><Play className="w-4 h-4 fill-white" /> 백테스트 실행</>
-                                )}
-                            </button>
+                                <Play className="w-4 h-4 fill-white" /> 백테스트 실행
+                            </Button>
                         </form>
                     </div>
                 </div>
@@ -295,17 +299,19 @@ export default function BacktestPage() {
 
                     {loading && (
                         <div className="glass-panel flex-1 rounded-2xl flex flex-col items-center justify-center p-12 min-h-[400px]">
-                            <div className="w-14 h-14 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
-                            <p className="text-xl font-bold text-white mb-1">{Math.round(progress)}%</p>
+                            <LoadingSpinner size="lg" />
+                            <p className="text-xl font-bold text-white mb-1 mt-4">{Math.round(progress)}%</p>
                             <p className="text-sm text-primary">{progressMessage}</p>
                         </div>
                     )}
 
                     {!result && !loading && (
                         <div className="glass-panel flex-1 rounded-2xl flex flex-col items-center justify-center p-16 text-center">
-                            <Activity className="w-12 h-12 text-gray-700 mb-4" />
-                            <h3 className="text-lg font-semibold text-gray-400 mb-1">분석 대기 중</h3>
-                            <p className="text-sm text-gray-600">전략을 설정하고 실행 버튼을 눌러주세요.</p>
+                            <EmptyState
+                                icon={<Activity className="w-12 h-12" />}
+                                title="분석 대기 중"
+                                description="전략을 설정하고 실행 버튼을 눌러주세요."
+                            />
                         </div>
                     )}
 
@@ -383,7 +389,7 @@ export default function BacktestPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/[0.03]">
-                                            {result.trades.map((trade: any, idx: number) => (
+                                            {result.trades.map((trade: BacktestTrade, idx: number) => (
                                                 <tr key={idx} className="hover:bg-white/[0.02] transition-colors text-sm">
                                                     <td className="px-5 py-4">
                                                         <p className="text-xs text-gray-300">
@@ -397,12 +403,9 @@ export default function BacktestPage() {
                                                         <span className="font-semibold text-white">{trade.symbol?.split('/')[0]}</span>
                                                     </td>
                                                     <td className="px-5 py-4 text-center">
-                                                        <span className={`inline-flex px-2.5 py-1 rounded-md text-[10px] font-semibold ${trade.side === 'BUY'
-                                                            ? 'bg-emerald-500/10 text-emerald-400'
-                                                            : 'bg-red-500/10 text-red-400'
-                                                            }`}>
+                                                        <Badge variant={trade.side === 'BUY' ? 'success' : 'danger'}>
                                                             {trade.side === 'BUY' ? '매수' : '매도'}
-                                                        </span>
+                                                        </Badge>
                                                     </td>
                                                     <td className="px-5 py-4 text-right font-mono text-sm text-gray-300">
                                                         ₩{Number(trade.price ?? 0).toLocaleString()}
@@ -425,11 +428,11 @@ export default function BacktestPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </PageContainer>
     );
 }
 
-function EquityCurveChart({ data }: { data: { time: string, value: number }[] }) {
+function EquityCurveChart({ data }: { data: EquityCurvePoint[] }) {
     if (!data || data.length === 0) return null;
 
     const values = data.map(d => d.value);

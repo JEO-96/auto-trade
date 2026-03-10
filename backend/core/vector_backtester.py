@@ -1,3 +1,5 @@
+import logging
+import traceback
 import pandas as pd
 import numpy as np
 import vectorbt as vbt
@@ -9,6 +11,8 @@ import uuid
 import threading
 import time
 from typing import Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 # Global storage for backtest tasks
 # task_id -> {status, progress, result}
@@ -59,9 +63,8 @@ class VectorBacktester:
             backtest_tasks[task_id]["message"] = "Backtest completed."
             backtest_tasks[task_id]["completed_at"] = time.time()
         except Exception as e:
-            print(f"Async backtest error: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error("Async backtest error: %s", e)
+            logger.debug(traceback.format_exc())
             backtest_tasks[task_id]["status"] = "failed"
             backtest_tasks[task_id]["message"] = str(e)
 
@@ -97,7 +100,7 @@ class VectorBacktester:
                       initial_capital=1000000.0, start_date=None,
                       end_date=None, db=None, task_id=None):
         """Core backtest execution for both single and multi-asset."""
-        print(f"--- [VectorBacktest] Symbols: {symbols} ---")
+        logger.info("--- [VectorBacktest] Symbols: %s ---", symbols)
 
         if not symbols:
             return {"status": "error", "message": "No symbols provided."}
@@ -240,14 +243,14 @@ class VectorBacktester:
         try:
             vbt_trades = portfolio.trades.records_readable
         except Exception as e:
-            print(f"[WARN] Could not read trades from portfolio: {e}")
+            logger.warning("Could not read trades from portfolio: %s", e)
             return []
 
         if vbt_trades.empty:
             return []
 
         cols = vbt_trades.columns.tolist()
-        print(f"[DEBUG] vectorbt trades columns: {cols}")
+        logger.debug("vectorbt trades columns: %s", cols)
 
         # Resolve column names
         entry_price_col = self._resolve_column(cols, 'Entry Price', 'Avg Entry Price')

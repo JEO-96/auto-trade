@@ -1,18 +1,15 @@
-import os
 import urllib.parse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
+from settings import settings
 
 # AWS Lightsail PostgreSQL Connection Info
-DB_USER = os.getenv("DB_USER", "dbmasteruser")
-DB_PASS = os.getenv("DB_PASS")
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_NAME = os.getenv("DB_NAME", "postgres")
-
-if not DB_PASS or not DB_HOST:
-    raise RuntimeError("DB_PASS and DB_HOST must be set as environment variables")
+DB_USER = settings.db_user
+DB_PASS = settings.db_pass
+DB_HOST = settings.db_host
+DB_PORT = settings.db_port
+DB_NAME = settings.db_name
 
 # URL encoding is required because the password contains special characters ($, [, ^, etc.)
 safe_password = urllib.parse.quote_plus(DB_PASS)

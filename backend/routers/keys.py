@@ -1,31 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from cryptography.fernet import Fernet
-import os
 import models, schemas
 from dependencies import get_db, get_current_user
+from crypto_utils import encrypt_key, decrypt_key
 
 router = APIRouter(prefix="/keys", tags=["keys"])
-
-
-def get_fernet() -> Fernet:
-    key = os.getenv("FERNET_KEY")
-    if not key:
-        raise RuntimeError(
-            "FERNET_KEY environment variable is not set. "
-            "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
-        )
-    return Fernet(key.encode())
-
-
-def encrypt_key(text: str) -> str:
-    f = get_fernet()
-    return f.encrypt(text.encode()).decode()
-
-
-def decrypt_key(text: str) -> str:
-    f = get_fernet()
-    return f.decrypt(text.encode()).decode()
 
 
 @router.post("/", response_model=schemas.ExchangeKeyResponse)

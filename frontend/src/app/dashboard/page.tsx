@@ -1,24 +1,30 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { Play, StopCircle, Activity, Settings2, BarChart2, AlertTriangle, TrendingUp, TrendingDown, Clock, Wallet, ArrowUpRight, Zap, ListFilter } from 'lucide-react';
-import api from '@/lib/api';
 import StatCard from '@/components/ui/StatCard';
 import RiskDisclaimerModal from '@/components/RiskDisclaimerModal';
+import Button from '@/components/ui/Button';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EmptyState from '@/components/ui/EmptyState';
+import PageContainer from '@/components/ui/PageContainer';
+import { BOT_POLL_INTERVAL_MS } from '@/lib/constants';
+import { getBotList, getBotStatus, getBotLogs, startBot, stopBot } from '@/lib/api/bot';
+import type { TradeLog } from '@/types/bot';
 
 export default function DashboardPage() {
     const [isBotActive, setIsBotActive] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [tradeLogs, setTradeLogs] = useState<any[]>([]);
+    const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
     const [showRiskModal, setShowRiskModal] = useState(false);
     const [botId, setBotId] = useState<number | null>(null);
 
     const fetchStatusAndLogs = useCallback(async (id: number) => {
         try {
-            const statusRes = await api.get(`/bot/status/${id}`);
-            setIsBotActive(statusRes.data.bot_status === 'Running');
+            const status = await getBotStatus(id);
+            setIsBotActive(status.bot_status === 'Running');
 
-            const logRes = await api.get(`/bot/logs/${id}`);
-            setTradeLogs(logRes.data);
+            const logs = await getBotLogs(id);
+            setTradeLogs(logs);
         } catch (err) {
             console.error("상태 및 로그를 불러올 수 없습니다", err);
         }
@@ -27,8 +33,7 @@ export default function DashboardPage() {
     useEffect(() => {
         const initializeBotId = async () => {
             try {
-                const res = await api.get('/bot/list');
-                const bots: any[] = res.data;
+                const bots = await getBotList();
                 if (bots.length > 0) {
                     const firstId = bots[0].id;
                     setBotId(firstId);
@@ -48,7 +53,7 @@ export default function DashboardPage() {
         if (botId === null) return;
         const interval = setInterval(() => {
             fetchStatusAndLogs(botId);
-        }, 10000);
+        }, BOT_POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, [botId, fetchStatusAndLogs]);
 
@@ -60,7 +65,7 @@ export default function DashboardPage() {
         setShowRiskModal(false);
         if (botId === null) return;
         try {
-            await api.post(`/bot/start/${botId}`);
+            await startBot(botId);
             setIsBotActive(true);
         } catch {
             alert("서버 연결에 실패했거나 권한이 없습니다.");
@@ -70,7 +75,7 @@ export default function DashboardPage() {
     const handleStop = async () => {
         if (botId === null) return;
         try {
-            await api.post(`/bot/stop/${botId}`);
+            await stopBot(botId);
             setIsBotActive(false);
         } catch {
             alert("서버 연결에 실패했거나 권한이 없습니다.");
@@ -79,15 +84,12 @@ export default function DashboardPage() {
 
     if (loading) return (
         <div className="flex items-center justify-center h-[80vh]">
-            <div className="flex flex-col items-center gap-4">
-                <div className="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-                <p className="text-gray-500 text-sm font-medium">데이터 불러오는 중...</p>
-            </div>
+            <LoadingSpinner message="데이터 불러오는 중..." />
         </div>
     );
 
     return (
-        <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in-up">
+        <PageContainer>
             {showRiskModal && (
                 <RiskDisclaimerModal
                     onConfirm={handleRiskConfirm}
@@ -158,23 +160,29 @@ export default function DashboardPage() {
                         </h3>
 
                         {isBotActive ? (
-                            <button
+                            <Button
+                                variant="danger"
+                                size="lg"
+                                fullWidth
                                 onClick={handleStop}
                                 disabled={botId === null}
-                                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-red-500/[0.08] hover:bg-red-500/[0.15] text-red-400 border border-red-500/20 rounded-xl font-semibold text-sm mb-6 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="mb-6"
                             >
                                 <StopCircle className="w-5 h-5" />
                                 엔진 정지
-                            </button>
+                            </Button>
                         ) : (
-                            <button
+                            <Button
+                                variant="primary"
+                                size="lg"
+                                fullWidth
                                 onClick={handleStartClick}
                                 disabled={botId === null}
-                                className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-semibold text-sm shadow-glow-primary mb-6 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="mb-6"
                             >
                                 <Play className="w-5 h-5" />
                                 엔진 가동
-                            </button>
+                            </Button>
                         )}
 
                         <div className="space-y-3">
@@ -260,11 +268,11 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
                             )) : (
-                                <div className="flex flex-col items-center justify-center py-16 text-center">
-                                    <Clock className="w-12 h-12 mb-4 text-gray-700" />
-                                    <p className="text-base font-semibold text-gray-400">거래 내역이 없습니다</p>
-                                    <p className="text-sm text-gray-600 mt-1">엔진을 가동하면 거래 타임라인이 표시됩니다.</p>
-                                </div>
+                                <EmptyState
+                                    icon={<Clock className="w-12 h-12" />}
+                                    title="거래 내역이 없습니다"
+                                    description="엔진을 가동하면 거래 타임라인이 표시됩니다."
+                                />
                             )}
 
                             {isBotActive && (
@@ -282,6 +290,6 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </PageContainer>
     );
 }
