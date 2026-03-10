@@ -12,7 +12,7 @@ import Input, { SelectInput } from '@/components/ui/Input';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import PageContainer from '@/components/ui/PageContainer';
-import { BOT_POLL_INTERVAL_MS, BOT_STRATEGIES, BOT_TIMEFRAMES } from '@/lib/constants';
+import { SYMBOLS, BOT_POLL_INTERVAL_MS, BOT_STRATEGIES, BOT_TIMEFRAMES } from '@/lib/constants';
 import {
     getBotList, getBotStatus, getBotLogs, startBot, stopBot,
     createBot, updateBot, deleteBot,
@@ -318,13 +318,25 @@ export default function DashboardPage() {
                                 </div>
                             )}
 
-                            <Input
-                                label="심볼 (Symbol)"
-                                value={formData.symbol}
-                                onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
-                                placeholder="BTC/KRW"
-                                required
-                            />
+                            <div>
+                                <label className="text-xs text-gray-500 font-medium mb-2 block">심볼 (Symbol)</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {SYMBOLS.map(s => (
+                                        <button
+                                            key={s}
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, symbol: s })}
+                                            className={`py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                                                formData.symbol === s
+                                                    ? 'bg-primary/10 border-primary/30 text-primary'
+                                                    : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10 hover:text-gray-300'
+                                            }`}
+                                        >
+                                            {s.split('/')[0]} <span className="opacity-40 text-[10px]">/ KRW</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
                             <SelectInput
                                 type="select"
