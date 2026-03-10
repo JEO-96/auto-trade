@@ -387,6 +387,7 @@ export default function BacktestPage() {
                                     <option value="james_pro_stable">모멘텀 PRO (안정형)</option>
                                     <option value="james_pro_aggressive">모멘텀 PRO (공격형)</option>
                                     <option value="james_basic">모멘텀 돌파 (기본)</option>
+                                    <option value="steady_compounder">스테디 복리 (주간 안정형)</option>
                                 </select>
                             </div>
 

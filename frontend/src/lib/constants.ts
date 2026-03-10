@@ -4,6 +4,7 @@ export const STRATEGIES = [
     { value: 'james_pro_stable', label: '모멘텀 돌파 Pro (안정형)' },
     { value: 'james_pro_aggressive', label: '모멘텀 돌파 Pro (공격형)' },
     { value: 'james_pro_elite', label: '모멘텀 돌파 Elite' },
+    { value: 'steady_compounder', label: '스테디 복리 (주간 안정형)' },
 ] as const;
 
 export const BOT_STRATEGIES = [
@@ -11,6 +12,7 @@ export const BOT_STRATEGIES = [
     { value: 'momentum_breakout_pro_stable', label: '모멘텀 돌파 Pro (안정형)' },
     { value: 'momentum_breakout_pro_aggressive', label: '모멘텀 돌파 Pro (공격형)' },
     { value: 'momentum_breakout_elite', label: '모멘텀 돌파 Elite' },
+    { value: 'steady_compounder', label: '스테디 복리 (주간 안정형)' },
 ] as const;
 
 export const BOT_TIMEFRAMES = [
