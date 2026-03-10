@@ -49,7 +49,9 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
                 detail="Authentication failed"
             )
 
-        kakao_token = token_response.json().get("access_token")
+        token_data = token_response.json()
+        kakao_token = token_data.get("access_token")
+        kakao_refresh = token_data.get("refresh_token")
 
         # 2. Get user information using the access token
         user_info_url = "https://kapi.kakao.com/v2/user/me"
@@ -93,9 +95,11 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
                 user = models.User(email=email, kakao_id=kakao_id)
                 db.add(user)
 
-        # Always update nickname and access token from Kakao
+        # Always update nickname and tokens from Kakao
         user.nickname = nickname
         user.kakao_access_token = kakao_token
+        if kakao_refresh:
+            user.kakao_refresh_token = kakao_refresh
 
         db.commit()
         db.refresh(user)
@@ -146,6 +150,7 @@ async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteR
         user.email = data.email
 
     user.kakao_access_token = data.kakao_token
+    # kakao_complete_register에서는 refresh_token이 없으므로 기존 값 유지
     db.commit()
     db.refresh(user)
 
