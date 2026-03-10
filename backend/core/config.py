@@ -31,7 +31,7 @@ VOLUME_SPIKE_MULTIPLIER = 2.0  # Volume must be > 200% of the MA
 # Risk Management Parameters
 # ---------------------------------------------------------
 RISK_PER_TRADE = 0.02    # Risk 2% of equity per trade
-RISK_REWARD_RATIO = 1.5  # Target profit is 1.5x the risk (basic strategy)
+RISK_REWARD_RATIO = 2.0  # Target profit is 2x the risk (stop loss distance)
 
 # ---------------------------------------------------------
 # Kakao OAuth Configuration

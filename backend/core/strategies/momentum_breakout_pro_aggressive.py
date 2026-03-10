@@ -21,9 +21,9 @@ class MomentumBreakoutProAggressiveStrategy(BaseStrategy):
         self.adx_threshold = 20
         self.volume_multiplier = 1.8
 
-        # Exit parameters (wider stops, 1:2.5 risk-reward)
+        # Exit parameters (wider stops, 1:4 risk-reward)
         self.atr_sl_multiplier = 2.0
-        self.atr_tp_multiplier = 2.5
+        self.atr_tp_multiplier = 4.0
         self.trailing_stop_multiplier = 2.5
 
         # Pullback ADX threshold
@@ -58,18 +58,6 @@ class MomentumBreakoutProAggressiveStrategy(BaseStrategy):
             return False
         if current['DMP_14'] <= current['DMN_14']:
             return False
-
-        # RSI 과열 구간 진입 방지
-        if current[self.rsi_col] > 80:
-            return False
-
-        # MACD 히스토그램 증가 확인
-        macd_hist_col = f"MACDh_{self.macd_fast}_{self.macd_slow}_{self.macd_signal}"
-        hist_curr = current.get(macd_hist_col, None)
-        hist_prev = prev.get(macd_hist_col, None)
-        if hist_curr is not None and hist_prev is not None and not pd.isna(hist_curr) and not pd.isna(hist_prev):
-            if hist_curr <= hist_prev:
-                return False
 
         # AGGRESSIVE criteria: Lower thresholds for faster entry
         breakout = (
