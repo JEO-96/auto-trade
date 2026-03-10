@@ -15,48 +15,49 @@ jobs:
 
     steps:
     - name: Deploy via SSH
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_IP }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script_stop: true
-        command_timeout: 15m
-        script: |
-          set -e
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key \
+          ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} \
+          'bash -s' << 'DEPLOY_SCRIPT'
+        set -e
 
-          cd ~/traiding-bot
+        cd ~/traiding-bot
 
-          # 1. 최신 코드
-          git fetch origin main
-          git reset --hard origin/main
+        # 1. 최신 코드
+        git fetch origin main
+        git reset --hard origin/main
 
-          # 2. 서버에서 직접 빌드 & 시작
-          docker-compose up -d --build
+        # 2. 서버에서 직접 빌드 & 시작
+        docker-compose up -d --build
 
-          # 3. 헬스체크 (최대 120초)
-          echo "Waiting for services..."
-          for i in $(seq 1 24); do
-            if curl -sf http://127.0.0.1:8000/docs > /dev/null 2>&1; then
-              echo "Backend is healthy!"
-              break
-            fi
-            if [ "$i" -eq 24 ]; then
-              echo "WARNING: Health check timed out"
-              docker-compose logs --tail=20 backend
-            fi
-            echo "Waiting... ($i/24)"
-            sleep 5
-          done
+        # 3. 헬스체크 (최대 120초)
+        echo "Waiting for services..."
+        for i in $(seq 1 24); do
+          if curl -sf http://127.0.0.1:8000/docs > /dev/null 2>&1; then
+            echo "Backend is healthy!"
+            break
+          fi
+          if [ "$i" -eq 24 ]; then
+            echo "WARNING: Health check timed out"
+            docker-compose logs --tail=20 backend
+          fi
+          echo "Waiting... ($i/24)"
+          sleep 5
+        done
 
-          docker-compose ps
+        docker-compose ps
 
-          # 4. 미사용 이미지 정리
-          docker image prune -f
+        # 4. 미사용 이미지 정리
+        docker image prune -f
 
-          echo "Deployment Successful!"
+        echo "Deployment Successful!"
+        DEPLOY_SCRIPT
+        rm -f ~/.ssh/deploy_key
 
 # 💡 GitHub Secrets 설정 (Settings → Secrets and variables → Actions):
-#    - SERVER_IP: 서버 공인 IP
+#    - SERVER_IP: 서버 공인 IP (IPv4 또는 IPv6)
 #    - SERVER_USERNAME: 서버 접속 계정 (예: ubuntu, root)
 #    - SSH_PRIVATE_KEY: 서버 SSH 개인 키 내용
