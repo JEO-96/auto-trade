@@ -7,7 +7,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import models, database
-from routers import auth, bots, keys, backtest
+from routers import auth, bots, keys, backtest, admin
 
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -34,3 +34,4 @@ app.include_router(auth.router)
 app.include_router(bots.router)
 app.include_router(keys.router)
 app.include_router(backtest.router)
+app.include_router(admin.router)

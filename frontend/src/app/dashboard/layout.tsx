@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X } from 'lucide-react';
+import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield } from 'lucide-react';
 import NavItem from '@/components/ui/NavItem';
 import AuthGuard from '@/components/AuthGuard';
 import api from '@/lib/api';
@@ -11,7 +11,7 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [user, setUser] = useState<{ email: string; nickname: string } | null>(null);
+    const [user, setUser] = useState<{ email: string; nickname: string; is_admin?: boolean } | null>(null);
 
     useEffect(() => {
         api.get('/auth/me').then(res => {
@@ -66,6 +66,9 @@ export default function DashboardLayout({
                         <NavItem href="/dashboard/keys" icon={<Key className="w-[18px] h-[18px]" />} label="API 설정" />
                         <NavItem href="/dashboard/backtest" icon={<BarChart2 className="w-[18px] h-[18px]" />} label="백테스팅" />
                         <NavItem href="/dashboard/settings" icon={<Settings className="w-[18px] h-[18px]" />} label="시스템 설정" />
+                        {user?.is_admin && (
+                            <NavItem href="/dashboard/admin" icon={<Shield className="w-[18px] h-[18px]" />} label="사용자 관리" />
+                        )}
                     </nav>
 
                     {/* User */}

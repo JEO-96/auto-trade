@@ -26,3 +26,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account deactivated")
     return user
+
+def get_admin_user(current_user: models.User = Depends(get_current_user)) -> models.User:
+    """관리자 권한 검증 의존성. is_admin이 True인 사용자만 허용."""
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="관리자 권한이 필요합니다.",
+        )
+    return current_user

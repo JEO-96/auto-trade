@@ -13,6 +13,7 @@ class User(Base):
     kakao_id = Column(String, unique=True, index=True, nullable=True)
     kakao_access_token = Column(String, nullable=True) # For "Send to Me" messages
     is_active = Column(Boolean, default=False) # Changed to False by default
+    is_admin = Column(Boolean, default=False) # 관리자 여부
     created_at = Column(DateTime, default=lambda: datetime.utcnow()) # Added registration time
 
     bots = relationship("BotConfig", back_populates="owner")

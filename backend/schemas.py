@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
+from datetime import datetime
 
 # -------- User Schemas --------
 class UserBase(BaseModel):
@@ -12,6 +13,18 @@ class UserResponse(UserBase):
     id: int
     nickname: Optional[str] = None
     is_active: bool
+
+    class Config:
+        from_attributes = True
+
+# -------- Admin Schemas --------
+class AdminUserResponse(BaseModel):
+    id: int
+    email: str
+    nickname: Optional[str] = None
+    is_active: bool
+    is_admin: bool
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
