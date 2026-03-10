@@ -17,8 +17,9 @@ import {
     getBotList, getBotStatus, getBotLogs, startBot, stopBot,
     createBot, updateBot, deleteBot,
 } from '@/lib/api/bot';
+import { getUpbitBalance, type BalanceItem } from '@/lib/api/keys';
 import { getErrorMessage } from '@/lib/utils';
-import type { BotConfig, BotCreateRequest, TradeLog } from '@/types/bot';
+import type { BotConfig, TradeLog } from '@/types/bot';
 
 type ModalMode = 'create' | 'edit';
 
@@ -32,8 +33,8 @@ for (const t of BOT_TIMEFRAMES) {
     TIMEFRAME_LABEL_MAP[t.value] = t.label;
 }
 
-const defaultFormState: BotCreateRequest = {
-    symbol: 'BTC/KRW',
+const defaultFormState = {
+    symbols: ['BTC/KRW'] as string[],
     timeframe: '1h',
     strategy_name: 'momentum_breakout_pro_stable',
     paper_trading_mode: true,
@@ -58,7 +59,7 @@ export default function DashboardPage() {
     const [showBotModal, setShowBotModal] = useState(false);
     const [modalMode, setModalMode] = useState<ModalMode>('create');
     const [editingBotId, setEditingBotId] = useState<number | null>(null);
-    const [formData, setFormData] = useState<BotCreateRequest>({ ...defaultFormState });
+    const [formData, setFormData] = useState<typeof defaultFormState>({ ...defaultFormState });
     const [formLoading, setFormLoading] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
 
@@ -68,6 +69,9 @@ export default function DashboardPage() {
 
     // Action loading per bot
     const [actionLoading, setActionLoading] = useState<Record<number, boolean>>({});
+
+    // Upbit balance
+    const [balances, setBalances] = useState<BalanceItem[]>([]);
 
     const fetchBots = useCallback(async () => {
         try {
@@ -113,10 +117,20 @@ export default function DashboardPage() {
         }
     }, []);
 
+    const fetchBalance = useCallback(async () => {
+        try {
+            const data = await getUpbitBalance();
+            setBalances(data);
+        } catch {
+            // API 키 미등록 등 — 무시
+        }
+    }, []);
+
     // Initial load
     useEffect(() => {
         fetchBots();
-    }, [fetchBots]);
+        fetchBalance();
+    }, [fetchBots, fetchBalance]);
 
     // Fetch logs when selected bot changes
     useEffect(() => {
@@ -183,7 +197,7 @@ export default function DashboardPage() {
         setModalMode('edit');
         setEditingBotId(bot.id);
         setFormData({
-            symbol: bot.symbol,
+            symbols: [bot.symbol],
             timeframe: bot.timeframe,
             strategy_name: bot.strategy_name,
             paper_trading_mode: bot.paper_trading_mode,
@@ -199,9 +213,28 @@ export default function DashboardPage() {
         setFormError(null);
         try {
             if (modalMode === 'create') {
-                await createBot(formData);
+                if (formData.symbols.length === 0) {
+                    setFormError('심볼을 1개 이상 선택해주세요.');
+                    setFormLoading(false);
+                    return;
+                }
+                for (const symbol of formData.symbols) {
+                    await createBot({
+                        symbol,
+                        timeframe: formData.timeframe,
+                        strategy_name: formData.strategy_name,
+                        paper_trading_mode: formData.paper_trading_mode,
+                        allocated_capital: formData.allocated_capital,
+                    });
+                }
             } else if (editingBotId !== null) {
-                await updateBot(editingBotId, formData);
+                await updateBot(editingBotId, {
+                    symbol: formData.symbols[0],
+                    timeframe: formData.timeframe,
+                    strategy_name: formData.strategy_name,
+                    paper_trading_mode: formData.paper_trading_mode,
+                    allocated_capital: formData.allocated_capital,
+                });
             }
             setShowBotModal(false);
             await fetchBots();
@@ -323,22 +356,38 @@ export default function DashboardPage() {
                             )}
 
                             <div>
-                                <label className="text-xs text-gray-500 font-medium mb-2 block">심볼 (Symbol)</label>
+                                <label className="text-xs text-gray-500 font-medium mb-2 block">
+                                    심볼 (Symbol) {modalMode === 'create' && <span className="text-gray-600">— 복수 선택 가능</span>}
+                                </label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {SYMBOLS.map(s => (
-                                        <button
-                                            key={s}
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, symbol: s })}
-                                            className={`py-2.5 rounded-xl text-xs font-semibold transition-all border ${
-                                                formData.symbol === s
-                                                    ? 'bg-primary/10 border-primary/30 text-primary'
-                                                    : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10 hover:text-gray-300'
-                                            }`}
-                                        >
-                                            {s.split('/')[0]} <span className="opacity-40 text-[10px]">/ KRW</span>
-                                        </button>
-                                    ))}
+                                    {SYMBOLS.map(s => {
+                                        const isSelected = formData.symbols.includes(s);
+                                        return (
+                                            <button
+                                                key={s}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (modalMode === 'edit') {
+                                                        setFormData({ ...formData, symbols: [s] });
+                                                    } else {
+                                                        setFormData({
+                                                            ...formData,
+                                                            symbols: isSelected
+                                                                ? formData.symbols.filter(sym => sym !== s)
+                                                                : [...formData.symbols, s],
+                                                        });
+                                                    }
+                                                }}
+                                                className={`py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                                                    isSelected
+                                                        ? 'bg-primary/10 border-primary/30 text-primary'
+                                                        : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10 hover:text-gray-300'
+                                                }`}
+                                            >
+                                                {s.split('/')[0]} <span className="opacity-40 text-[10px]">/ KRW</span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -510,12 +559,28 @@ export default function DashboardPage() {
                 <div className="glass-panel glass-panel-hover p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">총 운용 자산</h3>
+                            <h3 className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">Upbit 자산</h3>
                             <Wallet className="w-4 h-4 text-primary" />
                         </div>
-                        <span className="text-xl font-bold text-white">
-                            &#8361;{bots.reduce((sum, b) => sum + (b.allocated_capital ?? 0), 0).toLocaleString()}
-                        </span>
+                        {balances.length > 0 ? (
+                            <div className="space-y-1.5">
+                                {balances.slice(0, 4).map((b) => (
+                                    <div key={b.currency} className="flex justify-between items-center">
+                                        <span className="text-xs font-medium text-gray-400">{b.currency}</span>
+                                        <span className="text-xs font-bold text-white">
+                                            {b.currency === 'KRW'
+                                                ? `₩${Math.floor(b.total).toLocaleString()}`
+                                                : b.total.toFixed(4)}
+                                        </span>
+                                    </div>
+                                ))}
+                                {balances.length > 4 && (
+                                    <p className="text-[10px] text-gray-600 text-right">+{balances.length - 4}개 더</p>
+                                )}
+                            </div>
+                        ) : (
+                            <span className="text-sm text-gray-600">API 키를 등록해주세요</span>
+                        )}
                     </div>
                 </div>
             </div>

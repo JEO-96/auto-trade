@@ -13,3 +13,16 @@ export async function saveKey(data: ExchangeKeyCreateRequest): Promise<void> {
 export async function deleteKey(keyId: number): Promise<void> {
     await api.delete(`/keys/${keyId}`);
 }
+
+export interface BalanceItem {
+    currency: string;
+    total: number;
+    free: number;
+    used: number;
+    avg_buy_price: number | null;
+}
+
+export async function getUpbitBalance(): Promise<BalanceItem[]> {
+    const res = await api.get<{ balances: BalanceItem[] }>('/keys/balance');
+    return res.data.balances;
+}

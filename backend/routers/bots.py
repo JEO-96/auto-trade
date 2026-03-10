@@ -216,6 +216,15 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
 async def stop_bot(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     _get_user_bot(bot_id, current_user.id, db)
 
+    # 실매매 봇의 보유 포지션 확인
+    bot = _get_user_bot(bot_id, current_user.id, db)
+    has_positions = db.query(models.ActivePosition).filter(
+        models.ActivePosition.bot_id == bot_id
+    ).count() > 0
+    warning = ""
+    if not bot.paper_trading_mode and has_positions:
+        warning = " 주의: 실매매 포지션이 있습니다. 거래소에서 보유 중인 코인을 직접 확인해주세요."
+
     if bot_id in bot_manager.active_bots:
         task = bot_manager.active_bots.pop(bot_id)
         task.cancel()
@@ -224,14 +233,13 @@ async def stop_bot(bot_id: int, current_user: models.User = Depends(get_current_
             await task
         except asyncio.CancelledError:
             pass
-        # 수동 정지 시 포지션 정보도 정리
         bot_manager.clear_positions_from_db(bot_id)
         bot_manager.set_bot_active(bot_id, False)
-        return {"status": "success", "message": f"Bot {bot_id} stopped."}
+        return {"status": "success", "message": f"Bot {bot_id} stopped.{warning}"}
     # 메모리에 없지만 DB에 active로 남아있을 수 있음
     bot_manager.set_bot_active(bot_id, False)
     bot_manager.clear_positions_from_db(bot_id)
-    return {"status": "error", "message": "Bot was not running."}
+    return {"status": "error", "message": f"Bot was not running.{warning}"}
 
 @router.get("/status/{bot_id}")
 def status_bot(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):

@@ -64,6 +64,16 @@ class ExchangeKeyResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class BalanceItem(BaseModel):
+    currency: str
+    total: float
+    free: float
+    used: float
+    avg_buy_price: Optional[float] = None
+
+class BalanceResponse(BaseModel):
+    balances: List[BalanceItem]
+
 # -------- Bot Config Schemas --------
 class BotConfigCreate(BaseModel):
     symbol: str

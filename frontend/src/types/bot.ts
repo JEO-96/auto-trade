@@ -21,6 +21,14 @@ export interface BotCreateRequest {
     allocated_capital?: number;
 }
 
+export interface BotMultiCreateRequest {
+    symbols: string[];
+    timeframe?: string;
+    strategy_name?: string;
+    paper_trading_mode?: boolean;
+    allocated_capital?: number;
+}
+
 export interface TradeLog {
     id: number;
     bot_id: number;

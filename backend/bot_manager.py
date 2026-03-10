@@ -180,18 +180,27 @@ def _process_symbol_exit(
         return liquid_capital, False
 
     logger.info("[Bot %d] %s hit for %s!", bot_config_id, reason.upper(), symbol)
-    execution.execute_sell(symbol, exit_price, pos['position_amount'], reason=reason)
-    pnl = (exit_price - pos['entry_price']) * pos['position_amount']
-    liquid_capital += (pos['position_amount'] * exit_price)
-    save_trade_log(bot_config_id, symbol, "SELL", exit_price, pos['position_amount'], f"{reason} (Portfolio)", pnl)
+    sell_result = execution.execute_sell(symbol, exit_price, pos['position_amount'], reason=reason)
 
-    # Send Kakao Notification -- safe percentage calculation
+    # 실매매에서 매도 실패 시 포지션 유지 (강제 청산하지 않음)
+    if not sell_result or sell_result["status"] != "success":
+        logger.error("[Bot %d] SELL FAILED for %s. Keeping position.", bot_config_id, symbol)
+        return liquid_capital, False
+
+    # 실제 체결가 사용 (슬리피지/시장가 반영)
+    actual_price = sell_result.get("price", exit_price)
+    actual_amount = sell_result.get("amount", pos['position_amount'])
+    pnl = (actual_price - pos['entry_price']) * actual_amount
+    liquid_capital += (actual_amount * actual_price)
+    save_trade_log(bot_config_id, symbol, "SELL", actual_price, actual_amount, f"{reason} (Portfolio)", pnl)
+
+    # Send Kakao Notification
     cost_basis = pos['entry_price'] * pos['position_amount']
     pnl_pct = (pnl / cost_basis * 100) if cost_basis > 0 else 0.0
     msg = (
         f"[SELL]\n"
         f"Symbol: {symbol}\n"
-        f"Price: {exit_price:,.0f} KRW\n"
+        f"Price: {actual_price:,.0f} KRW\n"
         f"PnL: {pnl_pct:.2f}%\n"
         f"Reason: {reason}"
     )
@@ -249,10 +258,16 @@ def _process_symbol_entry(
     max_qty = liquid_capital / curr_price if curr_price > 0 else 0
     qty = min(desired_qty, max_qty)
 
+    if qty <= 0 or liquid_capital <= 0:
+        return liquid_capital, None
+
+    # 매수 금액이 유동 자본을 초과하지 않도록 보장
+    buy_amount = min(qty * curr_price, liquid_capital)
+    qty = buy_amount / curr_price
     if qty <= 0:
         return liquid_capital, None
 
-    res = execution.execute_buy(symbol, curr_price, qty * curr_price)
+    res = execution.execute_buy(symbol, curr_price, buy_amount)
     if not res or res["status"] != "success":
         return liquid_capital, None
 
@@ -318,7 +333,9 @@ async def run_bot_loop(bot_config_id: int):
                 api_secret = decrypt_key(exchange_key.api_secret_encrypted)
                 exchange_name = exchange_key.exchange_name
             else:
-                paper_trading = True
+                logger.error("[Bot %d] No API key found for user %d. Cannot start live trading.", bot_config_id, user_id)
+                set_bot_active(bot_config_id, False)
+                return
         finally:
             db_new.close()
 
@@ -328,6 +345,12 @@ async def run_bot_loop(bot_config_id: int):
         exchange_name=exchange_name,
         paper_trading=paper_trading
     )
+
+    # 실매매 모드인데 거래소 연결 실패 시 봇 정지
+    if not paper_trading and not execution.is_live_ready():
+        logger.error("[Bot %d] Exchange connection failed. Stopping bot.", bot_config_id)
+        set_bot_active(bot_config_id, False)
+        return
 
     # Portfolio State — DB에서 복구 시도
     active_positions = load_positions_from_db(bot_config_id)
@@ -342,6 +365,9 @@ async def run_bot_loop(bot_config_id: int):
 
     # DB에 활성 상태 표시
     set_bot_active(bot_config_id, True)
+
+    consecutive_errors = 0
+    MAX_CONSECUTIVE_ERRORS = 10  # 연속 10회 에러 시 봇 중단
 
     try:
         while True:
@@ -428,14 +454,23 @@ async def run_bot_loop(bot_config_id: int):
                     list(active_positions.keys()),
                 )
 
+                consecutive_errors = 0  # 성공 시 에러 카운터 초기화
+
             except Exception as e:
-                logger.error("[Bot %d] Loop error: %s", bot_config_id, e)
+                consecutive_errors += 1
+                logger.error("[Bot %d] Loop error (%d/%d): %s", bot_config_id, consecutive_errors, MAX_CONSECUTIVE_ERRORS, e)
                 logger.debug(traceback.format_exc())
+                if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                    logger.error("[Bot %d] Too many consecutive errors. Stopping bot.", bot_config_id)
+                    # 에러로 중단해도 포지션은 DB에 저장
+                    save_positions_to_db(bot_config_id, active_positions)
+                    break
             finally:
                 current_db.close()
 
-            # Sleep for 1 minute in portfolio mode to be more reactive
-            await asyncio.sleep(60)
+            # 에러가 연속되면 대기 시간을 늘림 (최대 5분)
+            sleep_time = min(60 * (1 + consecutive_errors), 300)
+            await asyncio.sleep(sleep_time)
     except asyncio.CancelledError:
         logger.info("--- [Bot %d] Engine Stopped (graceful) ---", bot_config_id)
         # 포지션은 DB에 유지 (재시작 시 복구 가능)
