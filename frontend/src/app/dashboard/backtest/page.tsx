@@ -370,46 +370,44 @@ export default function BacktestPage() {
                                         }`}
                                         onClick={() => h.status === 'completed' && loadHistoryDetail(h.id)}
                                     >
-                                        <div className="p-4">
-                                            {/* 상단: 전략명 + 날짜 */}
-                                            <div className="flex items-start justify-between mb-3">
+                                        <div className="p-4 group">
+                                            {/* 상단: 제목 + 상태 배지 */}
+                                            <div className="flex items-start justify-between mb-2">
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-sm font-bold text-white truncate">{strategyLabel}</p>
-                                                    <p className="text-[11px] text-gray-500 mt-0.5">{dateStr}</p>
+                                                    {isEditingTitle ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <input
+                                                                value={editTitleValue}
+                                                                onChange={(e) => setEditTitleValue(e.target.value)}
+                                                                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(h.id); if (e.key === 'Escape') setEditingTitleId(null); }}
+                                                                className="bg-white/[0.05] border border-primary/30 rounded-lg px-2 py-1 text-xs text-white w-48 focus:outline-none"
+                                                                autoFocus
+                                                            />
+                                                            <button onClick={() => handleSaveTitle(h.id)} className="text-primary hover:text-white transition-colors" title="저장">
+                                                                <Check className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button onClick={() => setEditingTitleId(null)} className="text-gray-500 hover:text-white transition-colors" title="취소">
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <p className="text-sm font-bold text-white truncate">{displayTitle}</p>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); setEditingTitleId(h.id); setEditTitleValue(h.title || ''); }}
+                                                                className="text-gray-600 hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                                                                title="제목 수정"
+                                                            >
+                                                                <Pencil className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <Badge variant={h.status === 'completed' ? 'success' : h.status === 'failed' ? 'danger' : 'warning'}>
                                                     {h.status === 'completed' ? '완료' : h.status === 'failed' ? '실패' : '진행중'}
                                                 </Badge>
-                                                {isEditingTitle ? (
-                                                    <div className="flex items-center gap-1">
-                                                        <input
-                                                            value={editTitleValue}
-                                                            onChange={(e) => setEditTitleValue(e.target.value)}
-                                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(h.id); if (e.key === 'Escape') setEditingTitleId(null); }}
-                                                            className="bg-white/[0.05] border border-primary/30 rounded-lg px-2 py-1 text-xs text-white w-48 focus:outline-none"
-                                                            autoFocus
-                                                        />
-                                                        <button onClick={() => handleSaveTitle(h.id)} className="text-primary hover:text-white transition-colors" title="저장">
-                                                            <Check className="w-3.5 h-3.5" />
-                                                        </button>
-                                                        <button onClick={() => setEditingTitleId(null)} className="text-gray-500 hover:text-white transition-colors" title="취소">
-                                                            <X className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-xs text-white font-semibold truncate max-w-[200px]">{displayTitle}</span>
-                                                        <button
-                                                            onClick={() => { setEditingTitleId(h.id); setEditTitleValue(h.title || ''); }}
-                                                            className="text-gray-600 hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
-                                                            title="제목 수정"
-                                                        >
-                                                            <Pencil className="w-3 h-3" />
-                                                        </button>
-                                                    </div>
-                                                )}
                                             </div>
-                                            <div className="flex items-center gap-3 text-[11px] text-gray-500 flex-wrap">
+                                            <div className="flex items-center gap-3 text-[11px] text-gray-500 flex-wrap mb-3">
                                                 <span className="text-gray-400">{getStrategyLabel(h.strategy_name)}</span>
                                                 <span>{(h.symbols || []).join(', ')}</span>
                                                 <span>{h.timeframe}</span>
