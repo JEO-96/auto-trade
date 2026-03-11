@@ -13,6 +13,27 @@ export interface EquityCurvePoint {
     value: number;
 }
 
+export interface BacktestMetrics {
+    win_rate?: number;
+    profit_factor?: number;
+    max_drawdown_pct?: number;
+    sharpe_ratio?: number;
+    sortino_ratio?: number;
+    avg_win?: number;
+    avg_loss?: number;
+    win_count?: number;
+    loss_count?: number;
+    best_trade?: number;
+    worst_trade?: number;
+    max_consecutive_wins?: number;
+    max_consecutive_losses?: number;
+    total_return_pct?: number;
+    cagr_pct?: number;
+    calmar_ratio?: number;
+    avg_holding_hours?: number;
+    expectancy?: number;
+}
+
 export interface BacktestResult {
     status?: string;
     initial_capital: number;
@@ -20,6 +41,7 @@ export interface BacktestResult {
     total_trades: number;
     trades: BacktestTrade[];
     equity_curve?: EquityCurvePoint[];
+    metrics?: BacktestMetrics;
 }
 
 export interface BacktestFormParams {

@@ -207,14 +207,127 @@ class VectorBacktester:
             except Exception:
                 total_trades = len(formatted_trades) // 2
 
+        # Extract professional trading metrics
+        metrics = self._extract_metrics(portfolio, initial_capital, total_trades)
+
         return {
             "status": "success",
             "initial_capital": float(initial_capital),
             "final_capital": float(portfolio.final_value()),
             "total_trades": total_trades,
             "trades": formatted_trades,
-            "equity_curve": equity_curve
+            "equity_curve": equity_curve,
+            "metrics": metrics,
         }
+
+    # ------------------------------------------------------------------
+    # Professional trading metrics extraction
+    # ------------------------------------------------------------------
+
+    def _extract_metrics(self, portfolio, initial_capital: float,
+                         total_trades: int) -> dict:
+        """Extract key performance metrics from vectorbt portfolio."""
+        metrics: Dict[str, Any] = {}
+
+        def _safe(fn, default=None):
+            try:
+                val = fn()
+                if isinstance(val, (pd.Series, pd.DataFrame)):
+                    val = val.iloc[0] if len(val) > 0 else default
+                if val is not None and not (isinstance(val, float) and (np.isnan(val) or np.isinf(val))):
+                    return float(val)
+                return default
+            except Exception:
+                return default
+
+        # Win rate
+        metrics["win_rate"] = _safe(lambda: portfolio.trades.win_rate())
+
+        # Profit factor
+        metrics["profit_factor"] = _safe(lambda: portfolio.trades.profit_factor())
+
+        # Max drawdown (%)
+        metrics["max_drawdown_pct"] = _safe(lambda: portfolio.max_drawdown() * 100)
+
+        # Sharpe ratio
+        metrics["sharpe_ratio"] = _safe(lambda: portfolio.sharpe_ratio())
+
+        # Sortino ratio
+        metrics["sortino_ratio"] = _safe(lambda: portfolio.sortino_ratio())
+
+        # Average win / average loss
+        try:
+            pnl_records = portfolio.trades.pnl.values
+            wins = pnl_records[pnl_records > 0]
+            losses = pnl_records[pnl_records < 0]
+            metrics["avg_win"] = float(np.mean(wins)) if len(wins) > 0 else None
+            metrics["avg_loss"] = float(np.mean(losses)) if len(losses) > 0 else None
+            metrics["win_count"] = int(len(wins))
+            metrics["loss_count"] = int(len(losses))
+            metrics["best_trade"] = float(np.max(pnl_records)) if len(pnl_records) > 0 else None
+            metrics["worst_trade"] = float(np.min(pnl_records)) if len(pnl_records) > 0 else None
+
+            # Max consecutive wins/losses
+            if len(pnl_records) > 0:
+                signs = np.sign(pnl_records)
+                max_consec_win = 0
+                max_consec_loss = 0
+                cur_win = 0
+                cur_loss = 0
+                for s in signs:
+                    if s > 0:
+                        cur_win += 1
+                        cur_loss = 0
+                        max_consec_win = max(max_consec_win, cur_win)
+                    elif s < 0:
+                        cur_loss += 1
+                        cur_win = 0
+                        max_consec_loss = max(max_consec_loss, cur_loss)
+                    else:
+                        cur_win = 0
+                        cur_loss = 0
+                metrics["max_consecutive_wins"] = max_consec_win
+                metrics["max_consecutive_losses"] = max_consec_loss
+        except Exception:
+            pass
+
+        # Total return (%)
+        final_val = _safe(lambda: portfolio.final_value(), initial_capital)
+        if final_val is not None:
+            metrics["total_return_pct"] = ((final_val - initial_capital) / initial_capital) * 100
+
+        # Annualized return (CAGR) - approximate from equity curve
+        try:
+            equity = portfolio.value()
+            if len(equity) > 1:
+                total_days = (equity.index[-1] - equity.index[0]).total_seconds() / 86400
+                if total_days > 0:
+                    total_return = final_val / initial_capital
+                    if total_return > 0:
+                        cagr = (total_return ** (365 / total_days) - 1) * 100
+                        metrics["cagr_pct"] = cagr
+        except Exception:
+            pass
+
+        # Calmar ratio (CAGR / Max Drawdown)
+        if metrics.get("cagr_pct") and metrics.get("max_drawdown_pct") and metrics["max_drawdown_pct"] > 0:
+            metrics["calmar_ratio"] = metrics["cagr_pct"] / metrics["max_drawdown_pct"]
+
+        # Average holding period
+        try:
+            durations = portfolio.trades.duration.values
+            if len(durations) > 0:
+                avg_dur = np.mean(durations.astype('timedelta64[h]').astype(float))
+                metrics["avg_holding_hours"] = float(avg_dur)
+        except Exception:
+            pass
+
+        # Expectancy (기대값) = (Win% × Avg Win) + (Loss% × Avg Loss)
+        if metrics.get("win_rate") is not None and metrics.get("avg_win") is not None and metrics.get("avg_loss") is not None:
+            wr = metrics["win_rate"]
+            metrics["expectancy"] = (wr * metrics["avg_win"]) + ((1 - wr) * metrics["avg_loss"])
+
+        return metrics
 
     # ------------------------------------------------------------------
     # Trade formatting -- version-agnostic column resolution

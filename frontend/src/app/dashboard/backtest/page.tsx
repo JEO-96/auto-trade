@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2 } from 'lucide-react';
+import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Target, Shield, BarChart3, Clock, AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
@@ -285,56 +285,59 @@ export default function BacktestPage() {
                                     : null;
                                 const isProfit = pnlPct !== null && pnlPct >= 0;
                                 return (
-                                    <div key={h.id} className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors group">
+                                    <div key={h.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors group">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <Badge variant={h.status === 'completed' ? 'success' : h.status === 'failed' ? 'danger' : 'warning'}>
                                                     {h.status === 'completed' ? '완료' : h.status === 'failed' ? '실패' : '진행중'}
                                                 </Badge>
-                                                <span className="text-xs text-gray-400 font-medium">{h.strategy_name}</span>
+                                                <span className="text-[11px] sm:text-xs text-gray-400 font-medium truncate">{h.strategy_name}</span>
                                             </div>
-                                            <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                                            <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-gray-500 flex-wrap">
                                                 <span>{(h.symbols || []).join(', ')}</span>
                                                 <span>{h.timeframe}</span>
                                                 <span>₩{h.initial_capital.toLocaleString()}</span>
                                                 <span>{new Date(h.created_at).toLocaleDateString('ko-KR')}</span>
                                             </div>
                                         </div>
-                                        {pnlPct !== null && (
-                                            <div className="text-right shrink-0">
-                                                <p className={`text-sm font-bold ${isProfit ? 'text-secondary' : 'text-red-400'}`}>
-                                                    {isProfit ? '+' : ''}{pnlPct.toFixed(2)}%
-                                                </p>
-                                                <p className="text-[10px] text-gray-500">{h.total_trades}회 거래</p>
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                            {h.status === 'completed' && (
-                                                <>
-                                                    <button
-                                                        onClick={() => loadHistoryDetail(h.id)}
-                                                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-                                                    >
-                                                        상세보기
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setShareModal({ historyId: h.id });
-                                                            setShareTitle(`${h.strategy_name} 백테스트 결과 (${(h.symbols || []).join(', ')})`);
-                                                        }}
-                                                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors flex items-center gap-1"
-                                                    >
-                                                        <Share2 className="w-3 h-3" /> 공유
-                                                    </button>
-                                                </>
+                                        <div className="flex items-center justify-between sm:justify-end gap-3">
+                                            {pnlPct !== null && (
+                                                <div className="text-left sm:text-right shrink-0">
+                                                    <p className={`text-sm font-bold ${isProfit ? 'text-secondary' : 'text-red-400'}`}>
+                                                        {isProfit ? '+' : ''}{pnlPct.toFixed(2)}%
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-500">{h.total_trades}회 거래</p>
+                                                </div>
                                             )}
-                                            <button
-                                                onClick={() => handleDeleteHistory(h.id)}
-                                                className="px-2 py-1.5 rounded-lg text-[11px] text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                                                title="삭제"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                {h.status === 'completed' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => loadHistoryDetail(h.id)}
+                                                            className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-semibold text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
+                                                        >
+                                                            상세
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setShareModal({ historyId: h.id });
+                                                                setShareTitle(`${h.strategy_name} 백테스트 결과 (${(h.symbols || []).join(', ')})`);
+                                                            }}
+                                                            className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors flex items-center gap-1"
+                                                        >
+                                                            <Share2 className="w-3 h-3" />
+                                                            <span className="hidden sm:inline">공유</span>
+                                                        </button>
+                                                    </>
+                                                )}
+                                                <button
+                                                    onClick={() => handleDeleteHistory(h.id)}
+                                                    className="px-2 py-1.5 rounded-lg text-[11px] text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                    title="삭제"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -549,8 +552,8 @@ export default function BacktestPage() {
                     {result && (
                         <>
                             {/* Backtest disclaimer + share button */}
-                            <div className="flex items-center justify-between">
-                                <p className="text-xs text-gray-500">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                                <p className="text-[11px] sm:text-xs text-gray-500">
                                     * 이 결과는 과거 데이터 시뮬레이션이며 실제 수익을 보장하지 않습니다.
                                 </p>
                                 {viewingHistoryId && (
@@ -566,46 +569,187 @@ export default function BacktestPage() {
                                 )}
                             </div>
 
-                            {/* Stats */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="glass-panel p-5 rounded-2xl">
-                                    <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">누적 수익</p>
-                                    <p className={`text-2xl font-bold truncate ${result.final_capital >= result.initial_capital ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {/* Core Stats - 핵심 지표 */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                                <div className="glass-panel p-4 sm:p-5 rounded-2xl">
+                                    <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-1.5 sm:mb-2">누적 수익</p>
+                                    <p className={`text-lg sm:text-2xl font-bold truncate ${result.final_capital >= result.initial_capital ? 'text-emerald-400' : 'text-red-400'}`}>
                                         ₩{Math.round(result.final_capital - result.initial_capital).toLocaleString()}
                                     </p>
-                                    <div className={`inline-flex items-center gap-1 text-xs font-medium mt-2 ${result.final_capital >= result.initial_capital ? 'text-emerald-400' : 'text-red-400'}`}>
-                                        {result.final_capital >= result.initial_capital ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                    <div className={`inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium mt-1.5 ${result.final_capital >= result.initial_capital ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        {result.final_capital >= result.initial_capital ? <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
                                         {(((result.final_capital - result.initial_capital) / (result.initial_capital || 1)) * 100).toFixed(2)}%
                                     </div>
                                 </div>
 
-                                <div className="glass-panel p-5 rounded-2xl">
-                                    <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">최종 자산</p>
-                                    <p className="text-2xl font-bold text-white truncate">₩{Math.round(result.final_capital).toLocaleString()}</p>
+                                <div className="glass-panel p-4 sm:p-5 rounded-2xl">
+                                    <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-1.5 sm:mb-2">최종 자산</p>
+                                    <p className="text-lg sm:text-2xl font-bold text-white truncate">₩{Math.round(result.final_capital).toLocaleString()}</p>
                                 </div>
 
-                                <div className="glass-panel p-5 rounded-2xl">
-                                    <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">매매 횟수</p>
-                                    <p className="text-2xl font-bold text-primary">
-                                        {result.total_trades}<span className="text-sm text-gray-500 ml-1 font-medium">회</span>
+                                <div className="glass-panel p-4 sm:p-5 rounded-2xl">
+                                    <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-1.5 sm:mb-2">매매 횟수</p>
+                                    <p className="text-lg sm:text-2xl font-bold text-primary">
+                                        {result.total_trades}<span className="text-xs sm:text-sm text-gray-500 ml-1 font-medium">회</span>
                                     </p>
+                                </div>
+
+                                <div className="glass-panel p-4 sm:p-5 rounded-2xl">
+                                    <p className="text-[10px] sm:text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-1.5 sm:mb-2">승률</p>
+                                    <p className={`text-lg sm:text-2xl font-bold ${(result.metrics?.win_rate ?? 0) >= 0.5 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                        {result.metrics?.win_rate != null ? `${(result.metrics.win_rate * 100).toFixed(1)}%` : '-'}
+                                    </p>
+                                    {result.metrics?.win_count != null && result.metrics?.loss_count != null && (
+                                        <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1">
+                                            {result.metrics.win_count}승 {result.metrics.loss_count}패
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
+                            {/* Professional Metrics - 전문가 지표 */}
+                            {result.metrics && (
+                                <div className="glass-panel rounded-2xl p-4 sm:p-6">
+                                    <h3 className="text-sm sm:text-base font-bold flex items-center gap-2 mb-4 sm:mb-5">
+                                        <BarChart3 className="w-4 h-4 text-primary" />
+                                        성과 분석
+                                    </h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-4 sm:gap-y-5">
+                                        {/* Risk Metrics */}
+                                        <MetricItem
+                                            icon={<AlertTriangle className="w-3.5 h-3.5 text-red-400" />}
+                                            label="최대 낙폭 (MDD)"
+                                            value={result.metrics.max_drawdown_pct != null ? `-${result.metrics.max_drawdown_pct.toFixed(2)}%` : '-'}
+                                            valueClass="text-red-400"
+                                        />
+                                        <MetricItem
+                                            icon={<Shield className="w-3.5 h-3.5 text-blue-400" />}
+                                            label="샤프 비율"
+                                            value={result.metrics.sharpe_ratio != null ? result.metrics.sharpe_ratio.toFixed(2) : '-'}
+                                            tooltip="1 이상이면 양호, 2 이상이면 우수"
+                                            valueClass={
+                                                result.metrics.sharpe_ratio != null
+                                                    ? result.metrics.sharpe_ratio >= 2 ? 'text-emerald-400'
+                                                    : result.metrics.sharpe_ratio >= 1 ? 'text-blue-400'
+                                                    : 'text-gray-300'
+                                                    : ''
+                                            }
+                                        />
+                                        <MetricItem
+                                            icon={<Shield className="w-3.5 h-3.5 text-violet-400" />}
+                                            label="소르티노 비율"
+                                            value={result.metrics.sortino_ratio != null ? result.metrics.sortino_ratio.toFixed(2) : '-'}
+                                            tooltip="하방 위험 대비 수익. 높을수록 좋음"
+                                        />
+                                        <MetricItem
+                                            icon={<Target className="w-3.5 h-3.5 text-amber-400" />}
+                                            label="수익 팩터"
+                                            value={result.metrics.profit_factor != null ? result.metrics.profit_factor.toFixed(2) : '-'}
+                                            tooltip="총이익/총손실. 1.5 이상 양호"
+                                            valueClass={
+                                                result.metrics.profit_factor != null
+                                                    ? result.metrics.profit_factor >= 1.5 ? 'text-emerald-400'
+                                                    : result.metrics.profit_factor >= 1 ? 'text-amber-400'
+                                                    : 'text-red-400'
+                                                    : ''
+                                            }
+                                        />
+
+                                        {/* Return Metrics */}
+                                        <MetricItem
+                                            icon={<TrendingUp className="w-3.5 h-3.5 text-emerald-400" />}
+                                            label="연평균 수익률 (CAGR)"
+                                            value={result.metrics.cagr_pct != null ? `${result.metrics.cagr_pct.toFixed(2)}%` : '-'}
+                                            valueClass={result.metrics.cagr_pct != null && result.metrics.cagr_pct >= 0 ? 'text-emerald-400' : 'text-red-400'}
+                                        />
+                                        <MetricItem
+                                            icon={<BarChart3 className="w-3.5 h-3.5 text-cyan-400" />}
+                                            label="칼마 비율"
+                                            value={result.metrics.calmar_ratio != null ? result.metrics.calmar_ratio.toFixed(2) : '-'}
+                                            tooltip="CAGR/MDD. 3 이상이면 매우 우수"
+                                        />
+                                        <MetricItem
+                                            icon={<Activity className="w-3.5 h-3.5 text-primary" />}
+                                            label="기대값 (Expectancy)"
+                                            value={result.metrics.expectancy != null ? `₩${Math.round(result.metrics.expectancy).toLocaleString()}` : '-'}
+                                            tooltip="거래 1건당 기대 수익"
+                                            valueClass={result.metrics.expectancy != null && result.metrics.expectancy >= 0 ? 'text-emerald-400' : 'text-red-400'}
+                                        />
+                                        <MetricItem
+                                            icon={<Clock className="w-3.5 h-3.5 text-gray-400" />}
+                                            label="평균 보유 시간"
+                                            value={result.metrics.avg_holding_hours != null ? formatHoldingTime(result.metrics.avg_holding_hours) : '-'}
+                                        />
+                                    </div>
+
+                                    {/* Win/Loss Details */}
+                                    <div className="mt-5 sm:mt-6 pt-4 sm:pt-5 border-t border-white/[0.04]">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                                            <div className="bg-emerald-500/[0.06] border border-emerald-500/10 rounded-xl p-3 sm:p-4">
+                                                <p className="text-[10px] text-emerald-400/60 font-medium mb-1">최대 수익 거래</p>
+                                                <p className="text-sm sm:text-base font-bold text-emerald-400 font-mono">
+                                                    {result.metrics.best_trade != null ? `+₩${Math.round(result.metrics.best_trade).toLocaleString()}` : '-'}
+                                                </p>
+                                            </div>
+                                            <div className="bg-red-500/[0.06] border border-red-500/10 rounded-xl p-3 sm:p-4">
+                                                <p className="text-[10px] text-red-400/60 font-medium mb-1">최대 손실 거래</p>
+                                                <p className="text-sm sm:text-base font-bold text-red-400 font-mono">
+                                                    {result.metrics.worst_trade != null ? `-₩${Math.round(Math.abs(result.metrics.worst_trade)).toLocaleString()}` : '-'}
+                                                </p>
+                                            </div>
+                                            <div className="bg-emerald-500/[0.06] border border-emerald-500/10 rounded-xl p-3 sm:p-4">
+                                                <p className="text-[10px] text-emerald-400/60 font-medium mb-1">평균 수익</p>
+                                                <p className="text-sm sm:text-base font-bold text-emerald-400 font-mono">
+                                                    {result.metrics.avg_win != null ? `+₩${Math.round(result.metrics.avg_win).toLocaleString()}` : '-'}
+                                                </p>
+                                                {result.metrics.max_consecutive_wins != null && (
+                                                    <p className="text-[10px] text-gray-500 mt-0.5">최대 연속 {result.metrics.max_consecutive_wins}연승</p>
+                                                )}
+                                            </div>
+                                            <div className="bg-red-500/[0.06] border border-red-500/10 rounded-xl p-3 sm:p-4">
+                                                <p className="text-[10px] text-red-400/60 font-medium mb-1">평균 손실</p>
+                                                <p className="text-sm sm:text-base font-bold text-red-400 font-mono">
+                                                    {result.metrics.avg_loss != null ? `-₩${Math.round(Math.abs(result.metrics.avg_loss)).toLocaleString()}` : '-'}
+                                                </p>
+                                                {result.metrics.max_consecutive_losses != null && (
+                                                    <p className="text-[10px] text-gray-500 mt-0.5">최대 연속 {result.metrics.max_consecutive_losses}연패</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Win Rate Bar */}
+                                    {result.metrics.win_rate != null && (
+                                        <div className="mt-4 sm:mt-5">
+                                            <div className="flex justify-between text-[10px] sm:text-[11px] text-gray-500 mb-2">
+                                                <span>승 {result.metrics.win_count ?? 0}회</span>
+                                                <span>패 {result.metrics.loss_count ?? 0}회</span>
+                                            </div>
+                                            <div className="h-2 sm:h-2.5 rounded-full bg-red-500/20 overflow-hidden">
+                                                <div
+                                                    className="h-full rounded-full bg-emerald-500 transition-all duration-1000"
+                                                    style={{ width: `${result.metrics.win_rate * 100}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Equity Curve */}
                             {result.equity_curve && result.equity_curve.length > 0 && (
-                                <div className="glass-panel p-6 rounded-2xl">
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-base font-bold flex items-center gap-2">
+                                <div className="glass-panel p-4 sm:p-6 rounded-2xl">
+                                    <div className="flex justify-between items-center mb-4 sm:mb-6">
+                                        <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
                                             <TrendingUp className="w-4 h-4 text-primary" />
                                             자산 성장 추이
                                         </h3>
                                         <div className="flex items-center gap-2">
                                             <div className="w-2.5 h-2.5 rounded-full bg-primary"></div>
-                                            <span className="text-xs text-gray-500">포트폴리오 가치</span>
+                                            <span className="text-[10px] sm:text-xs text-gray-500">포트폴리오 가치</span>
                                         </div>
                                     </div>
-                                    <div className="h-[280px] w-full">
+                                    <div className="h-[200px] sm:h-[280px] w-full">
                                         <EquityCurveChart data={result.equity_curve} />
                                     </div>
                                 </div>
@@ -613,15 +757,41 @@ export default function BacktestPage() {
 
                             {/* Trade History */}
                             <div className="glass-panel rounded-2xl overflow-hidden">
-                                <div className="p-5 border-b border-white/[0.04] flex justify-between items-center">
-                                    <h3 className="text-base font-bold flex items-center gap-2">
+                                <div className="p-4 sm:p-5 border-b border-white/[0.04] flex justify-between items-center">
+                                    <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                                         매매 이력
                                     </h3>
-                                    <span className="text-xs text-gray-500">{result.trades.length}건</span>
+                                    <span className="text-[11px] sm:text-xs text-gray-500">{result.trades.length}건</span>
                                 </div>
 
-                                <div className="overflow-x-auto">
+                                {/* Mobile: Card layout */}
+                                <div className="sm:hidden divide-y divide-white/[0.03]">
+                                    {result.trades.map((trade: BacktestTrade, idx: number) => (
+                                        <div key={idx} className="px-4 py-3 flex items-center gap-3">
+                                            <Badge variant={trade.side === 'BUY' ? 'success' : 'danger'}>
+                                                {trade.side === 'BUY' ? '매수' : '매도'}
+                                            </Badge>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold text-white text-xs">{trade.symbol?.split('/')[0]}</span>
+                                                    <span className="text-[10px] text-gray-500">
+                                                        {new Date(trade.time).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[10px] text-gray-500 font-mono mt-0.5">₩{Math.round(Number(trade.price ?? 0)).toLocaleString()}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <p className={`font-mono text-xs font-medium ${trade.pnl > 0 ? 'text-emerald-400' : trade.pnl < 0 ? 'text-red-400' : 'text-gray-600'}`}>
+                                                    {trade.pnl !== 0 ? (trade.pnl > 0 ? `+₩${Math.round(Number(trade.pnl)).toLocaleString()}` : `-₩${Math.round(Math.abs(trade.pnl)).toLocaleString()}`) : '-'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Desktop: Table layout */}
+                                <div className="hidden sm:block overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
                                             <tr className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 border-b border-white/[0.04]">
@@ -673,6 +843,39 @@ export default function BacktestPage() {
                 </div>
             </div>}
         </PageContainer>
+    );
+}
+
+function formatHoldingTime(hours: number): string {
+    if (hours < 1) return `${Math.round(hours * 60)}분`;
+    if (hours < 24) return `${hours.toFixed(1)}시간`;
+    const days = hours / 24;
+    if (days < 7) return `${days.toFixed(1)}일`;
+    return `${(days / 7).toFixed(1)}주`;
+}
+
+function MetricItem({ icon, label, value, tooltip, valueClass }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    tooltip?: string;
+    valueClass?: string;
+}) {
+    return (
+        <div className="group relative">
+            <div className="flex items-center gap-1.5 mb-1">
+                {icon}
+                <span className="text-[10px] sm:text-[11px] text-gray-500 font-medium">{label}</span>
+            </div>
+            <p className={`text-sm sm:text-base font-bold font-mono ${valueClass || 'text-white'}`}>{value}</p>
+            {tooltip && (
+                <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block z-20">
+                    <div className="bg-surface/95 border border-white/[0.08] rounded-lg px-3 py-2 text-[10px] text-gray-400 whitespace-nowrap shadow-lg backdrop-blur-md">
+                        {tooltip}
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
 
