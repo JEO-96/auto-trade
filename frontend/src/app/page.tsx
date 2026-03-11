@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { Activity, ShieldCheck, Zap, ArrowRight, TrendingUp, LogIn, LayoutDashboard } from 'lucide-react';
+import { Activity, ShieldCheck, Zap, ArrowRight, TrendingUp, LogIn } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Home() {
@@ -16,22 +16,13 @@ export default function Home() {
                         <span className="text-base font-extrabold tracking-tight text-white">MOMENTUM</span>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href="/login"
-                            className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
-                        >
-                            <LogIn className="w-4 h-4" />
-                            로그인
-                        </Link>
-                        <Link
-                            href="/dashboard"
-                            className="px-5 py-2 text-sm font-semibold bg-white/[0.06] hover:bg-white/[0.1] text-white rounded-lg transition-all border border-white/[0.06] flex items-center gap-2"
-                        >
-                            <LayoutDashboard className="w-4 h-4" />
-                            대시보드
-                        </Link>
-                    </div>
+                    <Link
+                        href="/login"
+                        className="px-5 py-2 text-sm font-semibold bg-white/[0.06] hover:bg-white/[0.1] text-white rounded-lg transition-all border border-white/[0.06] flex items-center gap-2"
+                    >
+                        <LogIn className="w-4 h-4" />
+                        로그인
+                    </Link>
                 </div>
             </header>
 
