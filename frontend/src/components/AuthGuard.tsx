@@ -15,7 +15,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         }
     }, [isLoading, isAuthenticated, pathname, router]);
 
-    if (isLoading) {
+    if (isLoading || !isAuthenticated) {
         return (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
                 <LoadingSpinner message="인증 확인 중..." />
@@ -23,5 +23,5 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         );
     }
 
-    return isAuthenticated ? <>{children}</> : null;
+    return <>{children}</>;
 }
