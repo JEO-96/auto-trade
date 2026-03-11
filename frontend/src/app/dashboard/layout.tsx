@@ -21,13 +21,13 @@ export default function DashboardLayout({
     return (
         <AuthGuard>
             <div className="min-h-screen bg-background text-white flex overflow-hidden relative">
-                {/* Mobile Menu Toggle */}
+                {/* Mobile Menu Toggle - 닫힌 상태에서만 표시 */}
                 <button
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="lg:hidden fixed top-4 right-4 z-50 p-2.5 bg-surface/80 backdrop-blur-xl border border-white/[0.06] rounded-lg text-gray-400 hover:text-white transition-colors"
-                    aria-label="Toggle Menu"
+                    onClick={() => setIsMobileMenuOpen(true)}
+                    className={`lg:hidden fixed top-4 right-4 z-50 p-2.5 bg-surface/80 backdrop-blur-xl border border-white/[0.06] rounded-xl text-gray-400 hover:text-white hover:bg-surface hover:border-white/[0.1] active:scale-95 transition-all duration-200 ${isMobileMenuOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
+                    aria-label="메뉴 열기"
                 >
-                    {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    <Menu className="w-5 h-5" />
                 </button>
 
                 {/* Sidebar */}
@@ -36,20 +36,30 @@ export default function DashboardLayout({
                     lg:relative lg:translate-x-0
                     ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
                 `}>
-                    {/* Brand */}
+                    {/* Brand + Close */}
                     <div className="p-6 pb-2">
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
-                                <Activity className="w-5 h-5 text-primary" />
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
+                                    <Activity className="w-5 h-5 text-primary" />
+                                </div>
+                                <div>
+                                    <span className="text-base font-extrabold tracking-tight text-white block leading-none">
+                                        MOMENTUM
+                                    </span>
+                                    <span className="text-[9px] font-semibold text-gray-500 tracking-widest uppercase">
+                                        Trading Bot
+                                    </span>
+                                </div>
                             </div>
-                            <div>
-                                <span className="text-base font-extrabold tracking-tight text-white block leading-none">
-                                    MOMENTUM
-                                </span>
-                                <span className="text-[9px] font-semibold text-gray-500 tracking-widest uppercase">
-                                    Trading Bot
-                                </span>
-                            </div>
+                            {/* 사이드바 내부 닫기 버튼 */}
+                            <button
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="lg:hidden p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.06] active:scale-95 transition-all duration-200"
+                                aria-label="메뉴 닫기"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
                     </div>
 
