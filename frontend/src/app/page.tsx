@@ -18,9 +18,9 @@ export default function Home() {
 
                     <Link
                         href="/login"
-                        className="px-5 py-2 text-sm font-semibold bg-white/[0.06] hover:bg-white/[0.1] text-white rounded-lg transition-all border border-white/[0.06] flex items-center gap-2"
+                        className="text-sm font-medium text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
                     >
-                        <LogIn className="w-4 h-4" />
+                        <LogIn className="w-3.5 h-3.5" />
                         로그인
                     </Link>
                 </div>

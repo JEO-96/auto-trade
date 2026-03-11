@@ -215,19 +215,21 @@ export default function PublicCommunityPage() {
                     <p className="text-sm text-gray-500">전략 공유, 백테스트 결과, 수익률을 공유하세요</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Link href={isAuthenticated ? '/dashboard/community/chat' : '/login'}>
-                        <Button variant="ghost" size="sm">
-                            <MessageSquare className="w-4 h-4" />
-                            채팅
-                        </Button>
-                    </Link>
                     {isAuthenticated ? (
-                        <Link href="/dashboard/community/create">
-                            <Button size="sm">
-                                <Plus className="w-4 h-4" />
-                                글쓰기
-                            </Button>
-                        </Link>
+                        <>
+                            <Link href="/dashboard/community/chat">
+                                <Button variant="ghost" size="sm">
+                                    <MessageSquare className="w-4 h-4" />
+                                    채팅
+                                </Button>
+                            </Link>
+                            <Link href="/dashboard/community/create">
+                                <Button size="sm">
+                                    <Plus className="w-4 h-4" />
+                                    글쓰기
+                                </Button>
+                            </Link>
+                        </>
                     ) : (
                         <Link href="/login">
                             <Button size="sm">
