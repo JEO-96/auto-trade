@@ -13,6 +13,7 @@ class UserResponse(UserBase):
     id: int
     nickname: Optional[str] = None
     is_active: bool
+    is_admin: bool = False
 
     class Config:
         from_attributes = True
@@ -25,28 +26,6 @@ class AdminUserResponse(BaseModel):
     is_active: bool
     is_admin: bool
     created_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
-
-# -------- Admin Timeframe Schemas --------
-class AllowedTimeframeCreate(BaseModel):
-    timeframe: str
-    label: str
-    display_order: int = 0
-    is_active: bool = True
-
-class AllowedTimeframeUpdate(BaseModel):
-    label: Optional[str] = None
-    display_order: Optional[int] = None
-    is_active: Optional[bool] = None
-
-class AllowedTimeframeResponse(BaseModel):
-    id: int
-    timeframe: str
-    label: str
-    display_order: int
-    is_active: bool
 
     class Config:
         from_attributes = True
@@ -208,6 +187,7 @@ class BacktestTaskResponse(BaseModel):
 # -------- Backtest History Schemas --------
 class BacktestHistoryResponse(BaseModel):
     id: int
+    title: Optional[str] = None
     symbols: List[str]
     timeframe: str
     strategy_name: str
@@ -215,6 +195,9 @@ class BacktestHistoryResponse(BaseModel):
     final_capital: Optional[float] = None
     total_trades: Optional[int] = None
     status: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    commission_rate: Optional[float] = None
     created_at: datetime
 
     class Config:
@@ -222,6 +205,30 @@ class BacktestHistoryResponse(BaseModel):
 
 class BacktestHistoryDetailResponse(BacktestHistoryResponse):
     result_data: Optional[dict] = None
+
+class BacktestHistoryUpdate(BaseModel):
+    title: Optional[str] = None
+
+
+# -------- System Settings Schemas --------
+class BacktestSettingsResponse(BaseModel):
+    strategy_timeframes: dict[str, List[str]]
+
+class BacktestSettingsUpdate(BaseModel):
+    strategy_timeframes: dict[str, List[str]]
+
+
+# -------- Active Bots (공개) --------
+class ActiveBotPublic(BaseModel):
+    nickname: Optional[str] = None
+    symbol: str
+    timeframe: str
+    strategy_name: Optional[str] = None
+    paper_trading_mode: bool
+
+class ActiveBotListResponse(BaseModel):
+    bots: List[ActiveBotPublic]
+    total: int
 
 
 # -------- Community Schemas --------
@@ -247,6 +254,7 @@ class PostCreate(BaseModel):
     backtest_data: Optional[dict] = None
     performance_data: Optional[dict] = None
     strategy_name: Optional[str] = None
+    timeframe: Optional[str] = None
     rating: Optional[int] = None  # 1-5
 
 
@@ -260,6 +268,7 @@ class PostResponse(BaseModel):
     backtest_data: Optional[dict] = None
     performance_data: Optional[dict] = None
     strategy_name: Optional[str] = None
+    timeframe: Optional[str] = None
     rating: Optional[int] = None
     like_count: int = 0
     comment_count: int = 0

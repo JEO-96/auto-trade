@@ -1,15 +1,34 @@
 import asyncio
 import logging
 import traceback
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any, Optional
+
+import pandas as pd
+
+import database
+import models
+from constants import (
+    MAX_CONCURRENT_POSITIONS,
+    MAX_CONSECUTIVE_ERRORS,
+    MAX_RISK_MULTIPLIER,
+    STOP_LOSS_COOLDOWN_SECONDS,
+)
+from core import config
 from core.data_fetcher import DataFetcher
 from core.execution import ExecutionEngine
-from core import config
-from sqlalchemy.orm import Session
-import database, models
 from notifications import send_kakao_message
-import pandas as pd
+
+# ──────────────────────────────────────────────
+# 분리된 모듈에서 임포트 + 하위 호환성을 위한 재수출
+# ──────────────────────────────────────────────
+from position_manager import (  # noqa: F401 — re-exported for backward compatibility
+    clear_positions_from_db,
+    load_positions_from_db,
+    save_positions_to_db,
+    set_bot_active,
+)
+from trade_logger import save_trade_log  # noqa: F401 — re-exported for backward compatibility
 
 logger = logging.getLogger(__name__)
 
@@ -17,123 +36,10 @@ logger = logging.getLogger(__name__)
 # In production, use Celery + Redis for scaling.
 active_bots: dict[int, asyncio.Task] = {}
 
-# ──────────────────────────────────────────────
-# 리스크 관리 상수
-# ──────────────────────────────────────────────
-MAX_CONCURRENT_POSITIONS = 3          # 최대 동시 포지션 수
-MAX_RISK_MULTIPLIER = 2.0             # 리스크 배수 상한 (자산 대비 최대 4%)
-STOP_LOSS_COOLDOWN_SECONDS = 3600     # 손절 후 재진입 금지 시간 (1시간)
 
-
-def save_trade_log(bot_id: int, symbol: str, side: str, price: float, amount: float, reason: str, pnl: float = None):
-    db: Session = database.SessionLocal()
-    try:
-        log = models.TradeLog(
-            bot_id=bot_id,
-            symbol=symbol,
-            side=side,
-            price=price,
-            amount=amount,
-            pnl=pnl,
-            reason=reason,
-            timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        )
-        db.add(log)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        logger.error("Failed to save trade log: %s", e)
-    finally:
-        db.close()
-
-
-# ──────────────────────────────────────────────
-# 포지션 영속화 (서버 재시작 시 복구용)
-# ──────────────────────────────────────────────
-
-def save_positions_to_db(bot_id: int, active_positions: dict) -> None:
-    """현재 보유 포지션을 DB에 저장 (upsert)"""
-    db: Session = database.SessionLocal()
-    try:
-        # 기존 포지션 삭제 후 새로 삽입
-        db.query(models.ActivePosition).filter(models.ActivePosition.bot_id == bot_id).delete()
-        for symbol, pos in active_positions.items():
-            db.add(models.ActivePosition(
-                bot_id=bot_id,
-                symbol=symbol,
-                position_amount=pos['position_amount'],
-                entry_price=pos['entry_price'],
-                stop_loss=pos['stop_loss'],
-                take_profit=pos['take_profit'],
-            ))
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        logger.error("[Bot %d] Failed to save positions: %s", bot_id, e)
-    finally:
-        db.close()
-
-
-def load_positions_from_db(bot_id: int) -> dict:
-    """DB에서 포지션 복구"""
-    db: Session = database.SessionLocal()
-    positions = {}
-    try:
-        rows = db.query(models.ActivePosition).filter(
-            models.ActivePosition.bot_id == bot_id
-        ).all()
-        for row in rows:
-            positions[row.symbol] = {
-                'position_amount': row.position_amount,
-                'entry_price': row.entry_price,
-                'stop_loss': row.stop_loss,
-                'take_profit': row.take_profit,
-            }
-        if positions:
-            logger.info("[Bot %d] Recovered %d positions from DB", bot_id, len(positions))
-    except Exception as e:
-        logger.error("[Bot %d] Failed to load positions: %s", bot_id, e)
-    finally:
-        db.close()
-    return positions
-
-
-def clear_positions_from_db(bot_id: int) -> None:
-    """봇 정지 시 DB 포지션 정리"""
-    db: Session = database.SessionLocal()
-    try:
-        db.query(models.ActivePosition).filter(models.ActivePosition.bot_id == bot_id).delete()
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        logger.error("[Bot %d] Failed to clear positions: %s", bot_id, e)
-    finally:
-        db.close()
-
-
-# ──────────────────────────────────────────────
-# 봇 활성 상태 DB 동기화
-# ──────────────────────────────────────────────
-
-def set_bot_active(bot_id: int, active: bool) -> None:
-    """DB의 is_active 플래그를 업데이트"""
-    db: Session = database.SessionLocal()
-    try:
-        bot = db.query(models.BotConfig).filter(models.BotConfig.id == bot_id).first()
-        if bot:
-            bot.is_active = active
-            db.commit()
-    except Exception as e:
-        db.rollback()
-        logger.error("[Bot %d] Failed to update is_active: %s", bot_id, e)
-    finally:
-        db.close()
-
-
-def _load_bot_config(bot_config_id: int) -> dict | None:
+def _load_bot_config(bot_config_id: int) -> Optional[dict]:
     """Load bot configuration from DB and return as a plain dict to avoid DetachedInstanceError."""
-    db: Session = database.SessionLocal()
-    try:
+    with database.get_db_session() as db:
         bot_config = db.query(models.BotConfig).filter(models.BotConfig.id == bot_config_id).first()
         if not bot_config:
             logger.warning("[Bot %d] Bot configuration not found. Stopping.", bot_config_id)
@@ -150,8 +56,6 @@ def _load_bot_config(bot_config_id: int) -> dict | None:
             "strategy_name": getattr(bot_config, 'strategy_name', 'james_pro_stable'),
             "user_id": bot_config.user_id,
         }
-    finally:
-        db.close()
 
 
 def _process_symbol_exit(
@@ -167,8 +71,8 @@ def _process_symbol_exit(
     Check stop-loss / take-profit and execute sell if triggered.
     Returns (updated_liquid_capital, was_exited).
     """
-    exit_price = None
-    reason = ""
+    exit_price: Optional[float] = None
+    reason: str = ""
     if curr_price <= pos['stop_loss']:
         exit_price = curr_price
         reason = "Stop Loss"
@@ -188,15 +92,15 @@ def _process_symbol_exit(
         return liquid_capital, False
 
     # 실제 체결가 사용 (슬리피지/시장가 반영)
-    actual_price = sell_result.get("price", exit_price)
-    actual_amount = sell_result.get("amount", pos['position_amount'])
-    pnl = (actual_price - pos['entry_price']) * actual_amount
+    actual_price: float = sell_result.get("price", exit_price)
+    actual_amount: float = sell_result.get("amount", pos['position_amount'])
+    pnl: float = (actual_price - pos['entry_price']) * actual_amount
     liquid_capital += (actual_amount * actual_price)
     save_trade_log(bot_config_id, symbol, "SELL", actual_price, actual_amount, f"{reason} (Portfolio)", pnl)
 
     # Send Kakao Notification
-    cost_basis = pos['entry_price'] * pos['position_amount']
-    pnl_pct = (pnl / cost_basis * 100) if cost_basis > 0 else 0.0
+    cost_basis: float = pos['entry_price'] * pos['position_amount']
+    pnl_pct: float = (pnl / cost_basis * 100) if cost_basis > 0 else 0.0
     msg = (
         f"[SELL]\n"
         f"Symbol: {symbol}\n"
@@ -214,13 +118,13 @@ def _process_symbol_entry(
     df: pd.DataFrame,
     curr_price: float,
     current_idx: int,
-    strategy,
+    strategy: Any,
     execution: ExecutionEngine,
     bot_config_id: int,
     user_id: int,
     total_equity: float,
     liquid_capital: float,
-) -> tuple[float, dict | None]:
+) -> tuple[float, Optional[dict]]:
     """
     Check buy signal and execute entry if triggered.
     Returns (updated_liquid_capital, new_position_dict_or_None).
@@ -241,28 +145,28 @@ def _process_symbol_entry(
         return liquid_capital, None
 
     # Risk Management (2% of TOTAL Portfolio Equity)
-    risk_multiplier = 1.0
+    risk_multiplier: float = 1.0
     if hasattr(strategy, 'get_risk_multiplier'):
         risk_multiplier = strategy.get_risk_multiplier(df, current_idx)
     # 리스크 배수 상한 적용
     risk_multiplier = min(risk_multiplier, MAX_RISK_MULTIPLIER)
 
-    risk_amount = total_equity * config.RISK_PER_TRADE * risk_multiplier
-    price_risk = curr_price - sl
+    risk_amount: float = total_equity * config.RISK_PER_TRADE * risk_multiplier
+    price_risk: float = curr_price - sl
 
     if price_risk <= 0:
         logger.warning("[Bot %d] Risk calculation failed for %s (risk <= 0)", bot_config_id, symbol)
         return liquid_capital, None
 
-    desired_qty = risk_amount / price_risk
-    max_qty = liquid_capital / curr_price if curr_price > 0 else 0
-    qty = min(desired_qty, max_qty)
+    desired_qty: float = risk_amount / price_risk
+    max_qty: float = liquid_capital / curr_price if curr_price > 0 else 0
+    qty: float = min(desired_qty, max_qty)
 
     if qty <= 0 or liquid_capital <= 0:
         return liquid_capital, None
 
     # 매수 금액이 유동 자본을 초과하지 않도록 보장
-    buy_amount = min(qty * curr_price, liquid_capital)
+    buy_amount: float = min(qty * curr_price, liquid_capital)
     qty = buy_amount / curr_price
     if qty <= 0:
         return liquid_capital, None
@@ -271,10 +175,10 @@ def _process_symbol_entry(
     if not res or res["status"] != "success":
         return liquid_capital, None
 
-    entry_price = res["price"]
+    entry_price: float = res["price"]
     qty = res.get("amount", qty)
     liquid_capital -= (qty * entry_price)
-    position = {
+    position: dict = {
         'position_amount': qty,
         'entry_price': entry_price,
         'stop_loss': sl,
@@ -300,7 +204,7 @@ def _send_trade_notification(user_id: int, msg: str) -> None:
     asyncio.create_task(send_kakao_message(user_id, msg))
 
 
-async def run_bot_loop(bot_config_id: int):
+async def run_bot_loop(bot_config_id: int) -> None:
     logger.info("--- [Bot %d] Engine Started (Portfolio Mode) ---", bot_config_id)
     fetcher = DataFetcher()
 
@@ -309,23 +213,22 @@ async def run_bot_loop(bot_config_id: int):
         set_bot_active(bot_config_id, False)
         return
 
-    symbols = cfg["symbols"]
-    timeframe = cfg["timeframe"]
-    liquid_capital = cfg["liquid_capital"]
-    paper_trading = cfg["paper_trading"]
-    strategy_name = cfg["strategy_name"]
-    user_id = cfg["user_id"]
+    symbols: list[str] = cfg["symbols"]
+    timeframe: str = cfg["timeframe"]
+    liquid_capital: float = cfg["liquid_capital"]
+    paper_trading: bool = cfg["paper_trading"]
+    strategy_name: str = cfg["strategy_name"]
+    user_id: int = cfg["user_id"]
 
     from core.strategy import get_strategy
     strategy = get_strategy(strategy_name)
 
-    api_key = None
-    api_secret = None
-    exchange_name = 'upbit'
+    api_key: Optional[str] = None
+    api_secret: Optional[str] = None
+    exchange_name: str = 'upbit'
 
     if not paper_trading:
-        db_new = database.SessionLocal()
-        try:
+        with database.get_db_session() as db_new:
             exchange_key = db_new.query(models.ExchangeKey).filter(models.ExchangeKey.user_id == user_id).first()
             if exchange_key:
                 from crypto_utils import decrypt_key
@@ -336,8 +239,6 @@ async def run_bot_loop(bot_config_id: int):
                 logger.error("[Bot %d] No API key found for user %d. Cannot start live trading.", bot_config_id, user_id)
                 set_bot_active(bot_config_id, False)
                 return
-        finally:
-            db_new.close()
 
     execution = ExecutionEngine(
         api_key=api_key,
@@ -353,29 +254,28 @@ async def run_bot_loop(bot_config_id: int):
         return
 
     # Portfolio State — DB에서 복구 시도
-    active_positions = load_positions_from_db(bot_config_id)
+    active_positions: dict = load_positions_from_db(bot_config_id)
     # 손절 쿨다운 추적: {symbol: datetime}
     cooldown_until: dict[str, datetime] = {}
 
     # 포지션이 복구된 경우, liquid_capital에서 보유 금액 차감
     for sym, pos in active_positions.items():
-        invested = pos['entry_price'] * pos['position_amount']
+        invested: float = pos['entry_price'] * pos['position_amount']
         liquid_capital -= invested
         logger.info("[Bot %d] Recovered position %s: entry=%.0f, qty=%.4f", bot_config_id, sym, pos['entry_price'], pos['position_amount'])
 
     # DB에 활성 상태 표시
     set_bot_active(bot_config_id, True)
 
-    consecutive_errors = 0
-    MAX_CONSECUTIVE_ERRORS = 10  # 연속 10회 에러 시 봇 중단
+    consecutive_errors: int = 0
 
     try:
         while True:
             logger.info("--- [Bot %d] Portfolio Tick: %d symbols ---", bot_config_id, len(symbols))
 
             # 1. Update Total Equity (Liquid + Current Positions Value)
-            total_equity = liquid_capital
-            current_prices = {}
+            total_equity: float = liquid_capital
+            current_prices: dict[str, float] = {}
 
             current_db = database.SessionLocal()
             try:
@@ -386,7 +286,7 @@ async def run_bot_loop(bot_config_id: int):
                     if df is None or df.empty:
                         continue
 
-                    curr_price = float(df.iloc[-1]['close'])
+                    curr_price: float = float(df.iloc[-1]['close'])
                     current_prices[symbol] = curr_price
                     if symbol in active_positions:
                         total_equity += (active_positions[symbol]['position_amount'] * curr_price)
@@ -395,7 +295,7 @@ async def run_bot_loop(bot_config_id: int):
                     df = strategy.apply_indicators(df)
                     # Use iloc[-2] (last CLOSED candle) for all signal checks.
                     # iloc[-1] is the still-forming candle and must not be used for signals.
-                    current_idx = len(df) - 2
+                    current_idx: int = len(df) - 2
 
                     # Guard: need at least 2 candles for current_idx >= 0, and strategies
                     # need current_idx >= 1 to access prev candle
@@ -469,7 +369,7 @@ async def run_bot_loop(bot_config_id: int):
                 current_db.close()
 
             # 에러가 연속되면 대기 시간을 늘림 (최대 5분)
-            sleep_time = min(60 * (1 + consecutive_errors), 300)
+            sleep_time: int = min(60 * (1 + consecutive_errors), 300)
             await asyncio.sleep(sleep_time)
     except asyncio.CancelledError:
         logger.info("--- [Bot %d] Engine Stopped (graceful) ---", bot_config_id)
@@ -485,7 +385,7 @@ async def run_bot_loop(bot_config_id: int):
         set_bot_active(bot_config_id, False)
 
 
-def get_bot_status(bot_config_id: int):
+def get_bot_status(bot_config_id: int) -> str:
     if bot_config_id in active_bots:
         task = active_bots[bot_config_id]
         if not task.done():
@@ -499,31 +399,29 @@ def get_bot_status(bot_config_id: int):
 
 async def recover_active_bots() -> None:
     """서버 시작 시 DB에서 is_active=True인 봇을 자동 재가동"""
-    db: Session = database.SessionLocal()
-    try:
-        active_bot_configs = db.query(models.BotConfig).filter(
-            models.BotConfig.is_active == True,
-        ).all()
+    with database.get_db_session() as db:
+        try:
+            active_bot_configs = db.query(models.BotConfig).filter(
+                models.BotConfig.is_active == True,
+            ).all()
 
-        if not active_bot_configs:
-            logger.info("[Recovery] No active bots to recover.")
-            return
+            if not active_bot_configs:
+                logger.info("[Recovery] No active bots to recover.")
+                return
 
-        for bot_cfg in active_bot_configs:
-            bot_id = bot_cfg.id
-            paper_label = "모의투자" if bot_cfg.paper_trading_mode else "실매매"
-            logger.info(
-                "[Recovery] Restarting bot %d (%s, %s, %s)",
-                bot_id, bot_cfg.symbol, bot_cfg.strategy_name, paper_label,
-            )
-            task = asyncio.create_task(run_bot_loop(bot_id))
-            active_bots[bot_id] = task
+            for bot_cfg in active_bot_configs:
+                bot_id: int = bot_cfg.id
+                paper_label: str = "모의투자" if bot_cfg.paper_trading_mode else "실매매"
+                logger.info(
+                    "[Recovery] Restarting bot %d (%s, %s, %s)",
+                    bot_id, bot_cfg.symbol, bot_cfg.strategy_name, paper_label,
+                )
+                task = asyncio.create_task(run_bot_loop(bot_id))
+                active_bots[bot_id] = task
 
-        logger.info("[Recovery] Recovered %d bot(s).", len(active_bot_configs))
-    except Exception as e:
-        logger.error("[Recovery] Failed to recover bots: %s", e)
-    finally:
-        db.close()
+            logger.info("[Recovery] Recovered %d bot(s).", len(active_bot_configs))
+        except Exception as e:
+            logger.error("[Recovery] Failed to recover bots: %s", e)
 
 
 async def graceful_shutdown() -> None:

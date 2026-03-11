@@ -1,5 +1,17 @@
 export type PostType = 'backtest_share' | 'performance_share' | 'strategy_review' | 'discussion';
 
+export interface BacktestShareData {
+    initial_capital?: number;
+    final_capital?: number;
+    total_trades?: number;
+    strategy_name?: string;
+    timeframe?: string;
+    start_date?: string;
+    end_date?: string;
+    commission_rate?: number;
+    [key: string]: unknown;
+}
+
 export interface CommunityPost {
     id: number;
     user_id: number;
@@ -7,9 +19,10 @@ export interface CommunityPost {
     post_type: PostType;
     title: string;
     content: string | null;
-    backtest_data: Record<string, unknown> | null;
+    backtest_data: BacktestShareData | null;
     performance_data: PerformanceData | null;
     strategy_name: string | null;
+    timeframe: string | null;
     rating: number | null;
     like_count: number;
     comment_count: number;
@@ -38,9 +51,10 @@ export interface PostCreateRequest {
     post_type: PostType;
     title: string;
     content?: string;
-    backtest_data?: Record<string, unknown>;
+    backtest_data?: BacktestShareData;
     performance_data?: PerformanceData;
     strategy_name?: string;
+    timeframe?: string;
     rating?: number;
 }
 

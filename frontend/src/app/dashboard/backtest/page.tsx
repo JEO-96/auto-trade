@@ -1,20 +1,25 @@
 'use client';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Pencil, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
-import { SYMBOLS, STRATEGIES, BACKTEST_POLL_INTERVAL_MS } from '@/lib/constants';
-import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory } from '@/lib/api/backtest';
-import { getAvailableTimeframes, type AvailableTimeframe } from '@/lib/api/bot';
-import { getErrorMessage } from '@/lib/utils';
+import { SYMBOLS, STRATEGIES, BOT_TIMEFRAMES, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel } from '@/lib/constants';
+import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle } from '@/lib/api/backtest';
+import { getBacktestSettings } from '@/lib/api/settings';
+import { getErrorMessage, formatKRW } from '@/lib/utils';
 import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryItem } from '@/types/backtest';
+
+// 백테스트용 전략 목록 (james_* 시리즈)
+const ALL_BACKTEST_STRATEGIES = [...STRATEGIES];
+
+// 백테스트용 타임프레임 (15분 이하 제외)
+const ALL_BACKTEST_TIMEFRAMES = BOT_TIMEFRAMES.filter(t => !['1m', '5m', '15m'].includes(t.value));
 
 export default function BacktestPage() {
     const [loading, setLoading] = useState(false);
-    const [availableTimeframes, setAvailableTimeframes] = useState<AvailableTimeframe[]>([]);
     const [result, setResult] = useState<BacktestResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [progress, setProgress] = useState(0);
@@ -33,6 +38,19 @@ export default function BacktestPage() {
     const [shareContent, setShareContent] = useState('');
     const [sharing, setSharing] = useState(false);
     const [shareSuccess, setShareSuccess] = useState(false);
+
+    // 설정에서 허용된 전략별 타임프레임 매핑
+    const [strategyTimeframeMap, setStrategyTimeframeMap] = useState<Record<string, string[]>>(() => {
+        const fallback: Record<string, string[]> = {};
+        for (const s of ALL_BACKTEST_STRATEGIES) {
+            fallback[s.value] = ALL_BACKTEST_TIMEFRAMES.map(t => t.value);
+        }
+        return fallback;
+    });
+
+    // 인라인 제목 수정
+    const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
+    const [editTitleValue, setEditTitleValue] = useState('');
 
     const fetchHistory = useCallback(async () => {
         setHistoryLoading(true);
@@ -83,13 +101,40 @@ export default function BacktestPage() {
     };
 
     useEffect(() => {
-        getAvailableTimeframes()
-            .then(tfs => { if (tfs.length > 0) setAvailableTimeframes(tfs); })
-            .catch(() => {});
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
     }, []);
+
+    // 허용된 전략별 타임프레임 로드
+    useEffect(() => {
+        async function loadSettings() {
+            try {
+                const settings = await getBacktestSettings();
+                if (Object.keys(settings.strategy_timeframes).length > 0) {
+                    setStrategyTimeframeMap(settings.strategy_timeframes);
+                }
+            } catch {
+                // 설정 로드 실패 시 전체 표시 (하위 호환)
+                const fallback: Record<string, string[]> = {};
+                for (const s of ALL_BACKTEST_STRATEGIES) {
+                    fallback[s.value] = ALL_BACKTEST_TIMEFRAMES.map(t => t.value);
+                }
+                setStrategyTimeframeMap(fallback);
+            }
+        }
+        loadSettings();
+    }, []);
+
+    const handleSaveTitle = async (id: number) => {
+        try {
+            await updateBacktestHistoryTitle(id, editTitleValue);
+            setHistoryList(prev => prev.map(h => h.id === id ? { ...h, title: editTitleValue } : h));
+            setEditingTitleId(null);
+        } catch (err) {
+            console.error('제목 수정 실패', err);
+        }
+    };
 
     const handleDeleteHistory = async (id: number) => {
         if (!confirm('이 백테스트 기록을 삭제하시겠습니까?')) return;
@@ -120,6 +165,23 @@ export default function BacktestPage() {
             period_preset: '3m' as string,
         };
     });
+
+    // 현재 전략에 허용된 전략/타임프레임 목록
+    const allowedStrategies = useMemo(
+        () => ALL_BACKTEST_STRATEGIES.filter(s => s.value in strategyTimeframeMap),
+        [strategyTimeframeMap],
+    );
+    const allowedTimeframes = useMemo(
+        () => ALL_BACKTEST_TIMEFRAMES.filter(t => (strategyTimeframeMap[form.strategy_name] ?? []).includes(t.value)),
+        [strategyTimeframeMap, form.strategy_name],
+    );
+
+    // 전략 변경 시 현재 타임프레임이 허용되지 않으면 첫 번째로 자동 변경
+    useEffect(() => {
+        if (allowedTimeframes.length > 0 && !allowedTimeframes.some(t => t.value === form.timeframe)) {
+            setForm(prev => ({ ...prev, timeframe: allowedTimeframes[0].value }));
+        }
+    }, [allowedTimeframes, form.timeframe]);
 
     const toggleSymbol = (symbol: string) => {
         setForm(prev => {
@@ -292,9 +354,8 @@ export default function BacktestPage() {
                                     ? (h.final_capital - h.initial_capital)
                                     : null;
                                 const isProfit = pnlPct !== null && pnlPct >= 0;
-                                const strategyLabel = STRATEGIES.find(s => s.value === h.strategy_name)?.label || h.strategy_name;
-                                const dateStr = new Date(h.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' });
-
+                                const displayTitle = h.title || getStrategyLabel(h.strategy_name);
+                                const isEditingTitle = editingTitleId === h.id;
                                 return (
                                     <div
                                         key={h.id}
@@ -319,18 +380,47 @@ export default function BacktestPage() {
                                                 <Badge variant={h.status === 'completed' ? 'success' : h.status === 'failed' ? 'danger' : 'warning'}>
                                                     {h.status === 'completed' ? '완료' : h.status === 'failed' ? '실패' : '진행중'}
                                                 </Badge>
+                                                {isEditingTitle ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <input
+                                                            value={editTitleValue}
+                                                            onChange={(e) => setEditTitleValue(e.target.value)}
+                                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(h.id); if (e.key === 'Escape') setEditingTitleId(null); }}
+                                                            className="bg-white/[0.05] border border-primary/30 rounded-lg px-2 py-1 text-xs text-white w-48 focus:outline-none"
+                                                            autoFocus
+                                                        />
+                                                        <button onClick={() => handleSaveTitle(h.id)} className="text-primary hover:text-white transition-colors" title="저장">
+                                                            <Check className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button onClick={() => setEditingTitleId(null)} className="text-gray-500 hover:text-white transition-colors" title="취소">
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-xs text-white font-semibold truncate max-w-[200px]">{displayTitle}</span>
+                                                        <button
+                                                            onClick={() => { setEditingTitleId(h.id); setEditTitleValue(h.title || ''); }}
+                                                            className="text-gray-600 hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                                                            title="제목 수정"
+                                                        >
+                                                            <Pencil className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
-
-                                            {/* 종목 태그 */}
-                                            <div className="flex flex-wrap gap-1.5 mb-3">
-                                                {(h.symbols || []).map((sym) => (
-                                                    <span key={sym} className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/[0.06] text-[11px] font-medium text-gray-300">
-                                                        {sym.replace('/KRW', '')}
-                                                    </span>
-                                                ))}
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/[0.04] text-[11px] text-gray-500">
-                                                    {h.timeframe}
-                                                </span>
+                                            <div className="flex items-center gap-3 text-[11px] text-gray-500 flex-wrap">
+                                                <span className="text-gray-400">{getStrategyLabel(h.strategy_name)}</span>
+                                                <span>{(h.symbols || []).join(', ')}</span>
+                                                <span>{h.timeframe}</span>
+                                                <span>₩{h.initial_capital.toLocaleString()}</span>
+                                                {h.start_date && h.end_date && (
+                                                    <span>{h.start_date} ~ {h.end_date}</span>
+                                                )}
+                                                {h.commission_rate != null && (
+                                                    <span>수수료 {(h.commission_rate * 100).toFixed(2)}%</span>
+                                                )}
+                                                <span>{new Date(h.created_at).toLocaleDateString('ko-KR')}</span>
                                             </div>
 
                                             {/* 수익률 & 핵심 지표 */}
@@ -365,15 +455,23 @@ export default function BacktestPage() {
                                         {/* 하단 액션 바 */}
                                         <div className="flex items-center justify-end gap-1 px-3 py-2 border-t border-white/[0.04]" onClick={(e) => e.stopPropagation()}>
                                             {h.status === 'completed' && (
-                                                <button
-                                                    onClick={() => {
-                                                        setShareModal({ historyId: h.id });
-                                                        setShareTitle(`${strategyLabel} 백테스트 결과 (${(h.symbols || []).join(', ')})`);
-                                                    }}
-                                                    className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors flex items-center gap-1"
-                                                >
-                                                    <Share2 className="w-3 h-3" /> 공유
-                                                </button>
+                                                <>
+                                                    <button
+                                                        onClick={() => loadHistoryDetail(h.id)}
+                                                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
+                                                    >
+                                                        상세보기
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setShareModal({ historyId: h.id });
+                                                            setShareTitle(`${getStrategyLabel(h.strategy_name)} 백테스트 결과 (${(h.symbols || []).join(', ')})`);
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors flex items-center gap-1"
+                                                    >
+                                                        <Share2 className="w-3 h-3" /> 공유
+                                                    </button>
+                                                </>
                                             )}
                                             <button
                                                 onClick={() => handleDeleteHistory(h.id)}
@@ -430,22 +528,17 @@ export default function BacktestPage() {
                                     onChange={handleChange}
                                     className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm font-medium text-white appearance-none cursor-pointer focus:border-primary/30 transition-colors [&>option]:bg-[#1e293b] [&>option]:text-white"
                                 >
-                                    <option value="james_pro_elite">모멘텀 PRO (초고수익형)</option>
-                                    <option value="james_pro_stable">모멘텀 PRO (안정형)</option>
-                                    <option value="james_pro_aggressive">모멘텀 PRO (공격형)</option>
-                                    <option value="james_basic">모멘텀 돌파 (기본)</option>
-                                    <option value="steady_compounder">스테디 복리 (주간 안정형)</option>
+                                    {allowedStrategies.map(s => (
+                                        <option key={s.value} value={s.value}>{s.label}</option>
+                                    ))}
                                 </select>
                             </div>
 
                             {/* Timeframe */}
                             <div>
                                 <label className="text-xs text-gray-500 font-medium mb-2 block">캔들 주기</label>
-                                <div className={`grid gap-1.5 bg-white/[0.02] p-1 rounded-xl border border-white/[0.04]`} style={{ gridTemplateColumns: `repeat(${Math.min(availableTimeframes.length || 4, 4)}, minmax(0, 1fr))` }}>
-                                    {(availableTimeframes.length > 0
-                                        ? availableTimeframes.map(t => ({ value: t.timeframe, label: t.label }))
-                                        : [{ value: '15m', label: '15분' }, { value: '1h', label: '1시간' }, { value: '4h', label: '4시간' }, { value: '1d', label: '1일' }]
-                                    ).map(tf => (
+                                <div className={`grid gap-1.5 bg-white/[0.02] p-1 rounded-xl border border-white/[0.04]`} style={{ gridTemplateColumns: `repeat(${Math.min(allowedTimeframes.length, 4)}, 1fr)` }}>
+                                    {allowedTimeframes.map(tf => (
                                         <button
                                             key={tf.value}
                                             type="button"
@@ -697,8 +790,8 @@ export default function BacktestPage() {
                                                         <span className="font-semibold text-white">{trade.symbol?.split('/')[0]}</span>
                                                     </td>
                                                     <td className="px-5 py-4 text-center">
-                                                        <Badge variant={trade.side === 'BUY' ? 'success' : 'danger'}>
-                                                            {trade.side === 'BUY' ? '매수' : '매도'}
+                                                        <Badge variant={trade.side === TRADE_SIDE.BUY ? 'success' : 'danger'}>
+                                                            {TRADE_SIDE_LABELS[trade.side]}
                                                         </Badge>
                                                     </td>
                                                     <td className="px-5 py-4 text-right font-mono text-sm text-gray-300 whitespace-nowrap">

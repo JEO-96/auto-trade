@@ -12,7 +12,13 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { getPosts, toggleLike } from '@/lib/api/community';
 import { useAuth } from '@/contexts/AuthContext';
+import { BOT_TIMEFRAMES, getStrategyLabel } from '@/lib/constants';
 import type { CommunityPost, PostType } from '@/types/community';
+
+const getTimeframeLabel = (value: string) => {
+    const found = BOT_TIMEFRAMES.find(t => t.value === value);
+    return found ? found.label : value;
+};
 
 const POST_TYPE_TABS: { label: string; value: PostType | 'all'; icon: React.ReactNode }[] = [
     { label: '전체', value: 'all', icon: <MessageSquare className="w-3.5 h-3.5" /> },
@@ -54,7 +60,12 @@ function PostCard({ post, onLikeToggle, isLoggedIn }: { post: CommunityPost; onL
                         <Badge variant={badge.variant}>{badge.label}</Badge>
                         {post.strategy_name && (
                             <span className="text-[10px] text-gray-500 font-medium">
-                                {post.strategy_name}
+                                {getStrategyLabel(post.strategy_name)}
+                            </span>
+                        )}
+                        {post.timeframe && (
+                            <span className="text-[10px] text-gray-600 font-medium">
+                                {getTimeframeLabel(post.timeframe)}
                             </span>
                         )}
                     </div>
@@ -75,14 +86,29 @@ function PostCard({ post, onLikeToggle, isLoggedIn }: { post: CommunityPost; onL
             )}
 
             {post.post_type === 'backtest_share' && post.backtest_data && (
-                <div className="flex items-center gap-4 p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                    <MetricItem
-                        label="수익률"
-                        value={`${(((Number(post.backtest_data.final_capital) - Number(post.backtest_data.initial_capital)) / Number(post.backtest_data.initial_capital)) * 100).toFixed(1)}%`}
-                        positive={(Number(post.backtest_data.final_capital) - Number(post.backtest_data.initial_capital)) > 0}
-                    />
-                    <MetricItem label="거래 수" value={String(post.backtest_data.total_trades ?? '-')} />
-                    <MetricItem label="전략" value={String(post.backtest_data.strategy_name ?? '-')} />
+                <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] space-y-2">
+                    <div className="flex items-center gap-4">
+                        <MetricItem
+                            label="수익률"
+                            value={`${(((Number(post.backtest_data.final_capital) - Number(post.backtest_data.initial_capital)) / Number(post.backtest_data.initial_capital)) * 100).toFixed(1)}%`}
+                            positive={(Number(post.backtest_data.final_capital) - Number(post.backtest_data.initial_capital)) > 0}
+                        />
+                        <MetricItem label="거래 수" value={String(post.backtest_data.total_trades ?? '-')} />
+                        <MetricItem label="전략" value={post.backtest_data.strategy_name ? getStrategyLabel(String(post.backtest_data.strategy_name)) : '-'} />
+                    </div>
+                    {(post.backtest_data.start_date || post.backtest_data.timeframe || post.backtest_data.commission_rate != null) && (
+                        <div className="flex items-center gap-3 text-[10px] text-gray-500">
+                            {post.backtest_data.start_date && post.backtest_data.end_date && (
+                                <span>{String(post.backtest_data.start_date)} ~ {String(post.backtest_data.end_date)}</span>
+                            )}
+                            {post.backtest_data.timeframe && (
+                                <span>{getTimeframeLabel(String(post.backtest_data.timeframe))}</span>
+                            )}
+                            {post.backtest_data.commission_rate != null && (
+                                <span>수수료 {(Number(post.backtest_data.commission_rate) * 100).toFixed(2)}%</span>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 

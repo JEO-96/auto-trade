@@ -57,6 +57,26 @@ def get_exchange_keys(current_user: models.User = Depends(get_current_user), db:
     return results
 
 
+@router.delete("/{key_id}")
+def delete_exchange_key(
+    key_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    key = db.query(models.ExchangeKey).filter(
+        models.ExchangeKey.id == key_id,
+        models.ExchangeKey.user_id == current_user.id,
+    ).first()
+    if not key:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="API 키를 찾을 수 없습니다.",
+        )
+    db.delete(key)
+    db.commit()
+    return {"detail": "API 키가 삭제되었습니다."}
+
+
 @router.get("/balance", response_model=schemas.BalanceResponse)
 async def get_upbit_balance(
     current_user: models.User = Depends(get_current_user),

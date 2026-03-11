@@ -1,18 +1,18 @@
-import ccxt
 import logging
 import random
 import time
+
+import ccxt
+
+from constants import (
+    MAX_RETRIES,
+    PAPER_SLIPPAGE_MAX,
+    PAPER_SLIPPAGE_MIN,
+    RETRY_DELAY,
+)
 from core import config
 
 logger = logging.getLogger(__name__)
-
-# 페이퍼 트레이딩 슬리피지 (0.05% ~ 0.15%)
-PAPER_SLIPPAGE_MIN = 0.0005
-PAPER_SLIPPAGE_MAX = 0.0015
-
-# 실매매 재시도 설정
-MAX_RETRIES = 3
-RETRY_DELAY = 2  # seconds
 
 
 class ExecutionEngine:

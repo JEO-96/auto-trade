@@ -84,8 +84,9 @@ export async function sendChatMessage(content: string): Promise<ChatMessage> {
 }
 
 // Strategy Reviews
-export async function getStrategyReviews(strategyName: string): Promise<CommunityPost[]> {
-    const res = await api.get<CommunityPost[]>(`/community/strategies/${strategyName}/reviews`);
+export async function getStrategyReviews(strategyName: string, timeframe?: string): Promise<CommunityPost[]> {
+    const params = timeframe ? { timeframe } : {};
+    const res = await api.get<CommunityPost[]>(`/community/strategies/${strategyName}/reviews`, { params });
     return res.data;
 }
 

@@ -11,7 +11,14 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { getPost, toggleLike, getComments, createComment, deleteComment, deletePost } from '@/lib/api/community';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDateTime } from '@/lib/utils';
+import { BOT_TIMEFRAMES, getStrategyLabel } from '@/lib/constants';
 import type { CommunityPost, PostComment, PostType } from '@/types/community';
+
+const getTimeframeLabel = (value: string) => {
+    const found = BOT_TIMEFRAMES.find(t => t.value === value);
+    return found ? found.label : value;
+};
 
 const POST_TYPE_BADGE: Record<PostType, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
     backtest_share: { label: '백테스트', variant: 'info' },
@@ -32,14 +39,6 @@ function StarDisplay({ rating }: { rating: number }) {
             <span className="text-sm text-gray-400 ml-1 font-semibold">{rating}/5</span>
         </div>
     );
-}
-
-function formatDate(dateString: string): string {
-    const d = new Date(dateString);
-    return d.toLocaleDateString('ko-KR', {
-        year: 'numeric', month: 'long', day: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-    });
 }
 
 export default function PublicPostDetailPage() {
@@ -155,7 +154,10 @@ export default function PublicPostDetailPage() {
                 <div className="flex items-center gap-2 mb-3">
                     <Badge variant={badge.variant}>{badge.label}</Badge>
                     {post.strategy_name && (
-                        <span className="text-[11px] text-gray-500 font-medium">{post.strategy_name}</span>
+                        <span className="text-[11px] text-gray-500 font-medium">{getStrategyLabel(post.strategy_name)}</span>
+                    )}
+                    {post.timeframe && (
+                        <span className="text-[11px] text-gray-600 font-medium">{getTimeframeLabel(post.timeframe)}</span>
                     )}
                 </div>
 
@@ -173,26 +175,42 @@ export default function PublicPostDetailPage() {
                     </div>
                     <div>
                         <p className="text-sm font-semibold text-white">{post.author_nickname ?? '익명'}</p>
-                        <p className="text-[10px] text-gray-500">{formatDate(post.created_at)}</p>
+                        <p className="text-[10px] text-gray-500">{formatDateTime(post.created_at)}</p>
                     </div>
                 </div>
 
                 {/* Backtest Data */}
                 {post.post_type === 'backtest_share' && post.backtest_data && (
-                    <div className="grid grid-cols-3 gap-3 mb-5">
-                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
-                            <p className="text-[10px] text-gray-500 mb-1">초기 자본</p>
-                            <p className="text-sm font-bold text-white">₩{Number(post.backtest_data.initial_capital).toLocaleString()}</p>
+                    <div className="mb-5 space-y-3">
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
+                                <p className="text-[10px] text-gray-500 mb-1">초기 자본</p>
+                                <p className="text-sm font-bold text-white">₩{Number(post.backtest_data.initial_capital).toLocaleString()}</p>
+                            </div>
+                            <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
+                                <p className="text-[10px] text-gray-500 mb-1">최종 자본</p>
+                                <p className={`text-sm font-bold ${Number(post.backtest_data.final_capital) >= Number(post.backtest_data.initial_capital) ? 'text-secondary' : 'text-red-400'}`}>
+                                    ₩{Number(post.backtest_data.final_capital).toLocaleString()}
+                                </p>
+                            </div>
+                            <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
+                                <p className="text-[10px] text-gray-500 mb-1">총 거래</p>
+                                <p className="text-sm font-bold text-white">{String(post.backtest_data.total_trades)}회</p>
+                            </div>
                         </div>
-                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
-                            <p className="text-[10px] text-gray-500 mb-1">최종 자본</p>
-                            <p className={`text-sm font-bold ${Number(post.backtest_data.final_capital) >= Number(post.backtest_data.initial_capital) ? 'text-secondary' : 'text-red-400'}`}>
-                                ₩{Number(post.backtest_data.final_capital).toLocaleString()}
-                            </p>
-                        </div>
-                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
-                            <p className="text-[10px] text-gray-500 mb-1">총 거래</p>
-                            <p className="text-sm font-bold text-white">{String(post.backtest_data.total_trades)}회</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500 px-1 flex-wrap">
+                            {post.backtest_data.strategy_name && (
+                                <span>전략: <span className="text-gray-400 font-medium">{getStrategyLabel(String(post.backtest_data.strategy_name))}</span></span>
+                            )}
+                            {post.backtest_data.timeframe && (
+                                <span>주기: <span className="text-gray-400 font-medium">{getTimeframeLabel(String(post.backtest_data.timeframe))}</span></span>
+                            )}
+                            {post.backtest_data.start_date && post.backtest_data.end_date && (
+                                <span>기간: <span className="text-gray-400 font-medium">{String(post.backtest_data.start_date)} ~ {String(post.backtest_data.end_date)}</span></span>
+                            )}
+                            {post.backtest_data.commission_rate != null && (
+                                <span>수수료: <span className="text-gray-400 font-medium">{(Number(post.backtest_data.commission_rate) * 100).toFixed(2)}%</span></span>
+                            )}
                         </div>
                     </div>
                 )}
@@ -276,7 +294,7 @@ export default function PublicPostDetailPage() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="text-xs font-semibold text-white">{comment.author_nickname ?? '익명'}</span>
-                                        <span className="text-[10px] text-gray-600">{formatDate(comment.created_at)}</span>
+                                        <span className="text-[10px] text-gray-600">{formatDateTime(comment.created_at)}</span>
                                     </div>
                                     <p className="text-sm text-gray-300 leading-relaxed">{comment.content}</p>
                                 </div>

@@ -93,6 +93,7 @@ class BacktestHistory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String, nullable=True)  # 사용자 지정 제목
     symbols = Column(String, nullable=False)  # JSON array string e.g. '["BTC/KRW"]'
     timeframe = Column(String, nullable=False)
     strategy_name = Column(String, nullable=False)
@@ -101,6 +102,9 @@ class BacktestHistory(Base):
     total_trades = Column(Integer, nullable=True)
     result_data = Column(String, nullable=True)  # Full result JSON (trades, equity_curve)
     status = Column(String, default="running")  # running, completed, failed
+    start_date = Column(String, nullable=True)  # YYYY-MM-DD
+    end_date = Column(String, nullable=True)  # YYYY-MM-DD
+    commission_rate = Column(Float, nullable=True)  # 수수료율 (소수)
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
     owner = relationship("User")
@@ -117,6 +121,7 @@ class CommunityPost(Base):
     backtest_data = Column(String, nullable=True)  # JSON string
     performance_data = Column(String, nullable=True)  # JSON string
     strategy_name = Column(String, nullable=True)
+    timeframe = Column(String, nullable=True)  # e.g., 1h, 4h, 1d for strategy_review
     rating = Column(Integer, nullable=True)  # 1-5 for strategy_review
     like_count = Column(Integer, default=0)
     comment_count = Column(Integer, default=0)
@@ -178,16 +183,12 @@ class ActivePosition(Base):
     )
 
 
-class AllowedTimeframe(Base):
-    """관리자가 허용한 캔들 주기 설정"""
-    __tablename__ = "allowed_timeframes"
+class SystemSettings(Base):
+    __tablename__ = "system_settings"
 
     id = Column(Integer, primary_key=True, index=True)
-    timeframe = Column(String, unique=True, nullable=False)  # e.g. "1h", "4h"
-    label = Column(String, nullable=False)  # e.g. "1시간", "4시간"
-    display_order = Column(Integer, default=0)  # 프론트엔드 정렬 순서
-    is_active = Column(Boolean, default=True)  # 비활성화 시 선택 불가
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    key = Column(String, unique=True, nullable=False)
+    value = Column(String, nullable=False)  # JSON string
 
 
 class ChatMessage(Base):

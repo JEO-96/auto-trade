@@ -75,6 +75,9 @@ def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depen
             strategy_name=req.strategy_name,
             initial_capital=req.initial_capital,
             status="running",
+            start_date=req.start_date,
+            end_date=req.end_date,
+            commission_rate=req.commission_rate,
         )
         db.add(history)
         db.commit()
@@ -112,6 +115,9 @@ def run_portfolio_backtest(req: schemas.PortfolioBacktestRequest, current_user: 
             strategy_name=req.strategy_name,
             initial_capital=req.initial_capital,
             status="running",
+            start_date=req.start_date,
+            end_date=req.end_date,
+            commission_rate=req.commission_rate,
         )
         db.add(history)
         db.commit()
@@ -171,6 +177,7 @@ def get_backtest_history(
     for h in histories:
         results.append(schemas.BacktestHistoryResponse(
             id=h.id,
+            title=h.title,
             symbols=json.loads(h.symbols) if h.symbols else [],
             timeframe=h.timeframe,
             strategy_name=h.strategy_name,
@@ -178,6 +185,9 @@ def get_backtest_history(
             final_capital=h.final_capital,
             total_trades=h.total_trades,
             status=h.status,
+            start_date=h.start_date,
+            end_date=h.end_date,
+            commission_rate=h.commission_rate,
             created_at=h.created_at,
         ))
     return results
@@ -199,6 +209,7 @@ def get_backtest_history_detail(
 
     return schemas.BacktestHistoryDetailResponse(
         id=history.id,
+        title=history.title,
         symbols=json.loads(history.symbols) if history.symbols else [],
         timeframe=history.timeframe,
         strategy_name=history.strategy_name,
@@ -206,9 +217,36 @@ def get_backtest_history_detail(
         final_capital=history.final_capital,
         total_trades=history.total_trades,
         status=history.status,
+        start_date=history.start_date,
+        end_date=history.end_date,
+        commission_rate=history.commission_rate,
         created_at=history.created_at,
         result_data=json.loads(history.result_data) if history.result_data else None,
     )
+
+
+@router.patch("/history/{history_id}")
+def update_backtest_history(
+    history_id: int,
+    update: schemas.BacktestHistoryUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """백테스트 기록 제목 수정"""
+    history = db.query(models.BacktestHistory).filter(
+        models.BacktestHistory.id == history_id,
+        models.BacktestHistory.user_id == current_user.id,
+    ).first()
+    if not history:
+        raise HTTPException(status_code=404, detail="백테스트 기록을 찾을 수 없습니다.")
+
+    if update.title is not None:
+        history.title = update.title
+
+    db.commit()
+    db.refresh(history)
+    logger.info("User %d updated backtest history %d title", current_user.id, history_id)
+    return {"status": "success", "message": "백테스트 기록이 수정되었습니다."}
 
 
 @router.delete("/history/{history_id}")
@@ -258,6 +296,9 @@ def share_backtest_to_community(
         "initial_capital": history.initial_capital,
         "final_capital": history.final_capital,
         "total_trades": history.total_trades,
+        "start_date": history.start_date,
+        "end_date": history.end_date,
+        "commission_rate": history.commission_rate,
     }
 
     post = models.CommunityPost(

@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { updateNickname, getUserProfile, getPosts } from '@/lib/api/community';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDate } from '@/lib/utils';
 import type { CommunityPost, PostType } from '@/types/community';
 
 const POST_TYPE_BADGE: Record<PostType, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
@@ -18,12 +19,6 @@ const POST_TYPE_BADGE: Record<PostType, { label: string; variant: 'success' | 'w
     strategy_review: { label: '전략 리뷰', variant: 'warning' },
     discussion: { label: '토론', variant: 'info' },
 };
-
-function formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
-        year: 'numeric', month: 'long', day: 'numeric',
-    });
-}
 
 export default function ProfilePage() {
     const { user, refreshUser } = useAuth();

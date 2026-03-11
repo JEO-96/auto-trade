@@ -38,15 +38,15 @@ export async function deleteBot(botId: number): Promise<void> {
     await api.delete(`/bot/${botId}`);
 }
 
-export interface AvailableTimeframe {
-    id: number;
+export interface ActiveBotPublic {
+    nickname: string | null;
+    symbol: string;
     timeframe: string;
-    label: string;
-    display_order: number;
-    is_active: boolean;
+    strategy_name: string | null;
+    paper_trading_mode: boolean;
 }
 
-export async function getAvailableTimeframes(): Promise<AvailableTimeframe[]> {
-    const res = await api.get<AvailableTimeframe[]>('/bot/timeframes');
-    return res.data;
+export async function getActiveBots(): Promise<ActiveBotPublic[]> {
+    const res = await api.get<{ bots: ActiveBotPublic[]; total: number }>('/bot/active');
+    return res.data.bots;
 }

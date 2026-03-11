@@ -1,5 +1,6 @@
 import urllib.parse
 from sqlalchemy import create_engine
+from contextlib import contextmanager
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 from settings import settings
@@ -34,6 +35,22 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
+# Context manager for standalone DB session usage (outside FastAPI Depends)
+@contextmanager
+def get_db_session():
+    """Provides a transactional DB session with automatic cleanup.
+
+    Usage:
+        with get_db_session() as db:
+            db.query(...)
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 # Dependency to get the database session
 def get_db():

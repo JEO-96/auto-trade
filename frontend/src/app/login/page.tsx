@@ -1,22 +1,28 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Activity, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import KakaoLoginButton from '@/components/KakaoLoginButton';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
     const [termsAgreed, setTermsAgreed] = useState(false);
     const router = useRouter();
+    const { isAuthenticated, isLoading } = useAuth();
 
-    useEffect(() => {
-        if (typeof window !== 'undefined' && localStorage.getItem('access_token')) {
-            router.push('/dashboard');
-        }
-    }, [router]);
+    // Redirect to dashboard if already authenticated
+    if (!isLoading && isAuthenticated) {
+        router.replace('/dashboard');
+    }
+
+    // Show blank screen while checking auth or if already authenticated (prevents flash)
+    if (isLoading || isAuthenticated) {
+        return <div className="min-h-screen bg-[#020617]" />;
+    }
 
     return (
-        <div className="min-h-screen flex relative overflow-hidden bg-[#020617]">
+        <div className="min-h-screen flex relative overflow-hidden bg-[#020617] animate-fade-in">
             {/* Left - Branding */}
             <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] to-accent/[0.04]" />

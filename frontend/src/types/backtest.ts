@@ -42,6 +42,7 @@ export interface BacktestTaskStatus {
 
 export interface BacktestHistoryItem {
     id: number;
+    title: string | null;
     symbols: string[];
     timeframe: string;
     strategy_name: string;
@@ -49,6 +50,9 @@ export interface BacktestHistoryItem {
     final_capital: number | null;
     total_trades: number | null;
     status: string;
+    start_date: string | null;
+    end_date: string | null;
+    commission_rate: number | null;
     created_at: string;
 }
 

@@ -40,6 +40,13 @@ export async function getBacktestHistoryDetail(
     return res.data;
 }
 
+export async function updateBacktestHistoryTitle(
+    historyId: number,
+    title: string,
+): Promise<void> {
+    await api.patch(`/backtest/history/${historyId}`, { title });
+}
+
 export async function deleteBacktestHistory(
     historyId: number,
 ): Promise<void> {

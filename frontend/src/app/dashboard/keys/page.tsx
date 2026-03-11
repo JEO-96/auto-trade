@@ -1,11 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { KeyRound, Plus, Save, Trash2, ShieldCheck, Eye, EyeOff, ExternalLink } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { KeyRound, Plus, Save, Trash2, ShieldCheck, Eye, EyeOff, ExternalLink, AlertTriangle, RefreshCw } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import { SelectInput } from '@/components/ui/Input';
-import { getKeys, saveKey } from '@/lib/api/keys';
+import { getKeys, saveKey, deleteKey } from '@/lib/api/keys';
 import type { ExchangeKeyPreview } from '@/types/keys';
 
 export default function ApiKeysPage() {
@@ -17,6 +17,7 @@ export default function ApiKeysPage() {
     const [apiSecret, setApiSecret] = useState('');
     const [showSecret, setShowSecret] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState<number | null>(null);
 
     const fetchKeys = async () => {
         try {
@@ -33,8 +34,20 @@ export default function ApiKeysPage() {
         fetchKeys();
     }, []);
 
+    const existingKeyForExchange = useMemo(() => {
+        return keys.find(k => k.exchange_name === exchangeName);
+    }, [keys, exchangeName]);
+
+    const isUpdate = !!existingKeyForExchange;
+
     const handleSaveKey = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (isUpdate) {
+            const confirmed = confirm('기존 키가 업데이트됩니다. 계속하시겠습니까?');
+            if (!confirmed) return;
+        }
+
         setSaving(true);
         try {
             await saveKey({
@@ -42,7 +55,7 @@ export default function ApiKeysPage() {
                 api_key: apiKey,
                 api_secret: apiSecret,
             });
-            alert('API 키가 안전하게 저장되었습니다.');
+            alert(isUpdate ? 'API 키가 업데이트되었습니다.' : 'API 키가 안전하게 저장되었습니다.');
             setApiKey('');
             setApiSecret('');
             fetchKeys();
@@ -50,6 +63,21 @@ export default function ApiKeysPage() {
             alert('저장 실패. 로그인 상태인지 확인해 주세요.');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleDeleteKey = async (keyId: number, keyExchangeName: string) => {
+        const confirmed = confirm(`${keyExchangeName.toUpperCase()} API 키를 삭제하시겠습니까?`);
+        if (!confirmed) return;
+
+        setDeleting(keyId);
+        try {
+            await deleteKey(keyId);
+            setKeys(prev => prev.filter(k => k.id !== keyId));
+        } catch (err) {
+            alert('삭제 실패. 다시 시도해 주세요.');
+        } finally {
+            setDeleting(null);
         }
     };
 
@@ -69,7 +97,7 @@ export default function ApiKeysPage() {
                 <div className="glass-panel p-6 rounded-2xl">
                     <h3 className="text-base font-bold mb-5 flex items-center gap-2">
                         <Plus className="w-4 h-4 text-primary" />
-                        API 키 등록
+                        API 키 {isUpdate ? '업데이트' : '등록'}
                     </h3>
 
                     <form onSubmit={handleSaveKey} className="space-y-4">
@@ -83,6 +111,20 @@ export default function ApiKeysPage() {
                             <option value="binance">Binance (바이낸스)</option>
                             <option value="bybit">Bybit (바이비트)</option>
                         </SelectInput>
+
+                        {isUpdate && (
+                            <div className="flex items-start gap-2 p-3 bg-amber-500/[0.06] border border-amber-500/20 rounded-xl">
+                                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-xs text-amber-400 font-medium">
+                                        이미 {exchangeName.toUpperCase()} API 키가 등록되어 있습니다.
+                                    </p>
+                                    <p className="text-[10px] text-amber-500/70 mt-0.5">
+                                        새 키를 입력하면 기존 키가 업데이트됩니다. 삭제 후 재등록하려면 오른쪽 목록에서 삭제해주세요.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         <div>
                             <label className="text-xs text-gray-500 font-medium mb-1.5 block">API Key (Access Key)</label>
@@ -129,8 +171,17 @@ export default function ApiKeysPage() {
                             fullWidth
                             loading={saving}
                         >
-                            <Save className="w-4 h-4" />
-                            {saving ? "저장 중..." : "저장하기"}
+                            {isUpdate ? (
+                                <>
+                                    <RefreshCw className="w-4 h-4" />
+                                    {saving ? "업데이트 중..." : "키 업데이트"}
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    {saving ? "저장 중..." : "저장하기"}
+                                </>
+                            )}
                         </Button>
                     </form>
                 </div>
@@ -165,8 +216,17 @@ export default function ApiKeysPage() {
                                             {key.api_key_preview}
                                         </p>
                                     </div>
-                                    <button aria-label="API 키 삭제" className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-red-500/[0.08] rounded-lg">
-                                        <Trash2 className="w-4 h-4" />
+                                    <button
+                                        onClick={() => handleDeleteKey(key.id, key.exchange_name)}
+                                        disabled={deleting === key.id}
+                                        aria-label="API 키 삭제"
+                                        className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-red-500/[0.08] rounded-lg disabled:opacity-50"
+                                    >
+                                        {deleting === key.id ? (
+                                            <div className="w-4 h-4 border border-gray-500/20 border-t-gray-400 rounded-full animate-spin" />
+                                        ) : (
+                                            <Trash2 className="w-4 h-4" />
+                                        )}
                                     </button>
                                 </div>
                             ))}

@@ -8,21 +8,16 @@ import PageContainer from '@/components/ui/PageContainer';
 import Button from '@/components/ui/Button';
 import Input, { SelectInput } from '@/components/ui/Input';
 import { createPost } from '@/lib/api/community';
+import { BOT_STRATEGIES, BOT_TIMEFRAMES } from '@/lib/constants';
 import type { PostType, PostCreateRequest } from '@/types/community';
-
-const STRATEGIES = [
-    'momentum_breakout_basic',
-    'momentum_breakout_pro_stable',
-    'momentum_breakout_pro_aggressive',
-    'momentum_breakout_elite',
-];
 
 export default function CreatePostPage() {
     const router = useRouter();
     const [postType, setPostType] = useState<PostType>('discussion');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [strategyName, setStrategyName] = useState(STRATEGIES[0]);
+    const [strategyName, setStrategyName] = useState<string>(BOT_STRATEGIES[0].value);
+    const [timeframe, setTimeframe] = useState<string>(BOT_TIMEFRAMES[3].value); // default 1h
     const [rating, setRating] = useState(5);
     const [hoverRating, setHoverRating] = useState(0);
     const [submitting, setSubmitting] = useState(false);
@@ -60,6 +55,7 @@ export default function CreatePostPage() {
 
             if (postType === 'strategy_review') {
                 data.strategy_name = strategyName;
+                data.timeframe = timeframe;
                 data.rating = rating;
             }
 
@@ -142,8 +138,19 @@ export default function CreatePostPage() {
                                 value={strategyName}
                                 onChange={(e) => setStrategyName(e.target.value)}
                             >
-                                {STRATEGIES.map((s) => (
-                                    <option key={s} value={s}>{s}</option>
+                                {BOT_STRATEGIES.map((s) => (
+                                    <option key={s.value} value={s.value}>{s.label}</option>
+                                ))}
+                            </SelectInput>
+
+                            <SelectInput
+                                type="select"
+                                label="캔들 주기"
+                                value={timeframe}
+                                onChange={(e) => setTimeframe(e.target.value)}
+                            >
+                                {BOT_TIMEFRAMES.map((t) => (
+                                    <option key={t.value} value={t.value}>{t.label}</option>
                                 ))}
                             </SelectInput>
 
@@ -220,8 +227,8 @@ export default function CreatePostPage() {
                                 value={strategyName}
                                 onChange={(e) => setStrategyName(e.target.value)}
                             >
-                                {STRATEGIES.map((s) => (
-                                    <option key={s} value={s}>{s}</option>
+                                {BOT_STRATEGIES.map((s) => (
+                                    <option key={s.value} value={s.value}>{s.label}</option>
                                 ))}
                             </SelectInput>
                             <div className="flex items-center gap-3">

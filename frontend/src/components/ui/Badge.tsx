@@ -1,10 +1,11 @@
 import React from 'react';
 
-type BadgeVariant = 'success' | 'warning' | 'danger' | 'info';
+type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'default';
 
 interface BadgeProps {
     variant: BadgeVariant;
     children: React.ReactNode;
+    className?: string;
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
@@ -12,12 +13,13 @@ const variantStyles: Record<BadgeVariant, string> = {
     warning: 'bg-amber-500/10 text-amber-400',
     danger: 'bg-red-500/10 text-red-400',
     info: 'bg-primary/10 text-primary',
+    default: 'bg-white/[0.06] text-gray-400',
 };
 
-export default function Badge({ variant, children }: BadgeProps) {
+export default function Badge({ variant, children, className = '' }: BadgeProps) {
     return (
         <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold ${variantStyles[variant]}`}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold ${variantStyles[variant]} ${className}`}
         >
             {children}
         </span>

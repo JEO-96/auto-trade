@@ -1,17 +1,19 @@
 export const SYMBOLS = ['BTC/KRW', 'ETH/KRW', 'SOL/KRW', 'XRP/KRW'] as const;
 
-export const STRATEGIES = [
-    { value: 'james_pro_stable', label: '모멘텀 돌파 Pro (안정형)' },
-    { value: 'james_pro_aggressive', label: '모멘텀 돌파 Pro (공격형)' },
-    { value: 'james_pro_elite', label: '모멘텀 돌파 Elite' },
-    { value: 'steady_compounder', label: '스테디 복리 (주간 안정형)' },
-] as const;
-
 export const BOT_STRATEGIES = [
     { value: 'momentum_breakout_basic', label: '모멘텀 돌파 (기본)' },
     { value: 'momentum_breakout_pro_stable', label: '모멘텀 돌파 Pro (안정형)' },
     { value: 'momentum_breakout_pro_aggressive', label: '모멘텀 돌파 Pro (공격형)' },
     { value: 'momentum_breakout_elite', label: '모멘텀 돌파 Elite' },
+    { value: 'steady_compounder', label: '스테디 복리 (주간 안정형)' },
+] as const;
+
+/** 백테스트 전용 전략 (james_* 시리즈 등 BOT_STRATEGIES와 다른 이름 체계) */
+export const STRATEGIES = [
+    { value: 'james_basic', label: '모멘텀 돌파 (기본)' },
+    { value: 'james_pro_stable', label: '모멘텀 돌파 Pro (안정형)' },
+    { value: 'james_pro_aggressive', label: '모멘텀 돌파 Pro (공격형)' },
+    { value: 'james_pro_elite', label: '모멘텀 돌파 PRO (초고수익형)' },
     { value: 'steady_compounder', label: '스테디 복리 (주간 안정형)' },
 ] as const;
 
@@ -26,6 +28,37 @@ export const BOT_TIMEFRAMES = [
 
 export const TIMEFRAMES = ['15m', '30m', '1h', '4h', '1d'] as const;
 
+export const BOT_STATUS = { RUNNING: 'Running', STOPPED: 'Stopped' } as const;
+
+export const TRADE_SIDE = { BUY: 'BUY', SELL: 'SELL' } as const;
+
+export const TRADE_SIDE_LABELS: Record<string, string> = { BUY: '매수', SELL: '매도' };
+
+export const BOT_MODE_LABELS = { paper: '모의투자', live: '실매매' } as const;
+
 export const BOT_POLL_INTERVAL_MS = 10000;
 
 export const BACKTEST_POLL_INTERVAL_MS = 1000;
+
+/** 봇 전략(momentum_*) → 백테스트 전략(james_*) 매핑 (타임프레임 설정 공유용) */
+export const BOT_TO_BACKTEST_STRATEGY: Record<string, string> = {
+    'momentum_breakout_basic': 'james_basic',
+    'momentum_breakout_pro_stable': 'james_pro_stable',
+    'momentum_breakout_pro_aggressive': 'james_pro_aggressive',
+    'momentum_breakout_elite': 'james_pro_elite',
+    'steady_compounder': 'steady_compounder',
+};
+
+/** 전략 value → 사용자 친화적 label 맵 (BOT_STRATEGIES + STRATEGIES 통합) */
+const STRATEGY_LABEL_MAP: Record<string, string> = Object.fromEntries([
+    ...BOT_STRATEGIES.map(s => [s.value, s.label]),
+    ...STRATEGIES.map(s => [s.value, s.label]),
+]);
+
+/**
+ * 전략 내부 이름에서 사용자 친화적 레이블을 반환합니다.
+ * 매핑이 없으면 원래 이름을 그대로 반환합니다.
+ */
+export function getStrategyLabel(strategyName: string): string {
+    return STRATEGY_LABEL_MAP[strategyName] ?? strategyName;
+}

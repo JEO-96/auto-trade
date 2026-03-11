@@ -35,6 +35,7 @@ def _post_to_response(post: models.CommunityPost, current_user_id: Optional[int]
         backtest_data=json.loads(post.backtest_data) if post.backtest_data else None,
         performance_data=json.loads(post.performance_data) if post.performance_data else None,
         strategy_name=post.strategy_name,
+        timeframe=post.timeframe,
         rating=post.rating,
         like_count=post.like_count,
         comment_count=post.comment_count,
@@ -183,6 +184,7 @@ async def create_post(
         backtest_data=json.dumps(body.backtest_data) if body.backtest_data else None,
         performance_data=json.dumps(body.performance_data) if body.performance_data else None,
         strategy_name=body.strategy_name,
+        timeframe=body.timeframe,
         rating=body.rating,
     )
     db.add(post)
@@ -247,6 +249,7 @@ async def update_post(
     post.backtest_data = json.dumps(body.backtest_data) if body.backtest_data else None
     post.performance_data = json.dumps(body.performance_data) if body.performance_data else None
     post.strategy_name = body.strategy_name
+    post.timeframe = body.timeframe
     post.rating = body.rating
     db.commit()
     db.refresh(post)
@@ -473,19 +476,23 @@ async def send_chat_message(
 @router.get("/strategies/{strategy_name}/reviews", response_model=list[schemas.PostResponse])
 async def get_strategy_reviews(
     strategy_name: str,
+    timeframe: Optional[str] = Query(None),
     current_user: Optional[models.User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
-    posts = (
+    query = (
         db.query(models.CommunityPost)
         .filter(
             models.CommunityPost.post_type == "strategy_review",
             models.CommunityPost.strategy_name == strategy_name,
             models.CommunityPost.is_deleted == False,
         )
-        .order_by(models.CommunityPost.created_at.desc())
-        .all()
     )
+
+    if timeframe:
+        query = query.filter(models.CommunityPost.timeframe == timeframe)
+
+    posts = query.order_by(models.CommunityPost.created_at.desc()).all()
 
     user_id = current_user.id if current_user else None
     return [_post_to_response(p, user_id, db) for p in posts]

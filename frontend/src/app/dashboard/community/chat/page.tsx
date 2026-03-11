@@ -8,6 +8,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Button from '@/components/ui/Button';
 import { getChatMessages, sendChatMessage } from '@/lib/api/community';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDate } from '@/lib/utils';
 import type { ChatMessage } from '@/types/community';
 
 const POLL_INTERVAL_MS = 3000;
@@ -15,11 +16,6 @@ const POLL_INTERVAL_MS = 3000;
 function formatTime(dateString: string): string {
     const d = new Date(dateString);
     return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatDateSeparator(dateString: string): string {
-    const d = new Date(dateString);
-    return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function shouldShowDateSeparator(current: string, prev?: string): boolean {
@@ -142,7 +138,7 @@ export default function ChatPage() {
                                             <div className="flex items-center gap-3 my-4">
                                                 <div className="flex-1 h-px bg-white/[0.04]" />
                                                 <span className="text-[10px] text-gray-600 font-medium">
-                                                    {formatDateSeparator(msg.created_at)}
+                                                    {formatDate(msg.created_at)}
                                                 </span>
                                                 <div className="flex-1 h-px bg-white/[0.04]" />
                                             </div>
