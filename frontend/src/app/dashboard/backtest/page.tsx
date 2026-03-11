@@ -6,7 +6,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
-import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS } from '@/lib/constants';
+import { SYMBOLS, STRATEGIES, BACKTEST_POLL_INTERVAL_MS } from '@/lib/constants';
 import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory } from '@/lib/api/backtest';
 import { getErrorMessage } from '@/lib/utils';
 import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryItem } from '@/types/backtest';
@@ -269,7 +269,7 @@ export default function BacktestPage() {
             {/* 기록 탭 */}
             {activeTab === 'history' && (
                 <div className="glass-panel rounded-2xl p-6">
-                    <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white mb-5 flex items-center gap-2">
                         <History className="w-5 h-5 text-primary" />
                         백테스트 기록
                     </h3>
@@ -278,55 +278,97 @@ export default function BacktestPage() {
                     ) : historyList.length === 0 ? (
                         <EmptyState icon={<History className="w-12 h-12" />} title="백테스트 기록이 없습니다" description="백테스트를 실행하면 자동으로 기록됩니다." />
                     ) : (
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {historyList.map((h) => {
                                 const pnlPct = h.final_capital && h.initial_capital
                                     ? ((h.final_capital - h.initial_capital) / h.initial_capital * 100)
                                     : null;
+                                const pnlAmount = h.final_capital && h.initial_capital
+                                    ? (h.final_capital - h.initial_capital)
+                                    : null;
                                 const isProfit = pnlPct !== null && pnlPct >= 0;
+                                const strategyLabel = STRATEGIES.find(s => s.value === h.strategy_name)?.label || h.strategy_name;
+                                const dateStr = new Date(h.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' });
+
                                 return (
-                                    <div key={h.id} className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors group">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
+                                    <div
+                                        key={h.id}
+                                        className={`relative rounded-xl border transition-all hover:scale-[1.01] cursor-pointer ${
+                                            h.status === 'completed'
+                                                ? isProfit
+                                                    ? 'bg-emerald-500/[0.04] border-emerald-500/20 hover:border-emerald-500/40'
+                                                    : 'bg-red-500/[0.04] border-red-500/20 hover:border-red-500/40'
+                                                : h.status === 'failed'
+                                                    ? 'bg-red-500/[0.03] border-red-500/10'
+                                                    : 'bg-white/[0.02] border-white/[0.06]'
+                                        }`}
+                                        onClick={() => h.status === 'completed' && loadHistoryDetail(h.id)}
+                                    >
+                                        <div className="p-4">
+                                            {/* 상단: 전략명 + 날짜 */}
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-bold text-white truncate">{strategyLabel}</p>
+                                                    <p className="text-[11px] text-gray-500 mt-0.5">{dateStr}</p>
+                                                </div>
                                                 <Badge variant={h.status === 'completed' ? 'success' : h.status === 'failed' ? 'danger' : 'warning'}>
                                                     {h.status === 'completed' ? '완료' : h.status === 'failed' ? '실패' : '진행중'}
                                                 </Badge>
-                                                <span className="text-xs text-gray-400 font-medium">{h.strategy_name}</span>
                                             </div>
-                                            <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                                                <span>{(h.symbols || []).join(', ')}</span>
-                                                <span>{h.timeframe}</span>
-                                                <span>₩{h.initial_capital.toLocaleString()}</span>
-                                                <span>{new Date(h.created_at).toLocaleDateString('ko-KR')}</span>
+
+                                            {/* 종목 태그 */}
+                                            <div className="flex flex-wrap gap-1.5 mb-3">
+                                                {(h.symbols || []).map((sym) => (
+                                                    <span key={sym} className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/[0.06] text-[11px] font-medium text-gray-300">
+                                                        {sym.replace('/KRW', '')}
+                                                    </span>
+                                                ))}
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/[0.04] text-[11px] text-gray-500">
+                                                    {h.timeframe}
+                                                </span>
                                             </div>
+
+                                            {/* 수익률 & 핵심 지표 */}
+                                            {h.status === 'completed' && pnlPct !== null ? (
+                                                <div className="flex items-end justify-between">
+                                                    <div>
+                                                        <div className={`text-xl font-extrabold tracking-tight ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                            {isProfit ? '+' : ''}{pnlPct.toFixed(2)}%
+                                                        </div>
+                                                        <p className={`text-xs mt-0.5 ${isProfit ? 'text-emerald-400/60' : 'text-red-400/60'}`}>
+                                                            {isProfit ? '+' : ''}{pnlAmount !== null ? `₩${Math.round(pnlAmount).toLocaleString()}` : ''}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right space-y-0.5">
+                                                        <p className="text-[11px] text-gray-400">
+                                                            <span className="text-gray-500">투자금</span>{' '}
+                                                            <span className="font-semibold text-gray-300">₩{h.initial_capital.toLocaleString()}</span>
+                                                        </p>
+                                                        <p className="text-[11px] text-gray-400">
+                                                            <span className="text-gray-500">거래</span>{' '}
+                                                            <span className="font-semibold text-gray-300">{h.total_trades}회</span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ) : h.status === 'failed' ? (
+                                                <p className="text-xs text-red-400/70">백테스트 실행에 실패했습니다</p>
+                                            ) : (
+                                                <p className="text-xs text-yellow-400/70">백테스트 진행 중...</p>
+                                            )}
                                         </div>
-                                        {pnlPct !== null && (
-                                            <div className="text-right shrink-0">
-                                                <p className={`text-sm font-bold ${isProfit ? 'text-secondary' : 'text-red-400'}`}>
-                                                    {isProfit ? '+' : ''}{pnlPct.toFixed(2)}%
-                                                </p>
-                                                <p className="text-[10px] text-gray-500">{h.total_trades}회 거래</p>
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-1.5 shrink-0">
+
+                                        {/* 하단 액션 바 */}
+                                        <div className="flex items-center justify-end gap-1 px-3 py-2 border-t border-white/[0.04]" onClick={(e) => e.stopPropagation()}>
                                             {h.status === 'completed' && (
-                                                <>
-                                                    <button
-                                                        onClick={() => loadHistoryDetail(h.id)}
-                                                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-400 hover:text-white hover:bg-white/[0.04] transition-colors"
-                                                    >
-                                                        상세보기
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setShareModal({ historyId: h.id });
-                                                            setShareTitle(`${h.strategy_name} 백테스트 결과 (${(h.symbols || []).join(', ')})`);
-                                                        }}
-                                                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors flex items-center gap-1"
-                                                    >
-                                                        <Share2 className="w-3 h-3" /> 공유
-                                                    </button>
-                                                </>
+                                                <button
+                                                    onClick={() => {
+                                                        setShareModal({ historyId: h.id });
+                                                        setShareTitle(`${strategyLabel} 백테스트 결과 (${(h.symbols || []).join(', ')})`);
+                                                    }}
+                                                    className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors flex items-center gap-1"
+                                                >
+                                                    <Share2 className="w-3 h-3" /> 공유
+                                                </button>
                                             )}
                                             <button
                                                 onClick={() => handleDeleteHistory(h.id)}
