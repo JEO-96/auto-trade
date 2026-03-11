@@ -35,6 +35,7 @@ frontend/.env*
 # Next.js build artifacts (anywhere)
 .next/
 out/
+*.tsbuildinfo
 
 # Logs
 *.log
