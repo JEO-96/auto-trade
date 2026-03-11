@@ -58,7 +58,14 @@ auto-trade/
 │   │   │   ├── page.tsx        # Landing page
 │   │   │   ├── login/page.tsx
 │   │   │   ├── register/page.tsx
-│   │   │   ├── auth/kakao/page.tsx  # Kakao OAuth callback
+│   │   │   ├── terms/page.tsx       # Terms of service
+│   │   │   ├── auth/
+│   │   │   │   ├── kakao/page.tsx       # Kakao OAuth callback
+│   │   │   │   └── register-email/page.tsx # Manual email registration (Kakao users without email)
+│   │   │   ├── community/
+│   │   │   │   ├── layout.tsx       # Public community layout
+│   │   │   │   ├── page.tsx         # Public community post listing
+│   │   │   │   └── post/page.tsx    # Public post detail view
 │   │   │   └── dashboard/
 │   │   │       ├── layout.tsx  # Sidebar navigation
 │   │   │       ├── page.tsx    # Bot control + trade log viewer
@@ -77,8 +84,23 @@ auto-trade/
 │   │   │   ├── KakaoLoginButton.tsx
 │   │   │   ├── RiskDisclaimerModal.tsx # Risk warning modal for live trading
 │   │   │   └── ui/                     # StatCard, NavItem, Badge, Button, Input, LoadingSpinner, EmptyState, PageContainer
+│   │   ├── types/
+│   │   │   ├── index.ts        # Type re-exports
+│   │   │   ├── user.ts         # User types
+│   │   │   ├── bot.ts          # Bot config & trade log types
+│   │   │   ├── keys.ts         # Exchange key types
+│   │   │   ├── backtest.ts     # Backtest request/response types
+│   │   │   └── community.ts    # Community post, comment, chat types
 │   │   └── lib/
 │   │       ├── api.ts          # Axios instance with auth interceptors
+│   │       ├── api/            # Modular API functions
+│   │       │   ├── index.ts    # Re-exports all API modules
+│   │       │   ├── auth.ts     # Auth API calls
+│   │       │   ├── bot.ts      # Bot CRUD & control API calls
+│   │       │   ├── keys.ts     # Exchange key API calls
+│   │       │   ├── backtest.ts # Backtest API calls
+│   │       │   ├── admin.ts    # Admin API calls
+│   │       │   └── community.ts # Community API calls
 │   │       ├── constants.ts    # Symbols, strategies, timeframes, poll intervals
 │   │       └── utils.ts        # Shared utility functions
 │   ├── package.json
@@ -89,7 +111,8 @@ auto-trade/
 │   └── Dockerfile
 ├── docker-compose.yml          # Orchestrates: backend, frontend, nginx
 ├── .github/workflows/deploy.yml # SSH deploy to server on push to main
-├── .claude/agents/             # Custom AI agent definitions
+├── .claude/agents/             # Custom AI agent definitions (if present)
+├── main.py, strategy.py, ...   # Legacy standalone scripts (not used by the app)
 └── README.md                   # Korean-language project documentation
 ```
 
