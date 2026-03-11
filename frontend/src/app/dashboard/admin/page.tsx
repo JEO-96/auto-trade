@@ -215,7 +215,6 @@ export default function AdminPage() {
             </header>
 
             {/* ========== 사용자 관리 섹션 ========== */}
-            <>
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -527,7 +526,6 @@ export default function AdminPage() {
                 </div>
             </div>
 
-            </>}
         </PageContainer>
     );
 }
