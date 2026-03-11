@@ -15,7 +15,8 @@ import PageContainer from '@/components/ui/PageContainer';
 import { SYMBOLS, BOT_POLL_INTERVAL_MS, BOT_STRATEGIES, BOT_TIMEFRAMES } from '@/lib/constants';
 import {
     getBotList, getBotStatus, getBotLogs, startBot, stopBot,
-    createBot, updateBot, deleteBot,
+    createBot, updateBot, deleteBot, getAvailableTimeframes,
+    type AvailableTimeframe,
 } from '@/lib/api/bot';
 import { getUpbitBalance, type BalanceItem } from '@/lib/api/keys';
 import { getErrorMessage } from '@/lib/utils';
@@ -28,9 +29,10 @@ for (const s of BOT_STRATEGIES) {
     STRATEGY_LABEL_MAP[s.value] = s.label;
 }
 
-const TIMEFRAME_LABEL_MAP: Record<string, string> = {};
+// 폴백용 정적 라벨 맵
+const STATIC_TIMEFRAME_LABEL_MAP: Record<string, string> = {};
 for (const t of BOT_TIMEFRAMES) {
-    TIMEFRAME_LABEL_MAP[t.value] = t.label;
+    STATIC_TIMEFRAME_LABEL_MAP[t.value] = t.label;
 }
 
 const defaultFormState = {
@@ -46,6 +48,15 @@ export default function DashboardPage() {
     const [bots, setBots] = useState<BotConfig[]>([]);
     const [botStatuses, setBotStatuses] = useState<Record<number, boolean>>({});
     const [loading, setLoading] = useState(true);
+
+    // 관리자가 설정한 허용 타임프레임
+    const [availableTimeframes, setAvailableTimeframes] = useState<AvailableTimeframe[]>([]);
+    const timeframeLabelMap: Record<string, string> = {};
+    for (const tf of availableTimeframes) {
+        timeframeLabelMap[tf.timeframe] = tf.label;
+    }
+    // 폴백: API에서 불러오지 못했으면 정적 맵 사용
+    const TIMEFRAME_LABEL_MAP = availableTimeframes.length > 0 ? timeframeLabelMap : STATIC_TIMEFRAME_LABEL_MAP;
 
     // Selected bot for trade logs
     const [selectedBotId, setSelectedBotId] = useState<number | null>(null);
@@ -117,6 +128,17 @@ export default function DashboardPage() {
         }
     }, []);
 
+    const fetchTimeframes = useCallback(async () => {
+        try {
+            const tfs = await getAvailableTimeframes();
+            if (tfs.length > 0) {
+                setAvailableTimeframes(tfs);
+            }
+        } catch {
+            // 폴백: 정적 BOT_TIMEFRAMES 사용
+        }
+    }, []);
+
     const fetchBalance = useCallback(async () => {
         try {
             const data = await getUpbitBalance();
@@ -130,7 +152,8 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchBots();
         fetchBalance();
-    }, [fetchBots, fetchBalance]);
+        fetchTimeframes();
+    }, [fetchBots, fetchBalance, fetchTimeframes]);
 
     // Fetch logs when selected bot changes
     useEffect(() => {
@@ -392,9 +415,14 @@ export default function DashboardPage() {
                                 value={formData.timeframe}
                                 onChange={(e) => setFormData({ ...formData, timeframe: e.target.value })}
                             >
-                                {BOT_TIMEFRAMES.map((tf) => (
-                                    <option key={tf.value} value={tf.value}>{tf.label}</option>
-                                ))}
+                                {(availableTimeframes.length > 0
+                                    ? availableTimeframes.map((tf) => (
+                                        <option key={tf.timeframe} value={tf.timeframe}>{tf.label}</option>
+                                    ))
+                                    : BOT_TIMEFRAMES.map((tf) => (
+                                        <option key={tf.value} value={tf.value}>{tf.label}</option>
+                                    ))
+                                )}
                             </SelectInput>
 
                             <SelectInput

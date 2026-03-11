@@ -29,6 +29,28 @@ class AdminUserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# -------- Admin Timeframe Schemas --------
+class AllowedTimeframeCreate(BaseModel):
+    timeframe: str
+    label: str
+    display_order: int = 0
+    is_active: bool = True
+
+class AllowedTimeframeUpdate(BaseModel):
+    label: Optional[str] = None
+    display_order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+class AllowedTimeframeResponse(BaseModel):
+    id: int
+    timeframe: str
+    label: str
+    display_order: int
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
 # -------- Token Schemas --------
 class Token(BaseModel):
     access_token: str

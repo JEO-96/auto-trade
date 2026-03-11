@@ -12,6 +12,11 @@ import {
     AlertTriangle,
     Search,
     RefreshCw,
+    Timer,
+    Plus,
+    Trash2,
+    ToggleLeft,
+    ToggleRight,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -19,10 +24,16 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import PageContainer from '@/components/ui/PageContainer';
 import { isAxiosError } from 'axios';
-import { getUsers, getPendingUsers, approveUser, rejectUser } from '@/lib/api/admin';
+import {
+    getUsers, getPendingUsers, approveUser, rejectUser,
+    getAllTimeframeOptions, getAllowedTimeframes, addAllowedTimeframe,
+    updateAllowedTimeframe, deleteAllowedTimeframe,
+    type AllowedTimeframe, type TimeframeOption,
+} from '@/lib/api/admin';
 import type { User } from '@/types/user';
 
 type TabFilter = 'all' | 'pending' | 'approved' | 'rejected';
+type AdminSection = 'users' | 'timeframes';
 
 export default function AdminPage() {
     const router = useRouter();
@@ -34,6 +45,35 @@ export default function AdminPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
     const [refreshing, setRefreshing] = useState(false);
+
+    // 관리자 섹션 전환
+    const [activeSection, setActiveSection] = useState<AdminSection>('users');
+
+    // 타임프레임 관리 상태
+    const [allowedTimeframes, setAllowedTimeframes] = useState<AllowedTimeframe[]>([]);
+    const [allTimeframeOptions, setAllTimeframeOptions] = useState<TimeframeOption[]>([]);
+    const [tfLoading, setTfLoading] = useState(false);
+    const [tfActionLoading, setTfActionLoading] = useState<Record<number, boolean>>({});
+    const [addingTimeframe, setAddingTimeframe] = useState(false);
+    const [selectedNewTf, setSelectedNewTf] = useState('');
+
+    const fetchTimeframes = useCallback(async () => {
+        setTfLoading(true);
+        try {
+            const [allowed, options] = await Promise.all([
+                getAllowedTimeframes(),
+                getAllTimeframeOptions(),
+            ]);
+            setAllowedTimeframes(allowed);
+            setAllTimeframeOptions(options);
+        } catch (err: unknown) {
+            if (isAxiosError(err) && err.response?.status === 403) {
+                setForbidden(true);
+            }
+        } finally {
+            setTfLoading(false);
+        }
+    }, []);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -54,13 +94,77 @@ export default function AdminPage() {
 
     useEffect(() => {
         fetchUsers();
-    }, [fetchUsers]);
+        fetchTimeframes();
+    }, [fetchUsers, fetchTimeframes]);
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        await fetchUsers();
+        await Promise.all([fetchUsers(), fetchTimeframes()]);
         setRefreshing(false);
     };
+
+    // -------- 타임프레임 핸들러 --------
+    const handleAddTimeframe = async () => {
+        if (!selectedNewTf) return;
+        const option = allTimeframeOptions.find(o => o.timeframe === selectedNewTf);
+        if (!option) return;
+        setAddingTimeframe(true);
+        try {
+            const maxOrder = allowedTimeframes.reduce((max, tf) => Math.max(max, tf.display_order), 0);
+            const newTf = await addAllowedTimeframe({
+                timeframe: option.timeframe,
+                label: option.label,
+                display_order: maxOrder + 1,
+                is_active: true,
+            });
+            setAllowedTimeframes(prev => [...prev, newTf]);
+            setSelectedNewTf('');
+        } catch (err) {
+            if (isAxiosError(err)) {
+                alert(err.response?.data?.detail || '추가에 실패했습니다.');
+            }
+        } finally {
+            setAddingTimeframe(false);
+        }
+    };
+
+    const handleToggleTimeframe = async (tf: AllowedTimeframe) => {
+        setTfActionLoading(prev => ({ ...prev, [tf.id]: true }));
+        try {
+            const updated = await updateAllowedTimeframe(tf.id, { is_active: !tf.is_active });
+            setAllowedTimeframes(prev => prev.map(t => t.id === tf.id ? updated : t));
+        } catch {
+            alert('상태 변경에 실패했습니다.');
+        } finally {
+            setTfActionLoading(prev => {
+                const next = { ...prev };
+                delete next[tf.id];
+                return next;
+            });
+        }
+    };
+
+    const handleDeleteTimeframe = async (tf: AllowedTimeframe) => {
+        if (!confirm(`'${tf.label} (${tf.timeframe})' 타임프레임을 삭제하시겠습니까?`)) return;
+        setTfActionLoading(prev => ({ ...prev, [tf.id]: true }));
+        try {
+            await deleteAllowedTimeframe(tf.id);
+            setAllowedTimeframes(prev => prev.filter(t => t.id !== tf.id));
+        } catch {
+            alert('삭제에 실패했습니다.');
+        } finally {
+            setTfActionLoading(prev => {
+                const next = { ...prev };
+                delete next[tf.id];
+                return next;
+            });
+        }
+    };
+
+    // 이미 등록된 타임프레임 제외한 추가 가능 목록
+    const availableToAdd = allTimeframeOptions.filter(
+        o => !allowedTimeframes.some(a => a.timeframe === o.timeframe)
+    );
 
     const handleApprove = async (userId: number) => {
         setActionLoading(prev => ({ ...prev, [userId]: 'approve' }));
@@ -207,13 +311,13 @@ export default function AdminPage() {
     return (
         <PageContainer>
             {/* Header */}
-            <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <header className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold mb-1 text-white flex items-center gap-2.5">
                         <Shield className="w-6 h-6 text-primary" />
-                        사용자 관리
+                        관리자 패널
                     </h1>
-                    <p className="text-sm text-gray-500">등록된 사용자를 관리하고 가입 승인을 처리합니다.</p>
+                    <p className="text-sm text-gray-500">사용자 및 시스템 설정을 관리합니다.</p>
                 </div>
                 <button
                     onClick={handleRefresh}
@@ -225,6 +329,164 @@ export default function AdminPage() {
                     새로고침
                 </button>
             </header>
+
+            {/* Section Tabs */}
+            <nav className="flex gap-1 bg-white/[0.03] p-1 rounded-lg mb-8 w-fit" role="tablist">
+                <button
+                    role="tab"
+                    aria-selected={activeSection === 'users'}
+                    onClick={() => setActiveSection('users')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
+                        activeSection === 'users'
+                            ? 'bg-white/[0.08] text-white'
+                            : 'text-gray-500 hover:text-gray-300'
+                    }`}
+                >
+                    <Users className="w-4 h-4" />
+                    사용자 관리
+                </button>
+                <button
+                    role="tab"
+                    aria-selected={activeSection === 'timeframes'}
+                    onClick={() => setActiveSection('timeframes')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${
+                        activeSection === 'timeframes'
+                            ? 'bg-white/[0.08] text-white'
+                            : 'text-gray-500 hover:text-gray-300'
+                    }`}
+                >
+                    <Timer className="w-4 h-4" />
+                    캔들 주기 설정
+                </button>
+            </nav>
+
+            {/* ========== 캔들 주기 설정 섹션 ========== */}
+            {activeSection === 'timeframes' && (
+                <div className="space-y-6">
+                    {/* 설명 */}
+                    <div className="glass-panel p-5 rounded-2xl">
+                        <h2 className="text-base font-bold text-white mb-2 flex items-center gap-2">
+                            <Timer className="w-5 h-5 text-primary" />
+                            허용 캔들 주기 관리
+                        </h2>
+                        <p className="text-sm text-gray-500">
+                            사용자가 봇 생성 및 백테스트에서 선택할 수 있는 캔들 주기를 설정합니다.
+                            비활성화된 주기는 목록에 표시되지 않습니다.
+                        </p>
+                    </div>
+
+                    {/* 추가 영역 */}
+                    {availableToAdd.length > 0 && (
+                        <div className="glass-panel p-5 rounded-2xl">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">캔들 주기 추가</h3>
+                            <div className="flex items-center gap-3">
+                                <select
+                                    value={selectedNewTf}
+                                    onChange={e => setSelectedNewTf(e.target.value)}
+                                    className="flex-1 bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-white focus:border-primary/30 transition-colors"
+                                >
+                                    <option value="">타임프레임 선택...</option>
+                                    {availableToAdd.map(o => (
+                                        <option key={o.timeframe} value={o.timeframe}>
+                                            {o.label} ({o.timeframe})
+                                        </option>
+                                    ))}
+                                </select>
+                                <Button
+                                    variant="primary"
+                                    size="md"
+                                    onClick={handleAddTimeframe}
+                                    disabled={!selectedNewTf || addingTimeframe}
+                                    loading={addingTimeframe}
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    추가
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 등록된 타임프레임 목록 */}
+                    <div className="glass-panel rounded-2xl overflow-hidden">
+                        <div className="p-5 border-b border-white/[0.04]">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">
+                                등록된 캔들 주기 ({allowedTimeframes.length}개)
+                            </h3>
+                        </div>
+
+                        {tfLoading ? (
+                            <div className="p-10 flex justify-center">
+                                <LoadingSpinner message="로딩 중..." />
+                            </div>
+                        ) : allowedTimeframes.length === 0 ? (
+                            <div className="p-10 text-center">
+                                <EmptyState
+                                    icon={<Timer className="w-10 h-10" />}
+                                    title="등록된 캔들 주기가 없습니다"
+                                    description="위에서 허용할 캔들 주기를 추가해주세요."
+                                />
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-white/[0.03]">
+                                {allowedTimeframes.map(tf => (
+                                    <div
+                                        key={tf.id}
+                                        className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold border ${
+                                                tf.is_active
+                                                    ? 'bg-primary/10 border-primary/20 text-primary'
+                                                    : 'bg-white/[0.02] border-white/[0.06] text-gray-600'
+                                            }`}>
+                                                {tf.timeframe}
+                                            </div>
+                                            <div>
+                                                <p className={`text-sm font-semibold ${tf.is_active ? 'text-white' : 'text-gray-600'}`}>
+                                                    {tf.label}
+                                                </p>
+                                                <p className="text-[11px] text-gray-500">
+                                                    순서: {tf.display_order}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant={tf.is_active ? 'success' : 'warning'}>
+                                                {tf.is_active ? '활성' : '비활성'}
+                                            </Badge>
+                                            <button
+                                                onClick={() => handleToggleTimeframe(tf)}
+                                                disabled={!!tfActionLoading[tf.id]}
+                                                className="p-2 rounded-lg hover:bg-white/[0.06] transition-colors text-gray-400 hover:text-white disabled:opacity-50"
+                                                aria-label={tf.is_active ? '비활성화' : '활성화'}
+                                                title={tf.is_active ? '비활성화' : '활성화'}
+                                            >
+                                                {tf.is_active ? (
+                                                    <ToggleRight className="w-5 h-5 text-secondary" />
+                                                ) : (
+                                                    <ToggleLeft className="w-5 h-5 text-gray-600" />
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteTimeframe(tf)}
+                                                disabled={!!tfActionLoading[tf.id]}
+                                                className="p-2 rounded-lg hover:bg-red-500/[0.06] transition-colors text-gray-500 hover:text-red-400 disabled:opacity-50"
+                                                aria-label="삭제"
+                                                title="삭제"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ========== 사용자 관리 섹션 ========== */}
+            {activeSection === 'users' && <>
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -535,6 +797,8 @@ export default function AdminPage() {
                     )}
                 </div>
             </div>
+
+            </>}
         </PageContainer>
     );
 }
