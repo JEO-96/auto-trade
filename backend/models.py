@@ -178,6 +178,18 @@ class ActivePosition(Base):
     )
 
 
+class AllowedTimeframe(Base):
+    """관리자가 허용한 캔들 주기 설정"""
+    __tablename__ = "allowed_timeframes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    timeframe = Column(String, unique=True, nullable=False)  # e.g. "1h", "4h"
+    label = Column(String, nullable=False)  # e.g. "1시간", "4시간"
+    display_order = Column(Integer, default=0)  # 프론트엔드 정렬 순서
+    is_active = Column(Boolean, default=True)  # 비활성화 시 선택 불가
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+
+
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 

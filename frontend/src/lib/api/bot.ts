@@ -37,3 +37,16 @@ export async function updateBot(botId: number, data: Partial<BotCreateRequest>):
 export async function deleteBot(botId: number): Promise<void> {
     await api.delete(`/bot/${botId}`);
 }
+
+export interface AvailableTimeframe {
+    id: number;
+    timeframe: string;
+    label: string;
+    display_order: number;
+    is_active: boolean;
+}
+
+export async function getAvailableTimeframes(): Promise<AvailableTimeframe[]> {
+    const res = await api.get<AvailableTimeframe[]>('/bot/timeframes');
+    return res.data;
+}

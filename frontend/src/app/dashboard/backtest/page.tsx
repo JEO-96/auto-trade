@@ -8,11 +8,13 @@ import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
 import { SYMBOLS, STRATEGIES, BACKTEST_POLL_INTERVAL_MS } from '@/lib/constants';
 import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory } from '@/lib/api/backtest';
+import { getAvailableTimeframes, type AvailableTimeframe } from '@/lib/api/bot';
 import { getErrorMessage } from '@/lib/utils';
 import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryItem } from '@/types/backtest';
 
 export default function BacktestPage() {
     const [loading, setLoading] = useState(false);
+    const [availableTimeframes, setAvailableTimeframes] = useState<AvailableTimeframe[]>([]);
     const [result, setResult] = useState<BacktestResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [progress, setProgress] = useState(0);
@@ -81,6 +83,9 @@ export default function BacktestPage() {
     };
 
     useEffect(() => {
+        getAvailableTimeframes()
+            .then(tfs => { if (tfs.length > 0) setAvailableTimeframes(tfs); })
+            .catch(() => {});
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
@@ -436,18 +441,21 @@ export default function BacktestPage() {
                             {/* Timeframe */}
                             <div>
                                 <label className="text-xs text-gray-500 font-medium mb-2 block">캔들 주기</label>
-                                <div className="grid grid-cols-4 gap-1.5 bg-white/[0.02] p-1 rounded-xl border border-white/[0.04]">
-                                    {['15m', '1h', '4h', '1d'].map(tf => (
+                                <div className={`grid gap-1.5 bg-white/[0.02] p-1 rounded-xl border border-white/[0.04]`} style={{ gridTemplateColumns: `repeat(${Math.min(availableTimeframes.length || 4, 4)}, minmax(0, 1fr))` }}>
+                                    {(availableTimeframes.length > 0
+                                        ? availableTimeframes.map(t => ({ value: t.timeframe, label: t.label }))
+                                        : [{ value: '15m', label: '15분' }, { value: '1h', label: '1시간' }, { value: '4h', label: '4시간' }, { value: '1d', label: '1일' }]
+                                    ).map(tf => (
                                         <button
-                                            key={tf}
+                                            key={tf.value}
                                             type="button"
-                                            onClick={() => setForm({ ...form, timeframe: tf })}
-                                            className={`py-2 text-xs font-semibold rounded-lg transition-all ${form.timeframe === tf
+                                            onClick={() => setForm({ ...form, timeframe: tf.value })}
+                                            className={`py-2 text-xs font-semibold rounded-lg transition-all ${form.timeframe === tf.value
                                                 ? 'bg-primary text-white'
                                                 : 'text-gray-500 hover:text-gray-300'
                                                 }`}
                                         >
-                                            {tf === '15m' ? '15분' : tf === '1h' ? '1시간' : tf === '4h' ? '4시간' : '1일'}
+                                            {tf.label}
                                         </button>
                                     ))}
                                 </div>

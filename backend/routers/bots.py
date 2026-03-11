@@ -19,8 +19,8 @@ MAX_LIVE_BOTS_PER_USER = 1
 # 심볼 형식 검증 (예: BTC/KRW, ETH/USDT)
 SYMBOL_PATTERN = re.compile(r'^[A-Z0-9]{2,10}/[A-Z]{3,5}$')
 
-# 허용되는 타임프레임
-VALID_TIMEFRAMES = {"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d", "1w"}
+# 폴백용 하드코딩 타임프레임 (DB에 설정이 없을 때 사용)
+FALLBACK_TIMEFRAMES = {"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d", "1w"}
 
 
 def _get_user_bot(bot_id: int, user_id: int, db: Session) -> models.BotConfig:
@@ -55,13 +55,38 @@ def _validate_symbol(symbol: str) -> None:
             )
 
 
-def _validate_timeframe(timeframe: str) -> None:
-    """타임프레임 검증"""
-    if timeframe not in VALID_TIMEFRAMES:
+def _get_allowed_timeframes(db: Session) -> set[str]:
+    """DB에서 관리자가 허용한 활성 타임프레임 목록 조회. 없으면 폴백 사용."""
+    allowed = db.query(models.AllowedTimeframe.timeframe).filter(
+        models.AllowedTimeframe.is_active == True
+    ).all()
+    if allowed:
+        return {row[0] for row in allowed}
+    return FALLBACK_TIMEFRAMES
+
+
+def _validate_timeframe(timeframe: str, db: Session) -> None:
+    """타임프레임 검증 (DB 기반)"""
+    valid = _get_allowed_timeframes(db)
+    if timeframe not in valid:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid timeframe: '{timeframe}'. Allowed: {sorted(VALID_TIMEFRAMES)}",
+            detail=f"Invalid timeframe: '{timeframe}'. Allowed: {sorted(valid)}",
         )
+
+
+# -------- 공개 엔드포인트 --------
+
+@router.get("/timeframes", response_model=List[schemas.AllowedTimeframeResponse])
+def get_available_timeframes(db: Session = Depends(get_db)):
+    """사용자가 선택 가능한 활성 캔들 주기 목록 (인증 불필요)"""
+    timeframes = (
+        db.query(models.AllowedTimeframe)
+        .filter(models.AllowedTimeframe.is_active == True)
+        .order_by(models.AllowedTimeframe.display_order)
+        .all()
+    )
+    return timeframes
 
 
 # -------- CRUD 엔드포인트 --------
@@ -97,7 +122,7 @@ def create_bot(
 
     # 입력값 검증
     _validate_symbol(req.symbol)
-    _validate_timeframe(req.timeframe)
+    _validate_timeframe(req.timeframe, db)
 
     if req.allocated_capital <= 0:
         raise HTTPException(
@@ -149,7 +174,7 @@ def update_bot(
         _validate_symbol(update_data["symbol"])
 
     if "timeframe" in update_data:
-        _validate_timeframe(update_data["timeframe"])
+        _validate_timeframe(update_data["timeframe"], db)
 
     if "allocated_capital" in update_data and update_data["allocated_capital"] <= 0:
         raise HTTPException(
