@@ -43,23 +43,39 @@ export default function BotCard({
             tabIndex={0}
             aria-label={`${bot.symbol} 봇 선택`}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(bot.id); }}
-            className={`glass-panel p-5 rounded-2xl cursor-pointer transition-all border-2 ${
+            className={`glass-panel p-5 rounded-2xl cursor-pointer transition-all border-2 overflow-hidden ${
                 isSelected
                     ? 'border-primary/30 bg-primary/[0.03]'
                     : 'border-transparent hover:border-white/[0.06]'
             }`}
         >
             {/* Top row: symbol + status */}
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2.5">
-                    <div className={`w-2.5 h-2.5 rounded-full ${
+            <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${
                         isRunning
                             ? 'bg-secondary shadow-[0_0_8px_rgba(16,185,129,0.5)]'
                             : 'bg-gray-600'
                     }`}></div>
-                    <span className="text-base font-bold text-white">{bot.symbol}</span>
+                    <div className="min-w-0">
+                        {(() => {
+                            const symbols = bot.symbol.split(',').map(s => s.trim()).filter(Boolean);
+                            if (symbols.length <= 2) {
+                                return <span className="text-base font-bold text-white break-all">{bot.symbol}</span>;
+                            }
+                            return (
+                                <div className="flex flex-wrap gap-1">
+                                    {symbols.map((sym) => (
+                                        <span key={sym} className="text-xs font-bold text-white bg-white/[0.06] px-1.5 py-0.5 rounded">
+                                            {sym.replace('/KRW', '')}
+                                        </span>
+                                    ))}
+                                </div>
+                            );
+                        })()}
+                    </div>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                     {bot.paper_trading_mode ? (
                         <Badge variant="info">{BOT_MODE_LABELS.paper}</Badge>
                     ) : (
