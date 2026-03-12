@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Coins, TrendingUp, TrendingDown, Gift, Shield, ChevronLeft, ChevronRight, Plus, CreditCard, Wallet } from 'lucide-react';
 import PageContainer from '@/components/ui/PageContainer';
-import { getMyCredits, getCreditHistory, createPaymentOrder, confirmPayment } from '@/lib/api';
+import { getMyCredits, getCreditHistory, createPaymentOrder, confirmPayment } from '@/lib/api/credits';
 import type { CreditBalance, CreditTransaction } from '@/types/user';
 
 const TX_TYPE_MAP: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
