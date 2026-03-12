@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Pencil, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -292,10 +293,10 @@ export default function BacktestPage() {
                 </div>
             </header>
 
-            {/* 공유 모달 */}
-            {shareModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-                    <div className="glass-panel rounded-2xl p-6 w-full max-w-md mx-4">
+            {/* 공유 모달 - Portal로 body에 직접 렌더링 */}
+            {shareModal && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShareModal(null)}>
+                    <div className="rounded-2xl p-6 w-full max-w-md mx-4 bg-[#0f172a] border border-white/[0.08] shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-base font-bold text-white">커뮤니티에 공유</h3>
                             <button onClick={() => setShareModal(null)} className="text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
@@ -312,14 +313,14 @@ export default function BacktestPage() {
                                     onChange={(e) => setShareTitle(e.target.value)}
                                     placeholder="제목을 입력하세요"
                                     maxLength={100}
-                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-3 focus:border-primary/30 transition-colors"
+                                    className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-3 focus:border-primary/30 transition-colors"
                                 />
                                 <textarea
                                     value={shareContent}
                                     onChange={(e) => setShareContent(e.target.value)}
                                     placeholder="소감이나 분석 내용을 작성하세요 (선택)"
                                     rows={3}
-                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-4 resize-none focus:border-primary/30 transition-colors"
+                                    className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-4 resize-none focus:border-primary/30 transition-colors"
                                 />
                                 <div className="flex gap-2">
                                     <Button onClick={handleShare} loading={sharing} disabled={!shareTitle.trim()} size="sm">
@@ -330,7 +331,8 @@ export default function BacktestPage() {
                             </>
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* 기록 탭 */}

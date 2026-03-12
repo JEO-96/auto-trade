@@ -279,6 +279,8 @@ async def run_bot_loop(bot_config_id: int) -> None:
 
             current_db = database.SessionLocal()
             try:
+                signal_details: list[str] = []
+
                 # First pass: Fetch data for all symbols and update equity
                 for symbol in symbols:
                     # Use async wrapper to avoid blocking the event loop with time.sleep()
@@ -302,6 +304,17 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     if current_idx < 1:
                         continue
 
+                    # 신호 분석 (카톡 피드백용)
+                    has_buy_signal = strategy.check_buy_signal(df, current_idx)
+                    current_data = df.iloc[current_idx]
+                    rsi_val = current_data.get('RSI_14', None)
+                    macd_val = current_data.get('MACD_12_26_9', None)
+                    macds_val = current_data.get('MACDs_12_26_9', None)
+                    atr_val = current_data.get('ATR_14', None)
+                    vol_ma_col = getattr(strategy, 'vol_ma_col', 'VOL_SMA_20')
+                    vol_ma_val = current_data.get(vol_ma_col, 0)
+                    vol_ratio = (current_data['volume'] / vol_ma_val) if vol_ma_val and not pd.isna(vol_ma_val) and vol_ma_val > 0 else 0
+
                     if symbol in active_positions:
                         pos = active_positions[symbol]
 
@@ -320,18 +333,28 @@ async def run_bot_loop(bot_config_id: int) -> None:
                         else:
                             # B. Trailing Stop Update
                             if hasattr(strategy, 'update_trailing_stop'):
-                                atr_val = df.iloc[current_idx].get('ATR_14', 0)
-                                # Guard against NaN ATR which would corrupt the stop loss
                                 if atr_val is not None and not pd.isna(atr_val) and atr_val > 0:
                                     new_sl = strategy.update_trailing_stop(curr_price, atr_val, pos['stop_loss'])
                                     if new_sl > pos['stop_loss']:
                                         pos['stop_loss'] = new_sl
+
+                            # 보유 중 상태 피드백
+                            pnl_pct = ((curr_price - pos['entry_price']) / pos['entry_price'] * 100) if pos['entry_price'] > 0 else 0
+                            sl_dist = ((curr_price - pos['stop_loss']) / curr_price * 100) if curr_price > 0 else 0
+                            tp_dist = ((pos['take_profit'] - curr_price) / curr_price * 100) if curr_price > 0 else 0
+                            signal_details.append(
+                                f"📊 {symbol}\n"
+                                f"  보유중 | 현재가: {curr_price:,.0f}\n"
+                                f"  손익: {pnl_pct:+.2f}% | SL까지: {sl_dist:.1f}% | TP까지: {tp_dist:.1f}%\n"
+                                f"  RSI: {rsi_val:.1f}" + (f" | 신호: {'⚡매수감지' if has_buy_signal else '—'}" if rsi_val and not pd.isna(rsi_val) else "")
+                            )
                     else:
                         # C. Entry Check (포지션 수 제한 + 쿨다운 체크)
+                        entry_skipped_reason = None
                         if len(active_positions) >= MAX_CONCURRENT_POSITIONS:
-                            pass  # 최대 포지션 도달, 진입 스킵
+                            entry_skipped_reason = "최대 포지션 도달"
                         elif symbol in cooldown_until and datetime.now() < cooldown_until[symbol]:
-                            pass  # 손절 쿨다운 중, 진입 스킵
+                            entry_skipped_reason = "손절 쿨다운 중"
                         else:
                             liquid_capital, new_position = _process_symbol_entry(
                                 symbol, df, curr_price, current_idx, strategy,
@@ -340,8 +363,20 @@ async def run_bot_loop(bot_config_id: int) -> None:
                             )
                             if new_position:
                                 active_positions[symbol] = new_position
-                                # 쿨다운 만료된 항목 정리
                                 cooldown_until.pop(symbol, None)
+
+                        # 미보유 상태 피드백
+                        status_str = "⚡매수 신호!" if has_buy_signal else "대기중"
+                        if entry_skipped_reason and has_buy_signal:
+                            status_str = f"⚡신호 있으나 {entry_skipped_reason}"
+                        rsi_str = f"{rsi_val:.1f}" if rsi_val is not None and not pd.isna(rsi_val) else "N/A"
+                        macd_str = "상승" if (macd_val is not None and macds_val is not None and not pd.isna(macd_val) and not pd.isna(macds_val) and macd_val > macds_val) else "하락"
+                        vol_str = f"{vol_ratio:.1f}x" if vol_ratio and not pd.isna(vol_ratio) else "N/A"
+                        signal_details.append(
+                            f"{'🟢' if has_buy_signal else '⚪'} {symbol}\n"
+                            f"  {status_str} | 현재가: {curr_price:,.0f}\n"
+                            f"  RSI: {rsi_str} | MACD: {macd_str} | 거래량: {vol_str}"
+                        )
 
                 # 매 tick마다 포지션 상태를 DB에 저장
                 save_positions_to_db(bot_config_id, active_positions)
@@ -353,6 +388,33 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     f"{liquid_capital:,.0f}",
                     list(active_positions.keys()),
                 )
+
+                # 매 tick 카톡 피드백 전송
+                if signal_details:
+                    mode_label = "모의투자" if paper_trading else "실매매"
+                    now_str = datetime.now().strftime("%m/%d %H:%M")
+                    strategy_labels = {
+                        'steady_compounder': '스테디 복리',
+                        'momentum_breakout_pro_stable': '모멘텀 안정형',
+                        'james_pro_stable': '모멘텀 안정형',
+                        'momentum_stable': '모멘텀 안정형',
+                        'momentum_breakout_pro_aggressive': '모멘텀 공격형',
+                        'james_pro_aggressive': '모멘텀 공격형',
+                        'momentum_aggressive': '모멘텀 공격형',
+                        'momentum_breakout_elite': '모멘텀 엘리트',
+                        'james_pro_elite': '모멘텀 엘리트',
+                        'momentum_elite': '모멘텀 엘리트',
+                        'momentum_breakout_basic': '모멘텀 기본',
+                    }
+                    strategy_label = strategy_labels.get(strategy_name, strategy_name)
+                    feedback_msg = (
+                        f"📈 [{mode_label}] {strategy_label}\n"
+                        f"⏰ {now_str} | {timeframe}봉 분석\n"
+                        f"💰 자산: {total_equity:,.0f} KRW\n"
+                        f"{'─' * 24}\n"
+                        + f"\n{'─' * 24}\n".join(signal_details)
+                    )
+                    _send_trade_notification(user_id, feedback_msg)
 
                 consecutive_errors = 0  # 성공 시 에러 카운터 초기화
 
