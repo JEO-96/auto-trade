@@ -13,7 +13,7 @@ export default function Home() {
                         <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
                             <Activity className="w-4 h-4 text-primary" />
                         </div>
-                        <span className="text-base font-extrabold tracking-tight text-white">MOMENTUM</span>
+                        <span className="text-base font-extrabold tracking-tight text-white">BACKTESTED</span>
                     </div>
 
                     <Link
@@ -42,13 +42,13 @@ export default function Home() {
                     </div>
 
                     <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-[1.1]">
-                        <span className="text-white">모멘텀 돌파 전략으로</span><br />
-                        <span className="text-gradient-primary">수익을 자동화하세요</span>
+                        <span className="text-white">백테스트로 검증된 전략,</span><br />
+                        <span className="text-gradient-primary">수익으로 증명합니다</span>
                     </h1>
 
                     <p className="text-base md:text-lg text-gray-400 max-w-xl mx-auto mb-10 leading-relaxed">
-                        검증된 모멘텀 돌파 알고리즘과 실시간 대시보드로<br className="hidden sm:block" />
-                        암호화폐 매매를 완벽하게 자동화합니다.
+                        직접 백테스트하고, 신뢰할 수 있는 전략으로 자동매매하세요.<br className="hidden sm:block" />
+                        수익이 날 때만 수수료를 내는 공정한 플랫폼입니다.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -69,22 +69,22 @@ export default function Home() {
                             icon: <Zap className="w-5 h-5" />,
                             bgClass: 'bg-primary/10 border-primary/10',
                             textClass: 'text-primary',
-                            title: '실시간 신호 포착',
-                            desc: 'RSI 상향 돌파, MACD 교차, 거래량 폭증을 밀리초 단위로 추적하여 최적의 진입 시점을 포착합니다.'
+                            title: '백테스트로 검증',
+                            desc: '실제 과거 데이터로 전략을 직접 검증하세요. 수익률, 승률, 최대 낙폭까지 투명하게 확인할 수 있습니다.'
                         },
                         {
                             icon: <TrendingUp className="w-5 h-5" />,
                             bgClass: 'bg-secondary/10 border-secondary/10',
                             textClass: 'text-secondary',
-                            title: '24/7 무중단 가동',
-                            desc: 'CCXT API를 통한 주요 거래소와의 완벽 연동으로 365일 지치지 않는 자동 매매를 실현합니다.'
+                            title: '성과 기반 수수료',
+                            desc: '수익이 날 때만 10%의 수수료를 내고, 손실 시에는 10%를 돌려받습니다. 플랫폼과 사용자의 이해가 일치합니다.'
                         },
                         {
                             icon: <ShieldCheck className="w-5 h-5" />,
                             bgClass: 'bg-accent/10 border-accent/10',
                             textClass: 'text-accent',
-                            title: '스마트 리스크 관리',
-                            desc: '진입 캔들 저점 손절 및 다이나믹 익절 전략으로 하락장에서도 자산을 안전하게 보호합니다.'
+                            title: '24/7 자동매매',
+                            desc: 'ATR 기반 동적 손절/익절과 다양한 전략으로 24시간 시장을 자동 모니터링하고 매매합니다.'
                         }
                     ].map((feature) => (
                         <div key={feature.title} className="glass-panel glass-panel-hover p-8 rounded-2xl flex flex-col items-start">
@@ -102,7 +102,7 @@ export default function Home() {
                     <div className="flex flex-col items-center gap-4 text-xs text-gray-500">
                         <div className="flex items-center gap-2">
                             <Activity className="w-3.5 h-3.5 text-primary/50" />
-                            <span className="font-medium">Momentum PRO</span>
+                            <span className="font-medium">Backtested</span>
                         </div>
                         <p className="text-center leading-relaxed max-w-lg">
                             본 서비스는 투자 자문이 아니며, 가상자산 투자는 원금 손실 위험이 있습니다.

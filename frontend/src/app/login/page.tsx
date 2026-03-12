@@ -33,17 +33,17 @@ export default function LoginPage() {
                         <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
                             <Activity className="w-5 h-5 text-primary" />
                         </div>
-                        <span className="text-xl font-extrabold tracking-tight">MOMENTUM</span>
+                        <span className="text-xl font-extrabold tracking-tight">BACKTESTED</span>
                     </div>
 
                     <h1 className="text-3xl font-bold tracking-tight mb-4 leading-snug text-white">
-                        모멘텀 돌파 전략으로<br />
-                        <span className="text-gradient-primary">스마트한 트레이딩</span>
+                        백테스트로 검증하고,<br />
+                        <span className="text-gradient-primary">수익으로 증명합니다</span>
                     </h1>
 
                     <p className="text-gray-400 leading-relaxed text-sm">
-                        검증된 알고리즘 기반 자동 매매 시스템으로 24시간 시장을 모니터링하고,
-                        최적의 진입/청산 타이밍을 자동으로 실행합니다.
+                        전략을 직접 검증하고 신뢰할 수 있는 자동매매를 경험하세요.
+                        수익이 날 때만 수수료를 내는 공정한 플랫폼입니다.
                     </p>
 
                     <div className="mt-10 grid grid-cols-2 gap-4">
@@ -70,7 +70,7 @@ export default function LoginPage() {
                         <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
                             <Activity className="w-4 h-4 text-primary" />
                         </div>
-                        <span className="text-base font-extrabold tracking-tight">MOMENTUM</span>
+                        <span className="text-base font-extrabold tracking-tight">BACKTESTED</span>
                     </div>
 
                     <div className="mb-8">

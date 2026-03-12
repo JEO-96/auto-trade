@@ -6,8 +6,8 @@ import { Providers } from './providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-    title: 'Momentum PRO | 자동 트레이딩 플랫폼',
-    description: '검증된 모멘텀 돌파 전략으로 암호화폐 매매를 자동화하세요.',
+    title: 'Backtested | 검증된 자동매매 플랫폼',
+    description: '백테스트로 검증된 전략, 성과 기반 수수료. 자동매매의 새로운 기준.',
 }
 
 export default function RootLayout({

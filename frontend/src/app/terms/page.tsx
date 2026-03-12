@@ -10,7 +10,7 @@ export default function TermsPage() {
                     <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
                         <Activity className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-base font-extrabold tracking-tight text-white">MOMENTUM</span>
+                    <span className="text-base font-extrabold tracking-tight text-white">BACKTESTED</span>
                 </div>
 
                 <Link href="/login" className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors mb-8">
@@ -25,7 +25,7 @@ export default function TermsPage() {
 
                     <section>
                         <h2 className="text-base font-semibold text-white mb-3">제1조 (목적)</h2>
-                        <p>본 약관은 MOMENTUM(이하 "서비스")이 제공하는 가상자산 자동 매매 알고리즘 서비스의 이용 조건 및 절차, 이용자와 서비스 제공자의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.</p>
+                        <p>본 약관은 Backtested(이하 "서비스")가 제공하는 자동 매매 알고리즘 서비스의 이용 조건 및 절차, 이용자와 서비스 제공자의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.</p>
                     </section>
 
                     <section>

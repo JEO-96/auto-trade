@@ -19,7 +19,7 @@ export default function CommunityLayout({ children }: { children: React.ReactNod
                         </div>
                         <div>
                             <span className="text-sm font-extrabold tracking-tight text-white block leading-none">
-                                MOMENTUM
+                                BACKTESTED
                             </span>
                             <span className="text-[8px] font-semibold text-gray-500 tracking-widest uppercase">
                                 커뮤니티

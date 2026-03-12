@@ -52,10 +52,10 @@ export default function DashboardLayout({
                                 </div>
                                 <div>
                                     <span className="text-base font-extrabold tracking-tight text-white block leading-none">
-                                        MOMENTUM
+                                        BACKTESTED
                                     </span>
                                     <span className="text-[9px] font-semibold text-gray-500 tracking-widest uppercase">
-                                        Trading Bot
+                                        Auto Trading
                                     </span>
                                 </div>
                             </div>

@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     await bot_manager.graceful_shutdown()
 
 
-app = FastAPI(title="Momentum Breakout Trading API", lifespan=lifespan)
+app = FastAPI(title="Backtested Trading API", lifespan=lifespan)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

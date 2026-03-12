@@ -275,7 +275,7 @@ export default function BacktestPage() {
             <header className="mb-6">
                 <h1 className="text-2xl font-bold mb-1 text-white">전략 백테스팅</h1>
                 <p className="text-sm text-gray-500 max-w-xl mb-4">
-                    모멘텀 돌파 알고리즘의 과거 성과를 분석하고 포트폴리오 시뮬레이션으로 검증하세요.
+                    다양한 전략의 과거 성과를 분석하고 포트폴리오 시뮬레이션으로 검증하세요.
                 </p>
                 <div className="flex gap-1.5 bg-white/[0.02] p-1 rounded-xl border border-white/[0.04] w-fit">
                     <button

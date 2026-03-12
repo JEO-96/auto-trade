@@ -1,21 +1,22 @@
-# CLAUDE.md — AI Assistant Guide for auto-trade
+# CLAUDE.md — AI Assistant Guide for Backtested
 
 ## Project Overview
 
-**auto-trade** is a full-stack cryptocurrency algorithmic trading platform with community features.
+**Backtested** (backtested.bot) is a full-stack algorithmic trading platform with community features and a performance-based credit system.
 - **Backend:** FastAPI (Python 3.12) with PostgreSQL (AWS RDS)
 - **Frontend:** Next.js 14 (TypeScript) with Tailwind CSS
 - **Infrastructure:** Docker Compose, Nginx (SSL), GitHub Actions CI/CD
-- **Exchange:** Upbit via CCXT library
+- **Exchange:** Upbit via CCXT library (주식 확장 예정)
 - **Auth:** Kakao OAuth 2.0 + JWT (admin approval required for new users)
-- **Production URL:** https://jooeunoh.com
+- **Credit System:** 성과 기반 수수료 (수익 10% 차감, 손실 10% 환불), 토스페이먼츠 결제 연동
+- **Production URL:** https://jooeunoh.com (→ backtested.bot 이전 예정)
 
 ---
 
 ## Repository Structure
 
 ```
-auto-trade/
+backtested/
 ├── backend/                    # FastAPI Python application
 │   ├── main.py                 # App entry point, CORS config, router registration, rate limiting
 │   ├── models.py               # SQLAlchemy ORM models
@@ -25,6 +26,7 @@ auto-trade/
 │   ├── auth.py                 # JWT creation/verification helpers (reads from settings)
 │   ├── dependencies.py         # FastAPI Depends() providers (get_db, get_current_user, get_admin_user)
 │   ├── bot_manager.py          # Async bot task lifecycle management
+│   ├── credit_service.py       # Credit balance management & trade fee processing
 │   ├── notifications.py        # Kakao Talk message notifications
 │   ├── crypto_utils.py         # Fernet encryption/decryption for API keys
 │   ├── log_config.py           # Centralized logging setup
@@ -35,9 +37,10 @@ auto-trade/
 │   ├── routers/
 │   │   ├── auth.py             # POST /auth/token, POST /auth/kakao, POST /auth/kakao/complete, GET /auth/me
 │   │   ├── backtest.py         # Backtest CRUD + share to community
-│   │   ├── bots.py             # Bot CRUD + start/stop/status/logs
+│   │   ├── bots.py             # Bot CRUD + start/stop/status/logs + credit check
+│   │   ├── credits.py          # Credit balance, history, Toss Payments integration
 │   │   ├── keys.py             # Exchange key management + balance query
-│   │   ├── admin.py            # Admin: user listing, approval, rejection
+│   │   ├── admin.py            # Admin: user listing, approval, rejection, credit adjustment
 │   │   └── community.py        # Community: posts, comments, likes, chat, profiles, strategy reviews
 │   └── core/
 │       ├── config.py           # Legacy config (Kakao API key)
@@ -79,6 +82,8 @@ auto-trade/
 │   │   │           ├── create/page.tsx  # Create new post
 │   │   │           ├── profile/page.tsx # Community user profile
 │   │   │           └── chat/page.tsx    # Real-time chat
+│   │   │       └── credits/
+│   │   │           └── page.tsx         # Credit balance, history, Toss payment
 │   │   ├── components/
 │   │   │   ├── AuthGuard.tsx           # JWT-based route protection
 │   │   │   ├── KakaoLoginButton.tsx
@@ -100,6 +105,7 @@ auto-trade/
 │   │       │   ├── keys.ts     # Exchange key API calls
 │   │       │   ├── backtest.ts # Backtest API calls
 │   │       │   ├── admin.ts    # Admin API calls
+│   │       │   ├── credits.ts  # Credit & payment API calls
 │   │       │   └── community.ts # Community API calls
 │   │       ├── constants.ts    # Symbols, strategies, timeframes, poll intervals
 │   │       └── utils.ts        # Shared utility functions
@@ -186,6 +192,9 @@ Services:
 | `CommunityPost` | user_id, post_type, title, content, backtest_data, performance_data, strategy_name, rating, like_count, comment_count, is_deleted | Post types: backtest_share, performance_share, strategy_review, discussion |
 | `PostComment` | post_id, user_id, content, is_deleted | Soft-delete comments |
 | `PostLike` | post_id, user_id | Unique constraint per user per post |
+| `UserCredit` | user_id, balance, total_earned, total_spent | 크레딧 잔액 (가입 시 1000 지급) |
+| `CreditTransaction` | user_id, amount, balance_after, tx_type, reference_id, description | 크레딧 변동 이력 (signup_bonus, profit_fee, loss_refund, purchase, admin_adjust) |
+| `PaymentOrder` | user_id, order_id, amount, credits, status, payment_key, method | 토스페이먼츠 결제 주문 (pending → confirmed/failed) |
 | `ChatMessage` | user_id, content, created_at | Simple chat messages |
 
 ### Migrations
@@ -198,6 +207,7 @@ python migrate_postgres.py          # PostgreSQL migration
 python migrate_active_positions.py  # active_positions table
 python migrate_admin.py             # admin fields (is_admin, created_at)
 python migrate_community.py         # community tables (posts, comments, likes)
+python migrate_credits.py           # credit tables (user_credits, credit_transactions, payment_orders)
 python migrate_kakao_refresh.py     # kakao_refresh_token field
 ```
 
@@ -252,6 +262,17 @@ All routes except `/auth/*` and some `/community/*` GETs require `Authorization:
 | GET | `/admin/users/pending` | List pending approval users (admin only) |
 | POST | `/admin/users/{user_id}/approve` | Approve user (set is_active=True) |
 | POST | `/admin/users/{user_id}/reject` | Reject user (set is_active=False) |
+
+### Credits (`/credits`)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/credits/` | Current user's credit balance |
+| GET | `/credits/history` | Credit transaction history (paginated, filterable by tx_type) |
+| POST | `/credits/payment/order` | Create Toss Payments order for credit purchase |
+| POST | `/credits/payment/confirm` | Confirm Toss payment and charge credits (1 KRW = 1 credit) |
+| GET | `/credits/payment/history` | Payment order history |
+| GET | `/credits/admin/overview` | Admin: all users' credit overview (admin only) |
+| POST | `/credits/admin/{user_id}/adjust` | Admin: manually adjust user credits (admin only) |
 
 ### Community (`/community`)
 | Method | Path | Description |
@@ -332,7 +353,17 @@ Unapproved users cannot log in (403 Forbidden).
 `frontend/src/lib/api.ts` — Axios instance that automatically attaches JWT from localStorage.
 All API calls must go through this client, never fetch directly.
 
-### 12. Frontend Constants
+### 12. Credit System & Performance-Based Fees
+`backend/credit_service.py` — core credit business logic.
+- **Signup bonus**: 1000 credits on admin approval
+- **Profit fee**: 10% of real-trade profit deducted as platform fee
+- **Loss refund**: 10% of real-trade loss refunded as credits
+- **Credit purchase**: Toss Payments PG integration (1 KRW = 1 credit)
+- **Bot start check**: Live bots require sufficient credits (`check_sufficient_credits()`)
+- **Thread-safe**: Uses `database.get_db_session()` context manager for bot_manager calls
+- **Atomic transactions**: Credit balance + transaction log updated in same DB session
+
+### 13. Frontend Constants
 `frontend/src/lib/constants.ts` — centralized strategy lists, symbol lists, timeframes, and poll intervals.
 Separate `STRATEGIES` (for backtest) and `BOT_STRATEGIES` (for bot creation) lists.
 
@@ -514,3 +545,4 @@ curl -X POST https://jooeunoh.com/api/backtest/ \
 | `axios` | HTTP client |
 | `lucide-react` | Icon library |
 | `tailwindcss` | CSS utility framework |
+| `@tosspayments/tosspayments-sdk` | Toss Payments PG SDK |
