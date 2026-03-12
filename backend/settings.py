@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     exchange_api_key: str = ""
     exchange_api_secret: str = ""
 
+    # Toss Payments
+    toss_client_key: str = ""
+    toss_secret_key: str = ""
+
     # CORS
     cors_origins: list[str] = [
         "http://localhost:3000",

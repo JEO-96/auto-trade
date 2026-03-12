@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield, MessageSquare, UserCircle, Radio } from 'lucide-react';
+import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield, MessageSquare, UserCircle, Radio, Coins } from 'lucide-react';
 import NavItem from '@/components/ui/NavItem';
 import AuthGuard from '@/components/AuthGuard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -76,6 +76,7 @@ export default function DashboardLayout({
                         <NavItem href="/dashboard/keys" icon={<Key className="w-[18px] h-[18px]" />} label="API 설정" />
                         <NavItem href="/dashboard/backtest" icon={<BarChart2 className="w-[18px] h-[18px]" />} label="백테스팅" />
                         <NavItem href="/dashboard/live-bots" icon={<Radio className="w-[18px] h-[18px]" />} label="실시간 봇 현황" />
+                        <NavItem href="/dashboard/credits" icon={<Coins className="w-[18px] h-[18px]" />} label="크레딧" />
                         <NavItem href="/community" icon={<MessageSquare className="w-[18px] h-[18px]" />} label="커뮤니티" />
                         <NavItem href="/dashboard/settings" icon={<Settings className="w-[18px] h-[18px]" />} label="시스템 설정" />
                         {user?.is_admin && (
@@ -94,7 +95,11 @@ export default function DashboardLayout({
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold truncate text-white group-hover:text-primary transition-colors">{displayName}</p>
-                                <p className="text-[10px] text-gray-500 truncate">{user?.email || ''}</p>
+                                <p className="text-[10px] text-gray-500 truncate">
+                                    {user?.credit_balance != null
+                                        ? `${user.credit_balance.toLocaleString()} 크레딧`
+                                        : user?.email || ''}
+                                </p>
                             </div>
                             <UserCircle className="w-4 h-4 text-gray-600 group-hover:text-primary transition-colors shrink-0" />
                         </Link>

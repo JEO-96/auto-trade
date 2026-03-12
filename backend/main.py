@@ -14,7 +14,7 @@ setup_logging(level=logging.INFO)
 import bot_manager
 import database
 import models
-from routers import admin, auth, backtest, bots, community, keys
+from routers import admin, auth, backtest, bots, community, credits, keys
 from routers import settings as settings_router
 from settings import settings
 
@@ -51,6 +51,7 @@ app.include_router(keys.router)
 app.include_router(backtest.router)
 app.include_router(admin.router)
 app.include_router(community.router)
+app.include_router(credits.router)
 app.include_router(settings_router.router)
 
 if __name__ == "__main__":

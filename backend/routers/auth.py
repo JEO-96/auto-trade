@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import Union
 import models, schemas, auth
+import credit_service
 from dependencies import get_db, get_current_user
 import httpx
 from core import config
@@ -167,5 +168,13 @@ async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteR
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me", response_model=schemas.UserResponse)
-def get_me(current_user: models.User = Depends(get_current_user)):
-    return current_user
+def get_me(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    credit = credit_service.get_balance(db, current_user.id)
+    return schemas.UserResponse(
+        id=current_user.id,
+        email=current_user.email,
+        nickname=current_user.nickname,
+        is_active=current_user.is_active,
+        is_admin=current_user.is_admin,
+        credit_balance=credit.balance,
+    )

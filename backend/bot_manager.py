@@ -66,6 +66,7 @@ def _process_symbol_exit(
     bot_config_id: int,
     user_id: int,
     liquid_capital: float,
+    paper_trading: bool = True,
 ) -> tuple[float, bool]:
     """
     Check stop-loss / take-profit and execute sell if triggered.
@@ -97,6 +98,11 @@ def _process_symbol_exit(
     pnl: float = (actual_price - pos['entry_price']) * actual_amount
     liquid_capital += (actual_amount * actual_price)
     save_trade_log(bot_config_id, symbol, "SELL", actual_price, actual_amount, f"{reason} (Portfolio)", pnl)
+
+    # 실매매인 경우 크레딧 처리
+    if not paper_trading and pnl != 0:
+        import credit_service
+        credit_service.process_trade_pnl(user_id, pnl)
 
     # Send Kakao Notification
     cost_basis: float = pos['entry_price'] * pos['position_amount']
@@ -322,6 +328,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
                         liquid_capital, was_exited = _process_symbol_exit(
                             symbol, pos, curr_price, execution,
                             bot_config_id, user_id, liquid_capital,
+                            paper_trading=bot_info["paper_trading"],
                         )
                         if was_exited:
                             # 손절인 경우 쿨다운 적용

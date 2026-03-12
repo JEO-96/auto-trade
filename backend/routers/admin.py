@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
+import credit_service
 from dependencies import get_db, get_admin_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -48,6 +49,8 @@ def approve_user(
     user.is_active = True
     db.commit()
     db.refresh(user)
+    # 승인 시 크레딧 초기화 (이미 있으면 무시)
+    credit_service.ensure_user_credit(db, user.id)
     return user
 
 

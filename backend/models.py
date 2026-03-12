@@ -191,6 +191,54 @@ class SystemSettings(Base):
     value = Column(String, nullable=False)  # JSON string
 
 
+class UserCredit(Base):
+    """사용자 크레딧 잔액"""
+    __tablename__ = "user_credits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    balance = Column(Float, default=1000.0)
+    total_earned = Column(Float, default=1000.0)
+    total_spent = Column(Float, default=0.0)
+    updated_at = Column(DateTime, default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow())
+
+    owner = relationship("User", backref="credit")
+
+
+class CreditTransaction(Base):
+    """크레딧 변동 이력"""
+    __tablename__ = "credit_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    amount = Column(Float, nullable=False)           # +충전/환불, -차감
+    balance_after = Column(Float, nullable=False)
+    tx_type = Column(String, nullable=False, index=True)  # signup_bonus, profit_fee, loss_refund, admin_adjust
+    reference_id = Column(Integer, nullable=True)    # trade_log.id
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow(), index=True)
+
+    owner = relationship("User")
+
+
+class PaymentOrder(Base):
+    """토스페이먼츠 결제 주문"""
+    __tablename__ = "payment_orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    order_id = Column(String, unique=True, nullable=False, index=True)
+    amount = Column(Integer, nullable=False)          # 결제 금액 (원)
+    credits = Column(Integer, nullable=False)          # 충전 크레딧 (1원 = 1크레딧)
+    status = Column(String, default="pending")         # pending, confirmed, failed, cancelled
+    payment_key = Column(String, nullable=True)        # 토스 paymentKey
+    method = Column(String, nullable=True)             # 결제 수단 (카드, 계좌이체 등)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    confirmed_at = Column(DateTime, nullable=True)
+
+    owner = relationship("User")
+
+
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 

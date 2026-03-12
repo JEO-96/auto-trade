@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 import bot_manager
+import credit_service
 import models
 import schemas
 from constants import (
@@ -238,10 +239,18 @@ def delete_bot(
 
 @router.post("/start/{bot_id}")
 async def start_bot(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    _get_user_bot(bot_id, current_user.id, db)
+    bot = _get_user_bot(bot_id, current_user.id, db)
 
     if _is_bot_running(bot_id):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bot already running.")
+
+    # 실매매 봇은 크레딧 잔액 확인
+    if not bot.paper_trading_mode:
+        if not credit_service.check_sufficient_credits(db, current_user.id):
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="크레딧이 부족합니다. 크레딧을 충전한 후 다시 시도해주세요.",
+            )
 
     task = asyncio.create_task(bot_manager.run_bot_loop(bot_id))
     bot_manager.active_bots[bot_id] = task
