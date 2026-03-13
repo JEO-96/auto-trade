@@ -49,7 +49,8 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
     def apply_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         """Elite adds EMA_100 on top of the standard indicator set."""
         df = super().apply_indicators(df)
-        df['EMA_100'] = df.ta.ema(length=100)
+        ema100 = df.ta.ema(length=100)
+        df['EMA_100'] = ema100.iloc[:, 0] if hasattr(ema100, 'iloc') and ema100.ndim > 1 else ema100
         return df
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:

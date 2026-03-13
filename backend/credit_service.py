@@ -88,10 +88,9 @@ def process_trade_pnl(
                 credit.balance += refund
                 credit.total_earned += refund
                 tx_type = "loss_refund"
-                fee = -refund  # amount는 양수 = 충전
                 description = f"손실 환불 (손실 {abs(pnl):,.0f}원의 {LOSS_REFUND_RATE*100:.0f}%)"
 
-            amount = -fee if pnl > 0 else abs(pnl) * LOSS_REFUND_RATE
+            amount = -(pnl * PROFIT_FEE_RATE) if pnl > 0 else abs(pnl) * LOSS_REFUND_RATE
 
             tx = models.CreditTransaction(
                 user_id=user_id,
