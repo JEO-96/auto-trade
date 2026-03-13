@@ -27,7 +27,7 @@ backtested/
 │   ├── dependencies.py         # FastAPI Depends() providers (get_db, get_current_user, get_admin_user, get_user_or_404)
 │   ├── bot_manager.py          # Async bot task lifecycle management
 │   ├── credit_service.py       # Credit balance management & trade fee processing
-│   ├── notifications.py        # Kakao Talk message notifications
+│   ├── notifications.py        # Telegram bot notifications
 │   ├── crypto_utils.py         # Fernet encryption/decryption + API key masking
 │   ├── kakao_service.py        # Kakao OAuth token exchange & user info (decoupled from router)
 │   ├── utils.py                # Common helpers (safe_json_loads, parse_symbols, mask_nickname)
@@ -64,6 +64,7 @@ backtested/
 │   │   │   ├── login/page.tsx
 │   │   │   ├── register/page.tsx
 │   │   │   ├── terms/page.tsx       # Terms of service
+│   │   │   ├── privacy/page.tsx    # Privacy policy (개인정보처리방침)
 │   │   │   ├── auth/
 │   │   │   │   ├── kakao/page.tsx       # Kakao OAuth callback
 │   │   │   │   └── register-email/page.tsx # Manual email registration (Kakao users without email)
@@ -90,7 +91,13 @@ backtested/
 │   │   │   ├── AuthGuard.tsx           # JWT-based route protection
 │   │   │   ├── KakaoLoginButton.tsx
 │   │   │   ├── RiskDisclaimerModal.tsx # Risk warning modal for live trading
-│   │   │   └── ui/                     # StatCard, NavItem, Badge, Button, Input, LoadingSpinner, EmptyState, PageContainer
+│   │   │   └── ui/                     # StatCard, NavItem, Badge, Button, Input, LoadingSpinner, EmptyState, PageContainer, Toast
+│   │   ├── modals/
+│   │   │   ├── DeleteConfirmationModal.tsx  # Reusable delete confirmation dialog
+│   │   │   ├── ConfirmationModal.tsx        # General-purpose confirmation dialog
+│   │   │   └── BotFormModal.tsx             # Bot create/edit form modal
+│   │   ├── cards/
+│   │   │   └── BotCard.tsx                  # Bot status card with live/paper visual distinction
 │   │   ├── types/
 │   │   │   ├── index.ts        # Type re-exports
 │   │   │   ├── user.ts         # User types
@@ -144,6 +151,10 @@ Environment variables (see `backend/.env.example`):
 - `FERNET_KEY` — Fernet encryption key for API keys (generate with `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`)
 - `DB_USER`, `DB_PASS`, `DB_HOST`, `DB_PORT`, `DB_NAME` — PostgreSQL credentials
 - `EXCHANGE_API_KEY`, `EXCHANGE_API_SECRET` — Optional Upbit keys (users set their own via dashboard)
+- `TELEGRAM_BOT_TOKEN` — Telegram bot token for notifications
+- `TELEGRAM_CHAT_ID` — Default Telegram chat ID
+- `TOSS_CLIENT_KEY` — Toss Payments client key (`test_ck_...` for dev, `live_ck_...` for prod)
+- `TOSS_SECRET_KEY` — Toss Payments secret key (`test_sk_...` for dev, `live_sk_...` for prod)
 
 ### Frontend
 
@@ -365,7 +376,7 @@ All API calls must go through this client, never fetch directly.
 - **Signup bonus**: 1000 credits on admin approval
 - **Profit fee**: 10% of real-trade profit deducted as platform fee
 - **Loss refund**: 10% of real-trade loss refunded as credits
-- **Credit purchase**: Toss Payments PG integration (1 KRW = 1 credit)
+- **Credit purchase**: Toss Payments v1 SDK integration (API 개별 연동 키, 1 KRW = 1 credit)
 - **Bot start check**: Live bots require sufficient credits (`check_sufficient_credits()`)
 - **Thread-safe**: Uses `database.get_db_session()` context manager for bot_manager calls
 - **Atomic transactions**: Credit balance + transaction log updated in same DB session
@@ -479,6 +490,27 @@ Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stor
 
 ---
 
+## Business Information
+
+- **상호**: 플레이위드
+- **대표**: 주은오
+- **사업자등록번호**: 880-58-00862
+- **소재지**: 서울특별시 영등포구 경인로 882, 1103호(영등포동1가, 여의도씨티아이)
+- **업태**: 정보통신업 / 응용 소프트웨어 개발 및 공급업
+- **이메일**: seal5945@gmail.com
+- **호스팅**: Amazon Web Services (AWS)
+
+### Legal Pages
+- **이용약관**: `/terms` — 투자 위험 고지, 면책조항, API 키 보안 안내
+- **개인정보처리방침**: `/privacy` — PIPA 준수, 수집 항목, 보유 기간, 위탁 업체, 보호책임자
+- **랜딩 페이지 푸터**: 사업자 정보 + 투자 위험 고지 + 약관/방침 링크
+
+### Notifications
+- **Telegram**: Bot start/stop 알림, per-user Telegram 연동 (`User.telegram_chat_id`)
+- Kakao Talk notifications 제거됨 (talk_message scope 삭제)
+
+---
+
 ## Code Conventions
 
 ### Python (Backend)
@@ -502,7 +534,10 @@ Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stor
 - Tailwind CSS for all styling; custom classes defined in `globals.css`
 - Auth state managed via localStorage JWT + `AuthGuard` component
 - UI text may be Korean (existing codebase convention)
-- Reusable UI components in `frontend/src/components/ui/` (ModalWrapper, ModalHeader, Button, Badge, etc.)
+- Toast notifications via `useToast()` hook from `components/ui/Toast.tsx` — replaces browser `alert()`
+- Delete confirmations via `DeleteConfirmationModal` — replaces browser `confirm()`
+- General confirmations via `ConfirmationModal` — for non-delete actions
+- Reusable UI components in `frontend/src/components/ui/` (ModalWrapper, ModalHeader, Button, Badge, Toast, etc.)
 - All modals use `ModalWrapper` + `ModalHeader` from `components/ui/ModalWrapper.tsx`
 - Label maps (`TIMEFRAME_LABEL_MAP`, `getStrategyLabel`, `CHART_COLORS`) centralized in `constants.ts`
 - Type definitions in `frontend/src/types/` — API layer re-exports via `export type { X } from '@/types/...'`
@@ -572,4 +607,4 @@ curl -X POST https://backtested.bot/api/backtest/ \
 | `axios` | HTTP client |
 | `lucide-react` | Icon library |
 | `tailwindcss` | CSS utility framework |
-| `@tosspayments/tosspayments-sdk` | Toss Payments PG SDK |
+| `@tosspayments/payment-sdk` | Toss Payments v1 PG SDK (API 개별 연동 키 사용) |
