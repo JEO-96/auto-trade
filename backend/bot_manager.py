@@ -38,6 +38,9 @@ logger = logging.getLogger(__name__)
 # In production, use Celery + Redis for scaling.
 active_bots: dict[int, asyncio.Task] = {}
 
+# 서버 셧다운 중 플래그 — True이면 finally 블록에서 is_active=False 설정을 건너뜀
+_shutting_down: bool = False
+
 
 
 def _load_bot_config(bot_config_id: int) -> Optional[dict]:
@@ -479,7 +482,9 @@ async def run_bot_loop(bot_config_id: int) -> None:
     finally:
         # Clean up from active_bots so status correctly reports Stopped
         active_bots.pop(bot_config_id, None)
-        set_bot_active(bot_config_id, False)
+        # 서버 셧다운 중이면 is_active=True를 유지하여 재시작 시 자동 복구 가능
+        if not _shutting_down:
+            set_bot_active(bot_config_id, False)
 
 
 def get_bot_status(bot_config_id: int) -> str:
@@ -521,11 +526,16 @@ async def recover_active_bots() -> None:
 
 
 async def graceful_shutdown() -> None:
-    """서버 종료 시 모든 봇을 안전하게 중단 (포지션은 DB에 유지)"""
+    """서버 종료 시 모든 봇을 안전하게 중단 (포지션은 DB에 유지, is_active=True 보존)"""
+    global _shutting_down
+
     if not active_bots:
         return
 
     logger.info("[Shutdown] Stopping %d active bot(s)...", len(active_bots))
+
+    # 셧다운 플래그 설정 → finally 블록에서 is_active=False 설정을 건너뜀
+    _shutting_down = True
 
     tasks = list(active_bots.values())
     for task in tasks:
