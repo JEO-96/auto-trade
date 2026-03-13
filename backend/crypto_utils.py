@@ -27,3 +27,10 @@ def encrypt_key(text: str) -> str:
 def decrypt_key(text: str) -> str:
     f = get_fernet()
     return f.decrypt(text.encode()).decode()
+
+
+def mask_api_key(key: str) -> str:
+    """API 키 프리뷰용 마스킹 (첫 4자리 + ********)."""
+    if len(key) >= 4:
+        return key[:4] + "*" * 10
+    return "****"

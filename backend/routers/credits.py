@@ -11,16 +11,13 @@ from sqlalchemy.orm import Session
 import credit_service
 import models
 import schemas
-from dependencies import get_db, get_current_user, get_admin_user
+from constants import MIN_CHARGE_AMOUNT, MAX_CHARGE_AMOUNT, TOSS_CONFIRM_URL
+from dependencies import get_db, get_current_user, get_admin_user, get_user_or_404
 from settings import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/credits", tags=["credits"])
-
-TOSS_CONFIRM_URL = "https://api.tosspayments.com/v1/payments/confirm"
-MIN_CHARGE_AMOUNT = 1000      # 최소 충전 금액 (원)
-MAX_CHARGE_AMOUNT = 1000000   # 최대 충전 금액 (원)
 
 
 @router.get("/", response_model=schemas.CreditBalanceResponse)
@@ -233,9 +230,7 @@ def admin_adjust_credit(
     db: Session = Depends(get_db),
 ):
     """관리자 수동 크레딧 조정"""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자를 찾을 수 없습니다.")
+    get_user_or_404(db, user_id)
 
     credit = credit_service.admin_adjust(db, user_id, req.amount, req.description)
     return schemas.CreditBalanceResponse(

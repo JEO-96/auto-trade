@@ -55,3 +55,14 @@ def get_admin_user(current_user: models.User = Depends(get_current_user)) -> mod
             detail="관리자 권한이 필요합니다.",
         )
     return current_user
+
+
+def get_user_or_404(db: Session, user_id: int) -> models.User:
+    """ID로 사용자 조회. 없으면 404."""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="사용자를 찾을 수 없습니다.",
+        )
+    return user

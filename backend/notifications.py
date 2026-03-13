@@ -4,7 +4,7 @@ import logging
 from models import User
 from sqlalchemy.orm import Session
 import database
-from core import config
+from settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ async def _refresh_kakao_token(user_id: int, refresh_token: str) -> str | None:
                 "https://kauth.kakao.com/oauth/token",
                 data={
                     "grant_type": "refresh_token",
-                    "client_id": config.KAKAO_REST_API_KEY,
+                    "client_id": settings.kakao_rest_api_key,
                     "refresh_token": refresh_token,
                 },
             )

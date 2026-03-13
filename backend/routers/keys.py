@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 import models, schemas
 from dependencies import get_db, get_current_user
-from crypto_utils import encrypt_key, decrypt_key
+from crypto_utils import encrypt_key, decrypt_key, mask_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +36,7 @@ def add_exchange_key(key_data: schemas.ExchangeKeyCreate, current_user: models.U
     db.commit()
     db.refresh(db_key)
 
-    preview = key_data.api_key[:4] + "*" * 10
-    return {"id": db_key.id, "exchange_name": db_key.exchange_name, "api_key_preview": preview}
+    return {"id": db_key.id, "exchange_name": db_key.exchange_name, "api_key_preview": mask_api_key(key_data.api_key)}
 
 @router.get("/", response_model=list[schemas.ExchangeKeyResponse])
 def get_exchange_keys(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -45,8 +44,7 @@ def get_exchange_keys(current_user: models.User = Depends(get_current_user), db:
     results = []
     for k in keys:
         try:
-            decrypted_key = decrypt_key(k.api_key_encrypted)
-            preview = decrypted_key[:4] + "*" * 10 if len(decrypted_key) >= 4 else "****"
+            preview = mask_api_key(decrypt_key(k.api_key_encrypted))
         except Exception:
             preview = "****"
         results.append({

@@ -1,13 +1,8 @@
 import api from '@/lib/api';
-import type { BacktestFormParams, BacktestTaskStatus, BacktestHistoryItem, BacktestHistoryDetail } from '@/types/backtest';
+import type { BacktestFormParams, BacktestTaskStatus, BacktestHistoryItem, BacktestHistoryDetail, RunBacktestResponse } from '@/types/backtest';
 import type { CommunityPost } from '@/types/community';
 
-export interface RunBacktestResponse {
-    status: 'running' | 'success';
-    task_id?: string;
-    message?: string;
-    [key: string]: unknown;
-}
+export type { RunBacktestResponse } from '@/types/backtest';
 
 export async function runPortfolioBacktest(
     params: BacktestFormParams,

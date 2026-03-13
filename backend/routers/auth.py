@@ -6,8 +6,7 @@ from typing import Union
 import models, schemas, auth
 import credit_service
 from dependencies import get_db, get_current_user
-import httpx
-from core import config
+from kakao_service import exchange_code_for_tokens, get_user_info, verify_token, KakaoAuthError
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -34,112 +33,67 @@ def login_for_access_token(request: Request, form_data: OAuth2PasswordRequestFor
 @router.post("/kakao", response_model=Union[schemas.Token, schemas.KakaoEmailRequired])
 @limiter.limit("10/minute")
 async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin, db: Session = Depends(get_db)):
-    # 1. Exchange authorization code for access token
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        token_url = "https://kauth.kakao.com/oauth/token"
-        token_params = {
-            "grant_type": "authorization_code",
-            "client_id": config.KAKAO_REST_API_KEY,
-            "redirect_uri": login_data.redirect_uri,
-            "code": login_data.code,
-        }
+    # 1. Exchange authorization code for tokens & get user info
+    try:
+        tokens = await exchange_code_for_tokens(login_data.code, login_data.redirect_uri)
+        user_info = await get_user_info(tokens.access_token)
+    except KakaoAuthError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-        token_response = await client.post(token_url, data=token_params)
+    kakao_id = user_info.kakao_id
+    kakao_token = tokens.access_token
+    kakao_refresh = tokens.refresh_token
+    nickname = user_info.nickname
+    email = user_info.email
 
-        if token_response.status_code != 200:
-            logger.warning("Kakao token error: %s", token_response.text)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Authentication failed"
-            )
-
-        token_data = token_response.json()
-        kakao_token = token_data.get("access_token")
-        kakao_refresh = token_data.get("refresh_token")
-
-        # 2. Get user information using the access token
-        user_info_url = "https://kapi.kakao.com/v2/user/me"
-        user_info_response = await client.get(
-            user_info_url,
-            headers={"Authorization": f"Bearer {kakao_token}"}
+    if not email:
+        return schemas.KakaoEmailRequired(
+            requires_email=True,
+            kakao_id=kakao_id,
+            kakao_token=kakao_token,
+            nickname=nickname,
         )
 
-        if user_info_response.status_code != 200:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to get Kakao user info"
-            )
+    # 2. Check if user exists or create new
+    user = db.query(models.User).filter(models.User.kakao_id == kakao_id).first()
 
-        user_json = user_info_response.json()
-        kakao_id = str(user_json.get("id"))
-        kakao_account = user_json.get("kakao_account", {})
-        properties = user_json.get("properties", {})
-        nickname = properties.get("nickname")
-        email = kakao_account.get("email")
+    if not user:
+        user_by_email = db.query(models.User).filter(models.User.email == email).first()
+        if user_by_email:
+            user = user_by_email
+            user.kakao_id = kakao_id
+        else:
+            user = models.User(email=email, kakao_id=kakao_id)
+            db.add(user)
 
-        if not email:
-            # Email not provided by Kakao — require manual input from user
-            return schemas.KakaoEmailRequired(
-                requires_email=True,
-                kakao_id=kakao_id,
-                kakao_token=kakao_token,
-                nickname=nickname,
-            )
+    user.nickname = nickname
+    user.kakao_access_token = kakao_token
+    if kakao_refresh:
+        user.kakao_refresh_token = kakao_refresh
 
-        # 3. Check if user exists or create new
-        user = db.query(models.User).filter(models.User.kakao_id == kakao_id).first()
+    db.commit()
+    db.refresh(user)
 
-        if not user:
-            # Check if a user with the same email already exists
-            user_by_email = db.query(models.User).filter(models.User.email == email).first()
-            if user_by_email:
-                user = user_by_email
-                user.kakao_id = kakao_id
-            else:
-                user = models.User(email=email, kakao_id=kakao_id)
-                db.add(user)
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="승인 대기 중입니다. 관리자에게 문의하세요.")
 
-        # Always update nickname and tokens from Kakao
-        user.nickname = nickname
-        user.kakao_access_token = kakao_token
-        if kakao_refresh:
-            user.kakao_refresh_token = kakao_refresh
-
-        db.commit()
-        db.refresh(user)
-
-        # 4. Check if user is approved (active)
-        if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="승인 대기 중입니다. 관리자에게 문의하세요."
-            )
-
-        # 5. Generate application JWT token
-        access_token_expires = auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = auth.create_access_token(
-            data={"sub": user.email},
-            expires_delta=access_token_expires
-        )
-
-        return {"access_token": access_token, "token_type": "bearer"}
+    access_token = auth.create_access_token(
+        data={"sub": user.email},
+        expires_delta=auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/kakao/complete", response_model=schemas.Token)
 @limiter.limit("10/minute")
 async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteRegister, db: Session = Depends(get_db)):
     """카카오 로그인 시 이메일 미제공 유저가 이메일 직접 입력 후 가입 완료하는 엔드포인트"""
-    # Verify kakao_token is still valid by calling Kakao API
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        user_info_response = await client.get(
-            "https://kapi.kakao.com/v2/user/me",
-            headers={"Authorization": f"Bearer {data.kakao_token}"}
-        )
-        if user_info_response.status_code != 200:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Kakao token. Please login again.")
+    try:
+        kakao_id_from_token = await verify_token(data.kakao_token)
+    except KakaoAuthError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Kakao token. Please login again.")
 
-        kakao_id_from_token = str(user_info_response.json().get("id"))
-        if kakao_id_from_token != data.kakao_id:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Kakao ID mismatch.")
+    if kakao_id_from_token != data.kakao_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Kakao ID mismatch.")
 
     # Check email uniqueness
     if db.query(models.User).filter(models.User.email == data.email).first():

@@ -49,3 +49,17 @@ RETRY_DELAY: int = 2  # seconds
 # 봇 루프 (Bot Loop)
 # ──────────────────────────────────────────────
 MAX_CONSECUTIVE_ERRORS: int = 10  # 연속 에러 시 봇 중단 임계값
+
+# ──────────────────────────────────────────────
+# 크레딧 시스템 (Credit System)
+# ──────────────────────────────────────────────
+CREDIT_SIGNUP_BONUS: float = 1000.0        # 가입 시 지급 크레딧
+CREDIT_PROFIT_FEE_RATE: float = 0.10       # 수익의 10% 수수료
+CREDIT_LOSS_REFUND_RATE: float = 0.10      # 손실의 10% 환불
+
+# ──────────────────────────────────────────────
+# 결제 (Payment)
+# ──────────────────────────────────────────────
+MIN_CHARGE_AMOUNT: int = 1000              # 최소 충전 금액 (원)
+MAX_CHARGE_AMOUNT: int = 1000000           # 최대 충전 금액 (원)
+TOSS_CONFIRM_URL: str = "https://api.tosspayments.com/v1/payments/confirm"

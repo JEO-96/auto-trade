@@ -50,41 +50,63 @@ def _save_backtest_result(task_id: str, task_info: dict):
         db.close()
 
 
+def _start_backtest(
+    symbols: list[str],
+    is_portfolio: bool,
+    strategy_name: str,
+    timeframe: str,
+    limit: int | None,
+    initial_capital: float,
+    start_date: str | None,
+    end_date: str | None,
+    commission_rate: float,
+    user_id: int,
+    db: Session,
+) -> dict:
+    """백테스트 태스크 생성 + DB 기록의 공통 로직."""
+    tester = VectorBacktester(strategy_name=strategy_name)
+    task_id = tester.start_async_backtest(
+        symbols=symbols,
+        is_portfolio=is_portfolio,
+        timeframe=timeframe,
+        limit=limit,
+        initial_capital=initial_capital,
+        start_date=start_date,
+        end_date=end_date,
+        fees=commission_rate,
+    )
+    backtest_tasks[task_id]["user_id"] = user_id
+    backtest_tasks[task_id]["commission_rate"] = commission_rate
+
+    history = models.BacktestHistory(
+        user_id=user_id,
+        symbols=json.dumps(symbols),
+        timeframe=timeframe,
+        strategy_name=strategy_name,
+        initial_capital=initial_capital,
+        status="running",
+        start_date=start_date,
+        end_date=end_date,
+        commission_rate=commission_rate,
+    )
+    db.add(history)
+    db.commit()
+    db.refresh(history)
+    backtest_tasks[task_id]["history_id"] = history.id
+
+    return {"status": "running", "task_id": task_id}
+
+
 @router.post("/", response_model=schemas.BacktestResponse)
 def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        tester = VectorBacktester(strategy_name=req.strategy_name)
-        task_id = tester.start_async_backtest(
-            symbols=[req.symbol],
-            is_portfolio=False,
-            timeframe=req.timeframe,
-            limit=req.limit,
-            initial_capital=req.initial_capital,
-            start_date=req.start_date,
-            end_date=req.end_date,
-            fees=req.commission_rate,
+        return _start_backtest(
+            symbols=[req.symbol], is_portfolio=False,
+            strategy_name=req.strategy_name, timeframe=req.timeframe,
+            limit=req.limit, initial_capital=req.initial_capital,
+            start_date=req.start_date, end_date=req.end_date,
+            commission_rate=req.commission_rate, user_id=current_user.id, db=db,
         )
-        backtest_tasks[task_id]["user_id"] = current_user.id
-        backtest_tasks[task_id]["commission_rate"] = req.commission_rate
-
-        # DB에 기록 생성
-        history = models.BacktestHistory(
-            user_id=current_user.id,
-            symbols=json.dumps([req.symbol]),
-            timeframe=req.timeframe,
-            strategy_name=req.strategy_name,
-            initial_capital=req.initial_capital,
-            status="running",
-            start_date=req.start_date,
-            end_date=req.end_date,
-            commission_rate=req.commission_rate,
-        )
-        db.add(history)
-        db.commit()
-        db.refresh(history)
-        backtest_tasks[task_id]["history_id"] = history.id
-
-        return {"status": "running", "task_id": task_id}
     except Exception as e:
         logger.error("Backtest startup error: %s", e)
         raise HTTPException(status_code=500, detail="Backtest failed to start")
@@ -93,38 +115,13 @@ def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depen
 @router.post("/portfolio", response_model=schemas.BacktestResponse)
 def run_portfolio_backtest(req: schemas.PortfolioBacktestRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        tester = VectorBacktester(strategy_name=req.strategy_name)
-        task_id = tester.start_async_backtest(
-            symbols=req.symbols,
-            is_portfolio=True,
-            timeframe=req.timeframe,
-            limit=req.limit,
-            initial_capital=req.initial_capital,
-            start_date=req.start_date,
-            end_date=req.end_date,
-            fees=req.commission_rate,
+        return _start_backtest(
+            symbols=req.symbols, is_portfolio=True,
+            strategy_name=req.strategy_name, timeframe=req.timeframe,
+            limit=req.limit, initial_capital=req.initial_capital,
+            start_date=req.start_date, end_date=req.end_date,
+            commission_rate=req.commission_rate, user_id=current_user.id, db=db,
         )
-        backtest_tasks[task_id]["user_id"] = current_user.id
-        backtest_tasks[task_id]["commission_rate"] = req.commission_rate
-
-        # DB에 기록 생성
-        history = models.BacktestHistory(
-            user_id=current_user.id,
-            symbols=json.dumps(req.symbols),
-            timeframe=req.timeframe,
-            strategy_name=req.strategy_name,
-            initial_capital=req.initial_capital,
-            status="running",
-            start_date=req.start_date,
-            end_date=req.end_date,
-            commission_rate=req.commission_rate,
-        )
-        db.add(history)
-        db.commit()
-        db.refresh(history)
-        backtest_tasks[task_id]["history_id"] = history.id
-
-        return {"status": "running", "task_id": task_id}
     except Exception as e:
         logger.error("Portfolio Backtest startup error: %s", e)
         raise HTTPException(status_code=500, detail="Backtest failed to start")

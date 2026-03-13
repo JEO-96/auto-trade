@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
 import credit_service
-from dependencies import get_db, get_admin_user
+from dependencies import get_db, get_admin_user, get_user_or_404
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -40,12 +40,7 @@ def approve_user(
     db: Session = Depends(get_db),
 ):
     """사용자 승인 (is_active=True)"""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다.",
-        )
+    user = get_user_or_404(db, user_id)
     user.is_active = True
     db.commit()
     db.refresh(user)
@@ -61,12 +56,7 @@ def reject_user(
     db: Session = Depends(get_db),
 ):
     """사용자 거부 (is_active=False)"""
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다.",
-        )
+    user = get_user_or_404(db, user_id)
     user.is_active = False
     db.commit()
     db.refresh(user)

@@ -59,3 +59,10 @@ export interface BacktestHistoryItem {
 export interface BacktestHistoryDetail extends BacktestHistoryItem {
     result_data: BacktestResult | null;
 }
+
+export interface RunBacktestResponse {
+    status: 'running' | 'success';
+    task_id?: string;
+    message?: string;
+    [key: string]: unknown;
+}

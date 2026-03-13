@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { BotConfig, BotCreateRequest, TradeLog, BotStatus } from '@/types/bot';
+import type { BotConfig, BotCreateRequest, TradeLog, BotStatus, ActiveBotPublic } from '@/types/bot';
 
 export async function getBotList(): Promise<BotConfig[]> {
     const res = await api.get<BotConfig[]>('/bot/list');
@@ -38,13 +38,7 @@ export async function deleteBot(botId: number): Promise<void> {
     await api.delete(`/bot/${botId}`);
 }
 
-export interface ActiveBotPublic {
-    nickname: string | null;
-    symbol: string;
-    timeframe: string;
-    strategy_name: string | null;
-    paper_trading_mode: boolean;
-}
+export type { ActiveBotPublic } from '@/types/bot';
 
 export async function getActiveBots(): Promise<ActiveBotPublic[]> {
     const res = await api.get<{ bots: ActiveBotPublic[]; total: number }>('/bot/active');

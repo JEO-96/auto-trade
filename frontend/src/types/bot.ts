@@ -44,3 +44,11 @@ export interface TradeLog {
 export interface BotStatus {
     bot_status: 'Running' | 'Stopped';
 }
+
+export interface ActiveBotPublic {
+    nickname: string | null;
+    symbol: string;
+    timeframe: string;
+    strategy_name: string | null;
+    paper_trading_mode: boolean;
+}

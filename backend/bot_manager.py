@@ -36,6 +36,21 @@ logger = logging.getLogger(__name__)
 # In production, use Celery + Redis for scaling.
 active_bots: dict[int, asyncio.Task] = {}
 
+# 전략 이름 → 한국어 라벨 매핑 (카카오 알림용)
+STRATEGY_LABELS: dict[str, str] = {
+    'steady_compounder': '스테디 복리',
+    'momentum_breakout_pro_stable': '모멘텀 안정형',
+    'james_pro_stable': '모멘텀 안정형',
+    'momentum_stable': '모멘텀 안정형',
+    'momentum_breakout_pro_aggressive': '모멘텀 공격형',
+    'james_pro_aggressive': '모멘텀 공격형',
+    'momentum_aggressive': '모멘텀 공격형',
+    'momentum_breakout_elite': '모멘텀 엘리트',
+    'james_pro_elite': '모멘텀 엘리트',
+    'momentum_elite': '모멘텀 엘리트',
+    'momentum_breakout_basic': '모멘텀 기본',
+}
+
 
 def _load_bot_config(bot_config_id: int) -> Optional[dict]:
     """Load bot configuration from DB and return as a plain dict to avoid DetachedInstanceError."""
@@ -208,6 +223,26 @@ def _process_symbol_entry(
 def _send_trade_notification(user_id: int, msg: str) -> None:
     """Fire-and-forget Kakao notification wrapped in asyncio.create_task."""
     asyncio.create_task(send_kakao_message(user_id, msg))
+
+
+def _build_tick_feedback(
+    signal_details: list[str],
+    paper_trading: bool,
+    strategy_name: str,
+    timeframe: str,
+    total_equity: float,
+) -> str:
+    """매 tick 카카오 피드백 메시지 생성."""
+    mode_label = "모의투자" if paper_trading else "실매매"
+    now_str = datetime.now().strftime("%m/%d %H:%M")
+    strategy_label = STRATEGY_LABELS.get(strategy_name, strategy_name)
+    return (
+        f"📈 [{mode_label}] {strategy_label}\n"
+        f"⏰ {now_str} | {timeframe}봉 분석\n"
+        f"💰 자산: {total_equity:,.0f} KRW\n"
+        f"{'─' * 24}\n"
+        + f"\n{'─' * 24}\n".join(signal_details)
+    )
 
 
 async def run_bot_loop(bot_config_id: int) -> None:
@@ -398,28 +433,8 @@ async def run_bot_loop(bot_config_id: int) -> None:
 
                 # 매 tick 카톡 피드백 전송
                 if signal_details:
-                    mode_label = "모의투자" if paper_trading else "실매매"
-                    now_str = datetime.now().strftime("%m/%d %H:%M")
-                    strategy_labels = {
-                        'steady_compounder': '스테디 복리',
-                        'momentum_breakout_pro_stable': '모멘텀 안정형',
-                        'james_pro_stable': '모멘텀 안정형',
-                        'momentum_stable': '모멘텀 안정형',
-                        'momentum_breakout_pro_aggressive': '모멘텀 공격형',
-                        'james_pro_aggressive': '모멘텀 공격형',
-                        'momentum_aggressive': '모멘텀 공격형',
-                        'momentum_breakout_elite': '모멘텀 엘리트',
-                        'james_pro_elite': '모멘텀 엘리트',
-                        'momentum_elite': '모멘텀 엘리트',
-                        'momentum_breakout_basic': '모멘텀 기본',
-                    }
-                    strategy_label = strategy_labels.get(strategy_name, strategy_name)
-                    feedback_msg = (
-                        f"📈 [{mode_label}] {strategy_label}\n"
-                        f"⏰ {now_str} | {timeframe}봉 분석\n"
-                        f"💰 자산: {total_equity:,.0f} KRW\n"
-                        f"{'─' * 24}\n"
-                        + f"\n{'─' * 24}\n".join(signal_details)
+                    feedback_msg = _build_tick_feedback(
+                        signal_details, paper_trading, strategy_name, timeframe, total_equity,
                     )
                     _send_trade_notification(user_id, feedback_msg)
 

@@ -14,12 +14,13 @@ from sqlalchemy.orm import Session
 
 import database
 import models
+from constants import (
+    CREDIT_SIGNUP_BONUS as SIGNUP_BONUS,
+    CREDIT_PROFIT_FEE_RATE as PROFIT_FEE_RATE,
+    CREDIT_LOSS_REFUND_RATE as LOSS_REFUND_RATE,
+)
 
 logger = logging.getLogger(__name__)
-
-SIGNUP_BONUS = 1000.0
-PROFIT_FEE_RATE = 0.10   # 수익의 10%
-LOSS_REFUND_RATE = 0.10   # 손실의 10%
 
 
 def ensure_user_credit(db: Session, user_id: int) -> models.UserCredit:

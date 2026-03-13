@@ -313,10 +313,13 @@ Bot loops run as asyncio tasks; `start_bot()` / `stop_bot()` manage the lifecycl
 
 Key features:
 - **Position persistence**: Positions saved to `ActivePosition` table every tick; loaded on bot restart
+- **Atomic position saves**: `position_manager.py` uses `begin_nested()` savepoint for crash-safe delete+insert
 - **Graceful shutdown**: `graceful_shutdown()` cancels all tasks with timeout, preserving positions in DB
 - **Auto-recovery**: `recover_active_bots()` restores bots marked `is_active=True` on server startup
 - **Lifespan events**: `main.py` uses `asynccontextmanager` lifespan for startup recovery + shutdown
 - **Bot limits**: Max 5 bots/user total, max 1 live (실매매) bot/user, unlimited paper (모의투자) bots
+- **TOCTOU-safe dict access**: All `active_bots` access uses `.get()` pattern to prevent KeyError in async context
+- **Stop cleanup**: `stop_bot` lets the task's `finally` block handle `active_bots` cleanup (no early pop)
 
 ### 4. Rate Limiting
 `backend/main.py` uses `slowapi` for rate limiting. Auth endpoints are limited to 10 requests/minute per IP.
@@ -352,6 +355,8 @@ Unapproved users cannot log in (403 Forbidden).
 ### 11. Frontend API Client
 `frontend/src/lib/api.ts` — Axios instance that automatically attaches JWT from localStorage.
 All API calls must go through this client, never fetch directly.
+- **401 deduplication**: `isRedirecting` flag prevents cascading login redirects during polling
+- **Bot status resilience**: Dashboard preserves previous bot status on API failure (merge, not replace)
 
 ### 12. Credit System & Performance-Based Fees
 `backend/credit_service.py` — core credit business logic.
@@ -362,6 +367,7 @@ All API calls must go through this client, never fetch directly.
 - **Bot start check**: Live bots require sufficient credits (`check_sufficient_credits()`)
 - **Thread-safe**: Uses `database.get_db_session()` context manager for bot_manager calls
 - **Atomic transactions**: Credit balance + transaction log updated in same DB session
+- **Row-level locking**: `with_for_update()` on credit balance to prevent concurrent PnL race conditions
 
 ### 13. Frontend Constants
 `frontend/src/lib/constants.ts` — centralized strategy lists, symbol lists, timeframes, and poll intervals.
@@ -432,6 +438,10 @@ Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stor
 3. **~~Hardcoded JWT secret~~** — **FIXED.** `backend/auth.py` reads `SECRET_KEY` from `settings.py`.
 4. **No test suite** — The project has no automated tests. Add tests before adding new critical features.
 5. **Kakao tokens stored in DB** — `kakao_access_token` and `kakao_refresh_token` stored in plain text in `User` table. Consider encrypting.
+6. **~~TOCTOU race conditions~~** — **FIXED.** `bot_manager.py` and `routers/bots.py` now use `.get()` pattern for all `active_bots` dict access.
+7. **~~Bot stop race condition~~** — **FIXED.** `stop_bot` no longer pops from `active_bots`; lets task's `finally` block handle cleanup.
+8. **~~Non-atomic position persistence~~** — **FIXED.** `position_manager.py` uses `begin_nested()` savepoint for crash-safe saves.
+9. **~~Credit concurrent update~~** — **FIXED.** `credit_service.py` uses `with_for_update()` row-level lock.
 
 ---
 
