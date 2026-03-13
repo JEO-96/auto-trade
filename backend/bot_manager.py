@@ -343,6 +343,19 @@ async def run_bot_loop(bot_config_id: int) -> None:
     consecutive_errors: int = 0
     last_feedback_candle_slot: int = -1  # 마지막으로 피드백을 보낸 캔들 슬롯
 
+    # 봇 시작 알림
+    mode_label = "모의투자" if paper_trading else "실매매"
+    strategy_label = STRATEGY_LABELS.get(strategy_name, strategy_name)
+    symbols_str = ", ".join(symbols)
+    _send_trade_notification(user_id, (
+        f"🟢 봇 시작\n"
+        f"모드: {mode_label}\n"
+        f"전략: {strategy_label}\n"
+        f"종목: {symbols_str}\n"
+        f"타임프레임: {timeframe}\n"
+        f"자본: {liquid_capital:,.0f} KRW"
+    ))
+
     try:
         while True:
             logger.info("--- [Bot %d] Portfolio Tick: %d symbols ---", bot_config_id, len(symbols))
@@ -485,6 +498,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     logger.error("[Bot %d] Too many consecutive errors. Stopping bot.", bot_config_id)
                     # 에러로 중단해도 포지션은 DB에 저장
                     save_positions_to_db(bot_config_id, active_positions)
+                    _send_trade_notification(user_id, f"🔴 봇 자동 종료\n전략: {strategy_label}\n사유: 연속 오류 {MAX_CONSECUTIVE_ERRORS}회")
                     break
             finally:
                 current_db.close()
@@ -496,10 +510,12 @@ async def run_bot_loop(bot_config_id: int) -> None:
         logger.info("--- [Bot %d] Engine Stopped (graceful) ---", bot_config_id)
         # 포지션은 DB에 유지 (재시작 시 복구 가능)
         save_positions_to_db(bot_config_id, active_positions)
+        _send_trade_notification(user_id, f"🔴 봇 종료\n전략: {strategy_label}\n종목: {symbols_str}")
         raise
     except Exception as e:
         logger.error("[Bot %d] Fatal error in bot loop: %s", bot_config_id, e)
         logger.debug(traceback.format_exc())
+        _send_trade_notification(user_id, f"🔴 봇 비정상 종료\n전략: {strategy_label}\n오류: {str(e)[:100]}")
     finally:
         # Clean up from active_bots so status correctly reports Stopped
         active_bots.pop(bot_config_id, None)
