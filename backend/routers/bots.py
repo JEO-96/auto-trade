@@ -303,6 +303,6 @@ def get_bot_trade_logs(bot_id: int, current_user: models.User = Depends(get_curr
     ).order_by(models.TradeLog.id.desc()).limit(100).all()
     return logs
 
-@router.get("/list", response_model=List[schemas.BotConfigResponse])
+@router.get("/list", response_model=list[schemas.BotConfigResponse])
 def list_user_bots(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.query(models.BotConfig).filter(models.BotConfig.user_id == current_user.id).all()
