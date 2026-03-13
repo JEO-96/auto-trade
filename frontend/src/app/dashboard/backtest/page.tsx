@@ -211,6 +211,8 @@ export default function BacktestPage() {
     };
 
     const pollStatus = async (taskId: string) => {
+        // 기존 폴링 인터벌이 있으면 정리 (중복 방지)
+        if (intervalRef.current) clearInterval(intervalRef.current);
         intervalRef.current = setInterval(async () => {
             try {
                 const data = await getBacktestStatus(taskId);

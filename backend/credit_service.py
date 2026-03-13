@@ -75,7 +75,12 @@ def process_trade_pnl(
 
     with database.get_db_session() as db:
         try:
-            credit = ensure_user_credit(db, user_id)
+            # 행 레벨 잠금으로 동시 업데이트 방지
+            credit = db.query(models.UserCredit).filter(
+                models.UserCredit.user_id == user_id
+            ).with_for_update().first()
+            if not credit:
+                credit = ensure_user_credit(db, user_id)
 
             if pnl > 0:
                 fee = pnl * PROFIT_FEE_RATE

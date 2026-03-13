@@ -455,10 +455,9 @@ async def run_bot_loop(bot_config_id: int) -> None:
 
 
 def get_bot_status(bot_config_id: int) -> str:
-    if bot_config_id in active_bots:
-        task = active_bots[bot_config_id]
-        if not task.done():
-            return "Running"
+    task = active_bots.get(bot_config_id)
+    if task is not None and not task.done():
+        return "Running"
     return "Stopped"
 
 

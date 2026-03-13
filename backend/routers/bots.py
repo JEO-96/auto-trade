@@ -27,7 +27,7 @@ router = APIRouter(prefix="/bot", tags=["bots"])
 def get_active_bots(db: Session = Depends(get_db)):
     """현재 실제 실행 중인 봇 목록 (공개, 인증 불필요)"""
     running_ids = [
-        bid for bid, task in bot_manager.active_bots.items()
+        bid for bid, task in list(bot_manager.active_bots.items())
         if not task.done()
     ]
     if not running_ids:
@@ -42,8 +42,11 @@ def get_active_bots(db: Session = Depends(get_db)):
 
     result = []
     for bot in bots:
+        # 닉네임은 익명화 (첫 글자 + **)
+        raw_name = (bot.owner.nickname or bot.owner.email.split('@')[0]) if bot.owner else "익명"
+        masked = raw_name[0] + "**" if len(raw_name) >= 1 else "익명"
         result.append(schemas.ActiveBotPublic(
-            nickname=(bot.owner.nickname or bot.owner.email.split('@')[0]) if bot.owner else None,
+            nickname=masked,
             symbol=bot.symbol,
             timeframe=bot.timeframe,
             strategy_name=bot.strategy_name,
@@ -65,8 +68,9 @@ def _get_user_bot(bot_id: int, user_id: int, db: Session) -> models.BotConfig:
 
 
 def _is_bot_running(bot_id: int) -> bool:
-    """봇이 현재 실행 중인지 확인"""
-    return bot_id in bot_manager.active_bots and not bot_manager.active_bots[bot_id].done()
+    """봇이 현재 실행 중인지 확인 (TOCTOU-safe)"""
+    task = bot_manager.active_bots.get(bot_id)
+    return task is not None and not task.done()
 
 
 def _validate_symbol(symbol: str) -> None:
@@ -259,10 +263,9 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
 
 @router.post("/stop/{bot_id}")
 async def stop_bot(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    _get_user_bot(bot_id, current_user.id, db)
-
-    # 실매매 봇의 보유 포지션 확인
     bot = _get_user_bot(bot_id, current_user.id, db)
+
+    # 실매매 봇의 보유 포지션 확인 (소유권 확인된 bot_id만 조회)
     has_positions = db.query(models.ActivePosition).filter(
         models.ActivePosition.bot_id == bot_id
     ).count() > 0
@@ -270,16 +273,17 @@ async def stop_bot(bot_id: int, current_user: models.User = Depends(get_current_
     if not bot.paper_trading_mode and has_positions:
         warning = " 주의: 실매매 포지션이 있습니다. 거래소에서 보유 중인 코인을 직접 확인해주세요."
 
-    if bot_id in bot_manager.active_bots:
-        task = bot_manager.active_bots.pop(bot_id)
+    task = bot_manager.active_bots.get(bot_id)
+    if task is not None and not task.done():
         task.cancel()
-        # cancel 후 task 완료 대기 (포지션 저장이 끝날 때까지)
+        # cancel 후 task의 finally 블록이 완료될 때까지 대기
+        # (finally에서 active_bots.pop + set_bot_active(False) 실행됨)
         try:
             await task
         except asyncio.CancelledError:
             pass
+        # finally 블록이 포지션을 DB에 저장한 후 정리
         bot_manager.clear_positions_from_db(bot_id)
-        bot_manager.set_bot_active(bot_id, False)
         return {"status": "success", "message": f"Bot {bot_id} stopped.{warning}"}
     # 메모리에 없지만 DB에 active로 남아있을 수 있음
     bot_manager.set_bot_active(bot_id, False)

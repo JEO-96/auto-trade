@@ -97,11 +97,11 @@ export default function DashboardPage() {
                         const status = await getBotStatus(bot.id);
                         statuses[bot.id] = status.bot_status === BOT_STATUS.RUNNING;
                     } catch {
-                        statuses[bot.id] = false;
+                        // API 실패 시 이전 상태 유지 (unknown을 false로 잘못 표시하지 않음)
                     }
                 })
             );
-            setBotStatuses(statuses);
+            setBotStatuses(prev => ({ ...prev, ...statuses }));
 
             if (list.length > 0) {
                 setSelectedBotId((prev) => {
