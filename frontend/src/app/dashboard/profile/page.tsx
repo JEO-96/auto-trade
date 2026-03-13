@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { User as UserIcon, Check, Heart, MessageCircle, Mail, Calendar, Send, Link2, Unlink, Bell } from 'lucide-react';
+import { User as UserIcon, Check, Heart, MessageCircle, Mail, Calendar, Send, Link2, Unlink, Bell, Copy } from 'lucide-react';
 import PageContainer from '@/components/ui/PageContainer';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import { useToast } from '@/components/ui/Toast';
 import { updateNickname, getUserProfile, getPosts, linkTelegram, unlinkTelegram, testTelegramNotification } from '@/lib/api/community';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/utils';
@@ -22,6 +23,7 @@ const POST_TYPE_BADGE: Record<PostType, { label: string; variant: 'success' | 'w
 
 export default function ProfilePage() {
     const { user, refreshUser } = useAuth();
+    const toast = useToast();
     const [nickname, setNickname] = useState('');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -126,10 +128,10 @@ export default function ProfilePage() {
         setTelegramTesting(true);
         try {
             await testTelegramNotification();
-            alert('텔레그램으로 테스트 메시지를 전송했습니다!');
+            toast.success('텔레그램으로 테스트 메시지를 전송했습니다!');
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : '테스트 메시지 전송에 실패했습니다.';
-            alert(msg);
+            toast.error(msg);
         } finally {
             setTelegramTesting(false);
         }
@@ -229,10 +231,23 @@ export default function ProfilePage() {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-xs text-gray-400 space-y-1">
+                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-xs text-gray-400 space-y-2">
                             <p>1. 텔레그램에서 <a href="https://t.me/backtested_alert_bot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">@backtested_alert_bot</a>을 검색하고 <span className="text-white font-medium">/start</span>를 보내세요.</p>
-                            <p>2. 브라우저에서 아래 링크를 열어 Chat ID를 확인하세요:</p>
-                            <p className="font-mono text-[10px] text-gray-500 break-all">https://api.telegram.org/bot8776556922:AAE-LnZxTnRPQJRI2WTnsRxTAxEWAOYd0ec/getUpdates</p>
+                            <p>2. 아래 링크를 복사하여 브라우저에서 열면 Chat ID를 확인할 수 있습니다:</p>
+                            <div className="flex items-center gap-2">
+                                <code className="flex-1 font-mono text-[10px] text-gray-500 break-all bg-white/[0.02] px-2 py-1.5 rounded-lg">https://api.telegram.org/bot8776556922:AAE-LnZxTnRPQJRI2WTnsRxTAxEWAOYd0ec/getUpdates</code>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText('https://api.telegram.org/bot8776556922:AAE-LnZxTnRPQJRI2WTnsRxTAxEWAOYd0ec/getUpdates');
+                                        toast.success('링크가 복사되었습니다.');
+                                    }}
+                                    className="shrink-0 p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors text-gray-500 hover:text-white"
+                                    title="복사"
+                                >
+                                    <Copy className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
                             <p>3. 응답에서 <span className="text-white font-medium">{'"chat":{"id": 숫자}'}</span> 부분의 숫자를 아래에 입력하세요.</p>
                         </div>
                         <form onSubmit={handleSaveTelegram} className="flex items-end gap-3">

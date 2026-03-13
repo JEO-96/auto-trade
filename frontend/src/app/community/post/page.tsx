@@ -9,6 +9,7 @@ import {
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import { getPost, toggleLike, getComments, createComment, deleteComment, deletePost } from '@/lib/api/community';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDateTime } from '@/lib/utils';
@@ -52,6 +53,8 @@ export default function PublicPostDetailPage() {
     const [loading, setLoading] = useState(true);
     const [commentText, setCommentText] = useState('');
     const [submittingComment, setSubmittingComment] = useState(false);
+    const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
+    const [showDeletePost, setShowDeletePost] = useState(false);
 
     const fetchData = useCallback(async () => {
         if (!postId) return;
@@ -99,8 +102,14 @@ export default function PublicPostDetailPage() {
         }
     };
 
-    const handleDeleteComment = async (commentId: number) => {
-        if (!confirm('댓글을 삭제하시겠습니까?')) return;
+    const handleDeleteComment = (commentId: number) => {
+        setDeletingCommentId(commentId);
+    };
+
+    const executeDeleteComment = async () => {
+        if (deletingCommentId === null) return;
+        const commentId = deletingCommentId;
+        setDeletingCommentId(null);
         try {
             await deleteComment(commentId);
             setComments(prev => prev.filter(c => c.id !== commentId));
@@ -110,8 +119,14 @@ export default function PublicPostDetailPage() {
         }
     };
 
-    const handleDeletePost = async () => {
-        if (!post || !confirm('게시글을 삭제하시겠습니까?')) return;
+    const handleDeletePost = () => {
+        if (!post) return;
+        setShowDeletePost(true);
+    };
+
+    const executeDeletePost = async () => {
+        if (!post) return;
+        setShowDeletePost(false);
         try {
             await deletePost(post.id);
             router.push('/community');
@@ -335,6 +350,22 @@ export default function PublicPostDetailPage() {
                     </Link>
                 )}
             </div>
+
+            <DeleteConfirmationModal
+                isOpen={deletingCommentId !== null}
+                title="댓글 삭제"
+                message="이 댓글을 삭제하시겠습니까?"
+                onConfirm={executeDeleteComment}
+                onCancel={() => setDeletingCommentId(null)}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={showDeletePost}
+                title="게시글 삭제"
+                message="이 게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+                onConfirm={executeDeletePost}
+                onCancel={() => setShowDeletePost(false)}
+            />
         </div>
     );
 }

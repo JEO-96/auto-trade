@@ -7,6 +7,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
+import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import { SYMBOLS, STRATEGIES, BACKTEST_TIMEFRAMES, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel } from '@/lib/constants';
 import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle } from '@/lib/api/backtest';
 import { getBacktestSettings } from '@/lib/api/settings';
@@ -36,6 +37,10 @@ export default function BacktestPage() {
     const [shareContent, setShareContent] = useState('');
     const [sharing, setSharing] = useState(false);
     const [shareSuccess, setShareSuccess] = useState(false);
+
+    // 삭제 확인 모달
+    const [deletingHistoryId, setDeletingHistoryId] = useState<number | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     // 설정에서 허용된 전략별 타임프레임 매핑
     const [strategyTimeframeMap, setStrategyTimeframeMap] = useState<Record<string, string[]>>(() => {
@@ -135,12 +140,15 @@ export default function BacktestPage() {
     };
 
     const handleDeleteHistory = async (id: number) => {
-        if (!confirm('이 백테스트 기록을 삭제하시겠습니까?')) return;
+        setDeleteLoading(true);
         try {
             await deleteBacktestHistory(id);
             setHistoryList(prev => prev.filter(h => h.id !== id));
+            setDeletingHistoryId(null);
         } catch (err) {
             console.error('백테스트 기록 삭제 실패', err);
+        } finally {
+            setDeleteLoading(false);
         }
     };
 
@@ -271,6 +279,16 @@ export default function BacktestPage() {
 
     return (
         <PageContainer>
+            {/* 삭제 확인 모달 */}
+            <DeleteConfirmationModal
+                isOpen={deletingHistoryId !== null}
+                title="백테스트 기록 삭제"
+                message="이 백테스트 기록을 삭제하시겠습니까? 삭제된 기록은 복구할 수 없습니다."
+                onConfirm={() => deletingHistoryId !== null && handleDeleteHistory(deletingHistoryId)}
+                onCancel={() => setDeletingHistoryId(null)}
+                loading={deleteLoading}
+            />
+
             <header className="mb-6">
                 <h1 className="text-2xl font-bold mb-1 text-white">전략 백테스팅</h1>
                 <p className="text-sm text-gray-500 max-w-xl mb-4">
@@ -473,7 +491,7 @@ export default function BacktestPage() {
                                                 </>
                                             )}
                                             <button
-                                                onClick={() => handleDeleteHistory(h.id)}
+                                                onClick={() => setDeletingHistoryId(h.id)}
                                                 className="px-2 py-1.5 rounded-lg text-[11px] text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
                                                 title="삭제"
                                             >

@@ -18,6 +18,8 @@ import Badge from '@/components/ui/Badge';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import PageContainer from '@/components/ui/PageContainer';
+import ConfirmationModal from '@/components/modals/ConfirmationModal';
+import { useToast } from '@/components/ui/Toast';
 import { isAxiosError } from 'axios';
 import { getInitials, formatDateCompact } from '@/lib/utils';
 import { getUsers, getPendingUsers, approveUser, rejectUser } from '@/lib/api/admin';
@@ -35,6 +37,8 @@ export default function AdminPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
     const [refreshing, setRefreshing] = useState(false);
+    const [rejectingUserId, setRejectingUserId] = useState<number | null>(null);
+    const toast = useToast();
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -72,7 +76,7 @@ export default function AdminPage() {
             );
             setPendingUsers(prev => prev.filter(u => u.id !== userId));
         } catch {
-            alert('승인 처리에 실패했습니다.');
+            toast.error('승인 처리에 실패했습니다.');
         } finally {
             setActionLoading(prev => {
                 const next = { ...prev };
@@ -82,8 +86,14 @@ export default function AdminPage() {
         }
     };
 
-    const handleReject = async (userId: number) => {
-        if (!confirm('이 사용자를 거부하시겠습니까?')) return;
+    const handleReject = (userId: number) => {
+        setRejectingUserId(userId);
+    };
+
+    const executeReject = async () => {
+        if (rejectingUserId === null) return;
+        const userId = rejectingUserId;
+        setRejectingUserId(null);
         setActionLoading(prev => ({ ...prev, [userId]: 'reject' }));
         try {
             await rejectUser(userId);
@@ -92,7 +102,7 @@ export default function AdminPage() {
             );
             setPendingUsers(prev => prev.filter(u => u.id !== userId));
         } catch {
-            alert('거부 처리에 실패했습니다.');
+            toast.error('거부 처리에 실패했습니다.');
         } finally {
             setActionLoading(prev => {
                 const next = { ...prev };
@@ -526,6 +536,15 @@ export default function AdminPage() {
                 </div>
             </div>
 
+            <ConfirmationModal
+                isOpen={rejectingUserId !== null}
+                title="사용자 거부"
+                message="이 사용자를 거부/비활성화하시겠습니까?"
+                confirmLabel="거부"
+                variant="danger"
+                onConfirm={executeReject}
+                onCancel={() => setRejectingUserId(null)}
+            />
         </PageContainer>
     );
 }

@@ -5,6 +5,9 @@ import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import { SelectInput } from '@/components/ui/Input';
+import ConfirmationModal from '@/components/modals/ConfirmationModal';
+import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
+import { useToast } from '@/components/ui/Toast';
 import { getKeys, saveKey, deleteKey } from '@/lib/api/keys';
 import type { ExchangeKeyPreview } from '@/types/keys';
 
@@ -18,6 +21,9 @@ export default function ApiKeysPage() {
     const [showSecret, setShowSecret] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState<number | null>(null);
+    const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
+    const [deletingKeyInfo, setDeletingKeyInfo] = useState<{ id: number; name: string } | null>(null);
+    const toast = useToast();
 
     const fetchKeys = async () => {
         try {
@@ -44,10 +50,15 @@ export default function ApiKeysPage() {
         e.preventDefault();
 
         if (isUpdate) {
-            const confirmed = confirm('기존 키가 업데이트됩니다. 계속하시겠습니까?');
-            if (!confirmed) return;
+            setShowUpdateConfirm(true);
+            return;
         }
 
+        await executeSaveKey();
+    };
+
+    const executeSaveKey = async () => {
+        setShowUpdateConfirm(false);
         setSaving(true);
         try {
             await saveKey({
@@ -55,27 +66,31 @@ export default function ApiKeysPage() {
                 api_key: apiKey,
                 api_secret: apiSecret,
             });
-            alert(isUpdate ? 'API 키가 업데이트되었습니다.' : 'API 키가 안전하게 저장되었습니다.');
+            toast.success(isUpdate ? 'API 키가 업데이트되었습니다.' : 'API 키가 안전하게 저장되었습니다.');
             setApiKey('');
             setApiSecret('');
             fetchKeys();
-        } catch (err) {
-            alert('저장 실패. 로그인 상태인지 확인해 주세요.');
+        } catch {
+            toast.error('저장 실패. 로그인 상태인지 확인해 주세요.');
         } finally {
             setSaving(false);
         }
     };
 
     const handleDeleteKey = async (keyId: number, keyExchangeName: string) => {
-        const confirmed = confirm(`${keyExchangeName.toUpperCase()} API 키를 삭제하시겠습니까?`);
-        if (!confirmed) return;
+        setDeletingKeyInfo({ id: keyId, name: keyExchangeName });
+    };
 
+    const executeDeleteKey = async () => {
+        if (!deletingKeyInfo) return;
+        const keyId = deletingKeyInfo.id;
+        setDeletingKeyInfo(null);
         setDeleting(keyId);
         try {
             await deleteKey(keyId);
             setKeys(prev => prev.filter(k => k.id !== keyId));
-        } catch (err) {
-            alert('삭제 실패. 다시 시도해 주세요.');
+        } catch {
+            toast.error('삭제 실패. 다시 시도해 주세요.');
         } finally {
             setDeleting(null);
         }
@@ -108,8 +123,6 @@ export default function ApiKeysPage() {
                             onChange={(e) => setExchangeName(e.target.value)}
                         >
                             <option value="upbit">Upbit (업비트)</option>
-                            <option value="binance">Binance (바이낸스)</option>
-                            <option value="bybit">Bybit (바이비트)</option>
                         </SelectInput>
 
                         {isUpdate && (
@@ -280,6 +293,23 @@ export default function ApiKeysPage() {
                 </div>
 
             </div>
+
+            <ConfirmationModal
+                isOpen={showUpdateConfirm}
+                title="API 키 업데이트"
+                message="기존 키가 새로운 키로 업데이트됩니다. 계속하시겠습니까?"
+                confirmLabel="업데이트"
+                onConfirm={executeSaveKey}
+                onCancel={() => setShowUpdateConfirm(false)}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={!!deletingKeyInfo}
+                title="API 키 삭제"
+                message={`${deletingKeyInfo?.name.toUpperCase() ?? ''} API 키를 삭제하시겠습니까?`}
+                onConfirm={executeDeleteKey}
+                onCancel={() => setDeletingKeyInfo(null)}
+            />
         </div>
     );
 }

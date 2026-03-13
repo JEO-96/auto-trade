@@ -40,9 +40,13 @@ export default function BotCard({
             aria-label={`${bot.symbol} 봇 선택`}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(bot.id); }}
             className={`glass-panel p-5 rounded-2xl cursor-pointer transition-all border-2 overflow-hidden ${
-                isSelected
-                    ? 'border-primary/30 bg-primary/[0.03]'
-                    : 'border-transparent hover:border-white/[0.06]'
+                !bot.paper_trading_mode && isRunning
+                    ? isSelected
+                        ? 'border-red-500/40 bg-red-500/[0.03]'
+                        : 'border-red-500/20 hover:border-red-500/30'
+                    : isSelected
+                        ? 'border-primary/30 bg-primary/[0.03]'
+                        : 'border-transparent hover:border-white/[0.06]'
             }`}
         >
             {/* Top row: symbol + status */}
@@ -75,7 +79,10 @@ export default function BotCard({
                     {bot.paper_trading_mode ? (
                         <Badge variant="info">{BOT_MODE_LABELS.paper}</Badge>
                     ) : (
-                        <Badge variant="danger">{BOT_MODE_LABELS.live}</Badge>
+                        <Badge variant="danger">
+                            {isRunning && <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />}
+                            {BOT_MODE_LABELS.live}
+                        </Badge>
                     )}
                     <Badge variant={isRunning ? 'success' : 'warning'}>
                         {isRunning ? '가동중' : '정지'}

@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import PageContainer from '@/components/ui/PageContainer';
+import { useToast } from '@/components/ui/Toast';
 import BotCard from '@/components/cards/BotCard';
 import TradeLogTimeline from '@/components/sections/TradeLogTimeline';
 import BotFormModal from '@/components/modals/BotFormModal';
@@ -35,6 +36,8 @@ const defaultFormState: BotFormData = {
 };
 
 export default function DashboardPage() {
+    const toast = useToast();
+
     // Bot list state
     const [bots, setBots] = useState<BotConfig[]>([]);
     const [botStatuses, setBotStatuses] = useState<Record<number, boolean>>({});
@@ -167,7 +170,7 @@ export default function DashboardPage() {
             await startBot(botId);
             setBotStatuses((prev) => ({ ...prev, [botId]: true }));
         } catch (err) {
-            alert(getErrorMessage(err, '서버 연결에 실패했거나 권한이 없습니다.'));
+            toast.error(getErrorMessage(err, '서버 연결에 실패했거나 권한이 없습니다.'));
         } finally {
             setActionLoading((prev) => ({ ...prev, [botId]: false }));
         }
@@ -179,7 +182,7 @@ export default function DashboardPage() {
             await stopBot(botId);
             setBotStatuses((prev) => ({ ...prev, [botId]: false }));
         } catch (err) {
-            alert(getErrorMessage(err, '서버 연결에 실패했거나 권한이 없습니다.'));
+            toast.error(getErrorMessage(err, '서버 연결에 실패했거나 권한이 없습니다.'));
         } finally {
             setActionLoading((prev) => ({ ...prev, [botId]: false }));
         }
@@ -255,7 +258,7 @@ export default function DashboardPage() {
             }
             await fetchBots();
         } catch (err) {
-            alert(getErrorMessage(err, '봇 삭제에 실패했습니다.'));
+            toast.error(getErrorMessage(err, '봇 삭제에 실패했습니다.'));
         } finally {
             setDeleteLoading(false);
         }
