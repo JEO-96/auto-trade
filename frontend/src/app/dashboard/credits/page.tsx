@@ -265,10 +265,11 @@ export default function CreditsPage() {
                     onClick={() => setShowChargeModal(false)}
                 >
                     <div
-                        className="bg-[#0f172a] border border-white/[0.08] rounded-2xl w-full max-w-md overflow-hidden"
+                        className="bg-[#0f172a] border border-white/[0.08] rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col"
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="px-6 py-5 border-b border-white/[0.06]">
+                        {/* 헤더 - 고정 */}
+                        <div className="px-6 py-5 border-b border-white/[0.06] shrink-0">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20">
                                     <Wallet className="w-5 h-5 text-blue-400" />
@@ -280,7 +281,8 @@ export default function CreditsPage() {
                             </div>
                         </div>
 
-                        <div className="p-6 space-y-5">
+                        {/* 콘텐츠 - 스크롤 가능 */}
+                        <div className="p-6 space-y-5 overflow-y-auto">
                             {/* 프리셋 금액 */}
                             <div>
                                 <p className="text-sm text-gray-400 mb-3">충전 금액 선택</p>
@@ -337,7 +339,8 @@ export default function CreditsPage() {
                             )}
                         </div>
 
-                        <div className="px-6 pb-6 flex gap-3">
+                        {/* 버튼 - 고정 */}
+                        <div className="px-6 py-4 border-t border-white/[0.06] flex gap-3 shrink-0">
                             <button
                                 onClick={() => setShowChargeModal(false)}
                                 className="flex-1 py-3 rounded-xl text-sm font-semibold bg-white/[0.04] text-gray-300 hover:bg-white/[0.08] border border-white/[0.06] transition-colors"
