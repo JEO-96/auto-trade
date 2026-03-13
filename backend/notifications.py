@@ -67,8 +67,8 @@ async def _send_message(kakao_token: str, message: str) -> int:
         "object_type": "text",
         "text": message,
         "link": {
-            "web_url": "https://jooeunoh.com",
-            "mobile_web_url": "https://jooeunoh.com",
+            "web_url": "https://backtested.bot",
+            "mobile_web_url": "https://backtested.bot",
         },
         "button_title": "대시보드 보기",
     }

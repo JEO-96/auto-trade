@@ -9,7 +9,7 @@
 - **Exchange:** Upbit via CCXT library (주식 확장 예정)
 - **Auth:** Kakao OAuth 2.0 + JWT (admin approval required for new users)
 - **Credit System:** 성과 기반 수수료 (수익 10% 차감, 손실 10% 환불), 토스페이먼츠 결제 연동
-- **Production URL:** https://jooeunoh.com (→ backtested.bot 이전 예정)
+- **Production URL:** https://backtested.bot
 
 ---
 
@@ -539,7 +539,7 @@ Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stor
 ### Run a backtest manually
 ```bash
 # Via API (after auth):
-curl -X POST https://jooeunoh.com/api/backtest/ \
+curl -X POST https://backtested.bot/api/backtest/ \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"symbol": "BTC/KRW", "timeframe": "4h", "strategy_name": "james_pro_elite"}'
