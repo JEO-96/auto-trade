@@ -6,6 +6,7 @@ export interface User {
     is_admin?: boolean;
     created_at?: string;
     credit_balance?: number;
+    telegram_chat_id?: string;
 }
 
 export interface CreditBalance {

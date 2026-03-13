@@ -194,7 +194,7 @@ def _process_symbol_entry(
 
 def _send_trade_notification(user_id: int, msg: str) -> None:
     """Fire-and-forget Telegram notification wrapped in asyncio.create_task."""
-    asyncio.create_task(send_telegram_message(msg))
+    asyncio.create_task(send_telegram_message(msg, user_id=user_id))
 
 
 # 타임프레임별 캔들 마감 간격 (분)

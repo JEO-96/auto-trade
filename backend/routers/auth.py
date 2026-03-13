@@ -131,4 +131,5 @@ def get_me(current_user: models.User = Depends(get_current_user), db: Session = 
         is_active=current_user.is_active,
         is_admin=current_user.is_admin,
         credit_balance=credit.balance,
+        telegram_chat_id=current_user.telegram_chat_id,
     )

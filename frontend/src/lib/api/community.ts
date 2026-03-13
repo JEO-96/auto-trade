@@ -83,6 +83,21 @@ export async function sendChatMessage(content: string): Promise<ChatMessage> {
     return res.data;
 }
 
+// Telegram
+export async function linkTelegram(chatId: string): Promise<{ status: string; telegram_chat_id: string }> {
+    const res = await api.put<{ status: string; telegram_chat_id: string }>('/community/profile/telegram', { chat_id: chatId });
+    return res.data;
+}
+
+export async function unlinkTelegram(): Promise<void> {
+    await api.delete('/community/profile/telegram');
+}
+
+export async function testTelegramNotification(): Promise<{ status: string; message: string }> {
+    const res = await api.post<{ status: string; message: string }>('/community/profile/telegram/test');
+    return res.data;
+}
+
 // Strategy Reviews
 export async function getStrategyReviews(strategyName: string, timeframe?: string): Promise<CommunityPost[]> {
     const params = timeframe ? { timeframe } : {};

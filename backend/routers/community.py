@@ -87,6 +87,58 @@ async def update_nickname(
     )
 
 
+@router.put("/profile/telegram")
+async def update_telegram_chat_id(
+    body: schemas.TelegramChatIdUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    chat_id = body.chat_id.strip()
+    if not chat_id.lstrip('-').isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="올바른 텔레그램 Chat ID를 입력해주세요.",
+        )
+
+    current_user.telegram_chat_id = chat_id
+    db.commit()
+    return {"status": "ok", "telegram_chat_id": chat_id}
+
+
+@router.delete("/profile/telegram")
+async def unlink_telegram(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_user.telegram_chat_id = None
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.post("/profile/telegram/test")
+async def test_telegram_notification(
+    current_user: models.User = Depends(get_current_user),
+):
+    from notifications import send_telegram_message
+
+    if not current_user.telegram_chat_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="텔레그램이 연동되지 않았습니다.",
+        )
+
+    success = await send_telegram_message(
+        "🔔 Backtested 알림 테스트\n텔레그램 연동이 정상적으로 완료되었습니다!",
+        chat_id=current_user.telegram_chat_id,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="텔레그램 메시지 전송에 실패했습니다. Chat ID를 확인해주세요.",
+        )
+    return {"status": "ok", "message": "테스트 메시지를 전송했습니다."}
+
+
 @router.get("/profile/{user_id}", response_model=schemas.UserProfileResponse)
 async def get_user_profile(
     user_id: int,

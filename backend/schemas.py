@@ -15,6 +15,7 @@ class UserResponse(UserBase):
     is_active: bool
     is_admin: bool = False
     credit_balance: Optional[float] = None
+    telegram_chat_id: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -235,6 +236,10 @@ class ActiveBotListResponse(BaseModel):
 # -------- Community Schemas --------
 class NicknameUpdate(BaseModel):
     nickname: str
+
+
+class TelegramChatIdUpdate(BaseModel):
+    chat_id: str
 
 
 class UserProfileResponse(BaseModel):

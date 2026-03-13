@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { User as UserIcon, Check, Heart, MessageCircle, Mail, Calendar } from 'lucide-react';
+import { User as UserIcon, Check, Heart, MessageCircle, Mail, Calendar, Send, Link2, Unlink, Bell } from 'lucide-react';
 import PageContainer from '@/components/ui/PageContainer';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { updateNickname, getUserProfile, getPosts } from '@/lib/api/community';
+import { updateNickname, getUserProfile, getPosts, linkTelegram, unlinkTelegram, testTelegramNotification } from '@/lib/api/community';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDate } from '@/lib/utils';
 import type { CommunityPost, PostType } from '@/types/community';
@@ -30,8 +30,16 @@ export default function ProfilePage() {
     const [postCount, setPostCount] = useState(0);
     const [loadingPosts, setLoadingPosts] = useState(true);
 
+    // Telegram
+    const [chatId, setChatId] = useState('');
+    const [telegramSaving, setTelegramSaving] = useState(false);
+    const [telegramSaved, setTelegramSaved] = useState(false);
+    const [telegramError, setTelegramError] = useState('');
+    const [telegramTesting, setTelegramTesting] = useState(false);
+
     useEffect(() => {
         if (user?.nickname) setNickname(user.nickname);
+        if (user?.telegram_chat_id) setChatId(user.telegram_chat_id);
     }, [user]);
 
     const fetchMyPosts = useCallback(async () => {
@@ -76,6 +84,54 @@ export default function ProfilePage() {
             setError(msg);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleSaveTelegram = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setTelegramError('');
+        setTelegramSaved(false);
+
+        const trimmed = chatId.trim();
+        if (!trimmed || !trimmed.replace('-', '').match(/^\d+$/)) {
+            setTelegramError('숫자로 된 Chat ID를 입력해주세요.');
+            return;
+        }
+
+        setTelegramSaving(true);
+        try {
+            await linkTelegram(trimmed);
+            await refreshUser();
+            setTelegramSaved(true);
+            setTimeout(() => setTelegramSaved(false), 3000);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : '텔레그램 연동에 실패했습니다.';
+            setTelegramError(msg);
+        } finally {
+            setTelegramSaving(false);
+        }
+    };
+
+    const handleUnlinkTelegram = async () => {
+        try {
+            await unlinkTelegram();
+            setChatId('');
+            await refreshUser();
+        } catch (err) {
+            console.error('텔레그램 연동 해제 실패', err);
+        }
+    };
+
+    const handleTestTelegram = async () => {
+        setTelegramTesting(true);
+        try {
+            await testTelegramNotification();
+            alert('텔레그램으로 테스트 메시지를 전송했습니다!');
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : '테스트 메시지 전송에 실패했습니다.';
+            alert(msg);
+        } finally {
+            setTelegramTesting(false);
         }
     };
 
@@ -131,6 +187,72 @@ export default function ProfilePage() {
                         <p className="text-xs text-secondary mt-2 font-medium">닉네임이 변경되었습니다.</p>
                     )}
                 </div>
+            </div>
+
+            {/* Telegram Settings */}
+            <div className="glass-panel rounded-2xl p-6 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                    <Bell className="w-4 h-4 text-blue-400" />
+                    <h3 className="text-sm font-semibold text-white">텔레그램 알림 설정</h3>
+                    {user?.telegram_chat_id && (
+                        <Badge variant="success">연동됨</Badge>
+                    )}
+                </div>
+
+                {user?.telegram_chat_id ? (
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                            <Send className="w-4 h-4 text-blue-400 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs text-gray-400">Chat ID</p>
+                                <p className="text-sm text-white font-mono">{user.telegram_chat_id}</p>
+                            </div>
+                            <div className="flex gap-2 shrink-0">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleTestTelegram}
+                                    loading={telegramTesting}
+                                >
+                                    테스트
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleUnlinkTelegram}
+                                    className="text-red-400 hover:text-red-300"
+                                >
+                                    <Unlink className="w-3 h-3" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-xs text-gray-400 space-y-1">
+                            <p>1. 텔레그램에서 <a href="https://t.me/backtested_alert_bot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">@backtested_alert_bot</a>을 검색하고 <span className="text-white font-medium">/start</span>를 보내세요.</p>
+                            <p>2. 브라우저에서 아래 링크를 열어 Chat ID를 확인하세요:</p>
+                            <p className="font-mono text-[10px] text-gray-500 break-all">https://api.telegram.org/bot8776556922:AAE-LnZxTnRPQJRI2WTnsRxTAxEWAOYd0ec/getUpdates</p>
+                            <p>3. 응답에서 <span className="text-white font-medium">{'"chat":{"id": 숫자}'}</span> 부분의 숫자를 아래에 입력하세요.</p>
+                        </div>
+                        <form onSubmit={handleSaveTelegram} className="flex items-end gap-3">
+                            <div className="flex-1">
+                                <Input
+                                    value={chatId}
+                                    onChange={(e) => setChatId(e.target.value)}
+                                    placeholder="텔레그램 Chat ID 입력"
+                                    error={telegramError}
+                                />
+                            </div>
+                            <Button type="submit" size="md" loading={telegramSaving}>
+                                {telegramSaved ? <Check className="w-4 h-4" /> : <><Link2 className="w-4 h-4 mr-1" />연동</>}
+                            </Button>
+                        </form>
+                        {telegramSaved && (
+                            <p className="text-xs text-secondary font-medium">텔레그램이 연동되었습니다.</p>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* My Posts */}
