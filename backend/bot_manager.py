@@ -328,7 +328,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
                         liquid_capital, was_exited = _process_symbol_exit(
                             symbol, pos, curr_price, execution,
                             bot_config_id, user_id, liquid_capital,
-                            paper_trading=bot_info["paper_trading"],
+                            paper_trading=paper_trading,
                         )
                         if was_exited:
                             # 손절인 경우 쿨다운 적용
