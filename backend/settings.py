@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     exchange_api_key: str = ""
     exchange_api_secret: str = ""
 
+    # Telegram
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+
     # Toss Payments
     toss_client_key: str = ""
     toss_secret_key: str = ""

@@ -18,7 +18,7 @@ from constants import (
 from core import config
 from core.data_fetcher import DataFetcher
 from core.execution import ExecutionEngine
-from notifications import send_kakao_message
+from notifications import send_telegram_message
 
 # ──────────────────────────────────────────────
 # 분리된 모듈에서 임포트 + 하위 호환성을 위한 재수출
@@ -155,30 +155,12 @@ def _process_symbol_entry(
         )
         return liquid_capital, None
 
-    # Risk Management (2% of TOTAL Portfolio Equity)
-    risk_multiplier: float = 1.0
-    if hasattr(strategy, 'get_risk_multiplier'):
-        risk_multiplier = strategy.get_risk_multiplier(df, current_idx)
-    # 리스크 배수 상한 적용
-    risk_multiplier = min(risk_multiplier, MAX_RISK_MULTIPLIER)
-
-    risk_amount: float = total_equity * config.RISK_PER_TRADE * risk_multiplier
-    price_risk: float = curr_price - sl
-
-    if price_risk <= 0:
-        logger.warning("[Bot %d] Risk calculation failed for %s (risk <= 0)", bot_config_id, symbol)
+    # 백테스트와 동일: 가용 자본 100% 사용
+    if liquid_capital <= 0 or curr_price <= 0:
         return liquid_capital, None
 
-    desired_qty: float = risk_amount / price_risk
-    max_qty: float = liquid_capital / curr_price if curr_price > 0 else 0
-    qty: float = min(desired_qty, max_qty)
-
-    if qty <= 0 or liquid_capital <= 0:
-        return liquid_capital, None
-
-    # 매수 금액이 유동 자본을 초과하지 않도록 보장
-    buy_amount: float = min(qty * curr_price, liquid_capital)
-    qty = buy_amount / curr_price
+    buy_amount: float = liquid_capital
+    qty: float = buy_amount / curr_price
     if qty <= 0:
         return liquid_capital, None
 
@@ -211,8 +193,8 @@ def _process_symbol_entry(
 
 
 def _send_trade_notification(user_id: int, msg: str) -> None:
-    """Fire-and-forget Kakao notification wrapped in asyncio.create_task."""
-    asyncio.create_task(send_kakao_message(user_id, msg))
+    """Fire-and-forget Telegram notification wrapped in asyncio.create_task."""
+    asyncio.create_task(send_telegram_message(msg))
 
 
 # 타임프레임별 캔들 마감 간격 (분)

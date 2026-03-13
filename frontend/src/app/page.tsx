@@ -83,7 +83,7 @@ export default function Home() {
                             icon: <ShieldCheck className="w-5 h-5" />,
                             bgClass: 'bg-accent/10 border-accent/10',
                             textClass: 'text-accent',
-                            title: '24/7 자동매매',
+                            title: '24시간 365일 자동매매',
                             desc: 'ATR 기반 동적 손절/익절과 다양한 전략으로 24시간 시장을 자동 모니터링하고 매매합니다.'
                         }
                     ].map((feature) => (
