@@ -204,9 +204,21 @@ _TIMEFRAME_MINUTES: dict[str, int] = {
     '12h': 720, '1d': 1440, '1w': 10080,
 }
 
-def _is_candle_close_time(timeframe: str, tolerance_minutes: int = 5) -> bool:
+def _get_current_candle_slot(timeframe: str) -> int:
+    """현재 캔들 슬롯 번호를 반환. 같은 캔들 구간 내에서는 동일한 값.
+    예: 4h봉이면 0시~3시59분 → 0, 4시~7시59분 → 1, ...
+    """
+    interval = _TIMEFRAME_MINUTES.get(timeframe, 0)
+    if interval <= 0:
+        return -1
+    now = datetime.now()
+    minutes_since_midnight = now.hour * 60 + now.minute
+    return minutes_since_midnight // interval
+
+
+def _is_candle_close_time(timeframe: str, tolerance_minutes: int = 2) -> bool:
     """현재 시각이 캔들 마감 시점 근처(±tolerance)인지 확인.
-    예: 4h봉이면 1시, 5시, 9시, 13시, 17시, 21시 (KST) 전후 5분."""
+    예: 4h봉이면 0시, 4시, 8시, 12시, 16시, 20시 (KST) 전후 2분."""
     interval = _TIMEFRAME_MINUTES.get(timeframe, 0)
     if interval <= 0:
         return True  # 알 수 없는 타임프레임이면 항상 전송
@@ -329,6 +341,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
     cooldown_until: dict[str, datetime] = init["cooldown_until"]
 
     consecutive_errors: int = 0
+    last_feedback_candle_slot: int = -1  # 마지막으로 피드백을 보낸 캔들 슬롯
 
     try:
         while True:
@@ -451,8 +464,12 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     list(active_positions.keys()),
                 )
 
-                # 캔들 마감 시점에만 카톡 피드백 전송
-                if signal_details and _is_candle_close_time(timeframe):
+                # 캔들 마감 시점에 1회만 피드백 전송 (같은 캔들 슬롯에서 중복 전송 방지)
+                current_candle_slot = _get_current_candle_slot(timeframe)
+                if (signal_details
+                        and _is_candle_close_time(timeframe)
+                        and current_candle_slot != last_feedback_candle_slot):
+                    last_feedback_candle_slot = current_candle_slot
                     feedback_msg = _build_tick_feedback(
                         signal_details, paper_trading, strategy_name, timeframe, total_equity,
                     )
