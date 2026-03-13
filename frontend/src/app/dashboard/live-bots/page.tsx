@@ -7,7 +7,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import { getActiveBots, type ActiveBotPublic } from '@/lib/api/bot';
-import { getStrategyLabel, TIMEFRAME_LABEL_MAP, LIVE_BOTS_LIVE_BOTS_POLL_INTERVAL_MS_MS } from '@/lib/constants';
+import { getStrategyLabel, TIMEFRAME_LABEL_MAP, LIVE_BOTS_POLL_INTERVAL_MS } from '@/lib/constants';
 
 export default function LiveBotsPage() {
     const [bots, setBots] = useState<ActiveBotPublic[]>([]);
