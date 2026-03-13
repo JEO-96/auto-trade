@@ -87,7 +87,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn }: { post: CommunityPost; onL
 
             {post.post_type === 'backtest_share' && post.backtest_data && (
                 <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] space-y-2">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-wrap">
                         <MetricItem
                             label="수익률"
                             value={`${(((Number(post.backtest_data.final_capital) - Number(post.backtest_data.initial_capital)) / Number(post.backtest_data.initial_capital)) * 100).toFixed(1)}%`}
@@ -97,7 +97,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn }: { post: CommunityPost; onL
                         <MetricItem label="전략" value={post.backtest_data.strategy_name ? getStrategyLabel(String(post.backtest_data.strategy_name)) : '-'} />
                     </div>
                     {(post.backtest_data.start_date || post.backtest_data.timeframe || post.backtest_data.commission_rate != null) && (
-                        <div className="flex items-center gap-3 text-[10px] text-gray-500">
+                        <div className="flex items-center gap-3 text-[10px] text-gray-500 flex-wrap">
                             {post.backtest_data.start_date && post.backtest_data.end_date && (
                                 <span>{String(post.backtest_data.start_date)} ~ {String(post.backtest_data.end_date)}</span>
                             )}
@@ -113,7 +113,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn }: { post: CommunityPost; onL
             )}
 
             {post.post_type === 'performance_share' && post.performance_data && (
-                <div className="flex items-center gap-4 p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                <div className="flex items-center gap-4 flex-wrap p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
                     <MetricItem
                         label="총 PnL"
                         value={`₩${Number(post.performance_data.total_pnl).toLocaleString()}`}

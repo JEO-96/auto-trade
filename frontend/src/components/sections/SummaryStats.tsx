@@ -61,9 +61,9 @@ export default function SummaryStats({
                     {balances.length > 0 ? (
                         <div className="space-y-1.5">
                             {balances.slice(0, 4).map((b) => (
-                                <div key={b.currency} className="flex justify-between items-center">
-                                    <span className="text-xs font-medium text-gray-400">{b.currency}</span>
-                                    <span className="text-xs font-bold text-white">
+                                <div key={b.currency} className="flex justify-between items-center gap-2 min-w-0">
+                                    <span className="text-xs font-medium text-gray-400 shrink-0">{b.currency}</span>
+                                    <span className="text-xs font-bold text-white truncate">
                                         {b.currency === 'KRW'
                                             ? formatKRW(b.total)
                                             : formatCryptoAmount(b.total)}

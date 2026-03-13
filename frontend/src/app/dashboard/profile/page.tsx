@@ -89,16 +89,16 @@ export default function ProfilePage() {
                     <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-white/[0.06]">
                         <UserIcon className="w-8 h-8 text-white/60" />
                     </div>
-                    <div className="flex-1">
-                        <h2 className="text-lg font-bold text-white">{user?.nickname || user?.email || '사용자'}</h2>
-                        <div className="flex items-center gap-3 mt-1">
-                            <span className="flex items-center gap-1 text-xs text-gray-500">
-                                <Mail className="w-3 h-3" />
-                                {user?.email}
+                    <div className="flex-1 min-w-0">
+                        <h2 className="text-lg font-bold text-white truncate">{user?.nickname || user?.email || '사용자'}</h2>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap min-w-0">
+                            <span className="flex items-center gap-1 text-xs text-gray-500 min-w-0">
+                                <Mail className="w-3 h-3 shrink-0" />
+                                <span className="truncate">{user?.email}</span>
                             </span>
                             {user?.created_at && (
-                                <span className="flex items-center gap-1 text-xs text-gray-500">
-                                    <Calendar className="w-3 h-3" />
+                                <span className="flex items-center gap-1 text-xs text-gray-500 shrink-0">
+                                    <Calendar className="w-3 h-3 shrink-0" />
                                     {formatDate(user.created_at)}
                                 </span>
                             )}

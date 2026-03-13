@@ -97,12 +97,12 @@ export default function LiveBotsPage() {
                 <div className="space-y-6">
                     {Object.entries(strategyGroups).map(([strategyKey, groupBots]) => (
                         <div key={strategyKey} className="glass-panel rounded-2xl p-5">
-                            <div className="flex items-center gap-2 mb-4">
-                                <Bot className="w-4 h-4 text-primary" />
-                                <h3 className="text-sm font-bold text-white">
+                            <div className="flex items-center gap-2 mb-4 min-w-0">
+                                <Bot className="w-4 h-4 text-primary shrink-0" />
+                                <h3 className="text-sm font-bold text-white truncate">
                                     {getStrategyLabel(strategyKey)}
                                 </h3>
-                                <span className="text-[10px] text-gray-500 font-mono">
+                                <span className="text-[10px] text-gray-500 font-mono truncate hidden sm:inline">
                                     {strategyKey}
                                 </span>
                                 <Badge variant="default" className="ml-auto">
@@ -128,8 +128,8 @@ export default function LiveBotsPage() {
                                             <p className="text-sm font-semibold text-white truncate">
                                                 {bot.nickname ?? '사용자'}
                                             </p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-[10px] text-gray-400 font-mono">
+                                            <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                                                <span className="text-[10px] text-gray-400 font-mono truncate">
                                                     {bot.symbol}
                                                 </span>
                                                 <span className="text-[10px] text-gray-600">|</span>
