@@ -215,6 +215,28 @@ def _send_trade_notification(user_id: int, msg: str) -> None:
     asyncio.create_task(send_kakao_message(user_id, msg))
 
 
+# 타임프레임별 캔들 마감 간격 (분)
+_TIMEFRAME_MINUTES: dict[str, int] = {
+    '1m': 1, '3m': 3, '5m': 5, '15m': 15, '30m': 30,
+    '1h': 60, '2h': 120, '4h': 240, '6h': 360, '8h': 480,
+    '12h': 720, '1d': 1440, '1w': 10080,
+}
+
+def _is_candle_close_time(timeframe: str, tolerance_minutes: int = 5) -> bool:
+    """현재 시각이 캔들 마감 시점 근처(±tolerance)인지 확인.
+    예: 4h봉이면 1시, 5시, 9시, 13시, 17시, 21시 (KST) 전후 5분."""
+    interval = _TIMEFRAME_MINUTES.get(timeframe, 0)
+    if interval <= 0:
+        return True  # 알 수 없는 타임프레임이면 항상 전송
+
+    now = datetime.now()
+    minutes_since_midnight = now.hour * 60 + now.minute
+    # 자정(00:00) 기준으로 캔들 마감 시각은 interval의 배수
+    remainder = minutes_since_midnight % interval
+    # remainder가 0 근처이거나 interval 근처이면 마감 시점
+    return remainder <= tolerance_minutes or (interval - remainder) <= tolerance_minutes
+
+
 def _build_tick_feedback(
     signal_details: list[str],
     paper_trading: bool,
@@ -447,8 +469,8 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     list(active_positions.keys()),
                 )
 
-                # 매 tick 카톡 피드백 전송
-                if signal_details:
+                # 캔들 마감 시점에만 카톡 피드백 전송
+                if signal_details and _is_candle_close_time(timeframe):
                     feedback_msg = _build_tick_feedback(
                         signal_details, paper_trading, strategy_name, timeframe, total_equity,
                     )
