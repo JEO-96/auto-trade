@@ -7,7 +7,7 @@ const KAKAO_CLIENT_ID = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || 'YOUR_KAKAO_C
 export default function KakaoLoginButton() {
     const handleKakaoLogin = () => {
         const redirectUri = `${window.location.origin}/auth/kakao`;
-        const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=talk_message`;
+        const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code`;
         window.location.href = kakaoAuthUrl;
     };
 
