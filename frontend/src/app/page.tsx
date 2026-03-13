@@ -99,18 +99,37 @@ export default function Home() {
 
                 {/* Footer */}
                 <footer className="w-full border-t border-white/[0.04] pt-8 pb-4">
-                    <div className="flex flex-col items-center gap-4 text-xs text-gray-500">
-                        <div className="flex items-center gap-2">
-                            <Activity className="w-3.5 h-3.5 text-primary/50" />
-                            <span className="font-medium">Backtested</span>
+                    <div className="flex flex-col items-center gap-6 text-xs text-gray-500">
+                        {/* 투자 위험 고지 */}
+                        <div className="text-center leading-relaxed max-w-lg">
+                            <p className="text-amber-500/80 font-medium mb-1">⚠ 투자 위험 고지</p>
+                            <p>
+                                본 서비스는 투자 자문이 아니며, 가상자산 투자는 원금 손실 위험이 있습니다.
+                                과거 수익률은 미래를 보장하지 않습니다. 모든 투자 결정에 대한 책임은 이용자 본인에게 있습니다.
+                            </p>
                         </div>
-                        <p className="text-center leading-relaxed max-w-lg">
-                            본 서비스는 투자 자문이 아니며, 가상자산 투자는 원금 손실 위험이 있습니다.
-                            과거 수익률은 미래를 보장하지 않습니다. 모든 투자 결정에 대한 책임은 이용자 본인에게 있습니다.
-                        </p>
-                        <Link href="/terms" className="text-gray-600 hover:text-gray-400 transition-colors underline underline-offset-2">
-                            서비스 이용약관
-                        </Link>
+
+                        {/* 사업자 정보 */}
+                        <div className="text-center leading-relaxed text-gray-600 space-y-1">
+                            <p>
+                                <span className="text-gray-500">플레이위드</span> | 대표 주은오 | 사업자등록번호 880-58-00862
+                            </p>
+                            <p>서울특별시 영등포구 경인로 882, 1103호(영등포동1가, 여의도씨티아이)</p>
+                            <p>이메일 seal5945@gmail.com | 호스팅 Amazon Web Services</p>
+                        </div>
+
+                        {/* 링크 */}
+                        <div className="flex items-center gap-4">
+                            <Link href="/terms" className="text-gray-600 hover:text-gray-400 transition-colors underline underline-offset-2">
+                                이용약관
+                            </Link>
+                            <span className="text-gray-700">|</span>
+                            <Link href="/privacy" className="text-gray-600 hover:text-gray-400 transition-colors underline underline-offset-2">
+                                개인정보처리방침
+                            </Link>
+                        </div>
+
+                        <p className="text-gray-700">© 2025 Backtested. All rights reserved.</p>
                     </div>
                 </footer>
             </div>

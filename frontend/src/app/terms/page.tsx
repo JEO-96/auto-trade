@@ -19,7 +19,7 @@ export default function TermsPage() {
                 </Link>
 
                 <h1 className="text-2xl font-bold text-white mb-2">서비스 이용약관</h1>
-                <p className="text-xs text-gray-500 mb-10">최종 업데이트: 2025년 3월</p>
+                <p className="text-xs text-gray-500 mb-10">최종 업데이트: 2026년 3월</p>
 
                 <div className="space-y-8 text-sm text-gray-400 leading-relaxed">
 
@@ -89,8 +89,12 @@ export default function TermsPage() {
 
                 </div>
 
-                <div className="mt-12 pt-8 border-t border-white/[0.04] text-xs text-gray-600 text-center">
-                    본 약관에 동의하지 않을 경우 서비스를 이용하실 수 없습니다.
+                <div className="mt-12 pt-8 border-t border-white/[0.04] text-xs text-gray-600 text-center space-y-2">
+                    <p>본 약관에 동의하지 않을 경우 서비스를 이용하실 수 없습니다.</p>
+                    <div className="mt-4 space-y-1">
+                        <p>플레이위드 | 대표 주은오 | 사업자등록번호 880-58-00862</p>
+                        <p>서울특별시 영등포구 경인로 882, 1103호(영등포동1가, 여의도씨티아이)</p>
+                    </div>
                 </div>
             </div>
         </div>

@@ -94,14 +94,12 @@ export default function CreditsPage() {
         try {
             const order = await createPaymentOrder(amount);
 
-            // 토스페이먼츠 SDK 로드 및 결제 요청
-            const { loadTossPayments } = await import('@tosspayments/tosspayments-sdk');
-            const toss = await loadTossPayments(order.toss_client_key);
-            const payment = toss.payment({ customerKey: `user_${Date.now()}` });
+            // 토스페이먼츠 v1 SDK 로드 및 결제 요청
+            const { loadTossPayments } = await import('@tosspayments/payment-sdk');
+            const tossPayments = await loadTossPayments(order.toss_client_key);
 
-            await payment.requestPayment({
-                method: 'CARD',
-                amount: { currency: 'KRW', value: order.amount },
+            await tossPayments.requestPayment('카드', {
+                amount: order.amount,
                 orderId: order.order_id,
                 orderName: `크레딧 ${order.credits.toLocaleString()}개 충전`,
                 successUrl: `${window.location.origin}/dashboard/credits?`,
