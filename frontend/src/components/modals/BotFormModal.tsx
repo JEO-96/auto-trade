@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Plus, Edit3, X, AlertTriangle } from 'lucide-react';
+import { Plus, Edit3, AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { SelectInput } from '@/components/ui/Input';
+import ModalWrapper, { ModalHeader } from '@/components/ui/ModalWrapper';
 import { SYMBOLS, BOT_STRATEGIES, BOT_TIMEFRAMES, BOT_TO_BACKTEST_STRATEGY } from '@/lib/constants';
 
 export interface BotFormData {
@@ -49,24 +50,13 @@ export default function BotFormModal({
         return BOT_TIMEFRAMES.filter(tf => allowed.includes(tf.value));
     }, [strategyTimeframeMap, formData.strategy_name]);
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
-            <div className="w-full max-w-md bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl">
-                <div className="flex items-center justify-between p-6 border-b border-white/[0.06]">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
-                            {mode === 'create' ? <Plus className="w-5 h-5 text-primary" /> : <Edit3 className="w-5 h-5 text-primary" />}
-                        </div>
-                        <h2 className="text-base font-bold text-white">
-                            {mode === 'create' ? '새 봇 만들기' : '봇 설정 수정'}
-                        </h2>
-                    </div>
-                    <button onClick={onClose} aria-label="닫기" className="text-gray-500 hover:text-gray-300 transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
+        <ModalWrapper isOpen={isOpen}>
+                <ModalHeader
+                    icon={<div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">{mode === 'create' ? <Plus className="w-5 h-5 text-primary" /> : <Edit3 className="w-5 h-5 text-primary" />}</div>}
+                    title={mode === 'create' ? '새 봇 만들기' : '봇 설정 수정'}
+                    onClose={onClose}
+                />
 
                 <form onSubmit={onSubmit} className="p-6 space-y-5">
                     {formError && (
@@ -235,7 +225,6 @@ export default function BotFormModal({
                         </Button>
                     </div>
                 </form>
-            </div>
-        </div>
+        </ModalWrapper>
     );
 }

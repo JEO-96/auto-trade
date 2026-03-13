@@ -7,6 +7,13 @@ from core import config
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 import models
+from constants import (
+    FETCH_CHUNK_SIZE_UPBIT,
+    FETCH_CHUNK_SIZE_DEFAULT,
+    DB_SAVE_CHUNK_SIZE,
+    FETCH_MAX_RETRIES,
+    FETCH_BACKOFF_MAX_SECONDS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -178,10 +185,9 @@ class DataFetcher:
                 current_since = since
                 target_until = until if until else self.exchange.milliseconds()
                 retry_count = 0
-                max_retries = 5
                 while current_since < target_until:
                     try:
-                        batch = self.exchange.fetch_ohlcv(symbol, timeframe, since=current_since, limit=200)
+                        batch = self.exchange.fetch_ohlcv(symbol, timeframe, since=current_since, limit=FETCH_CHUNK_SIZE_UPBIT)
                         if not batch: break
                         last_timestamp = batch[-1][0]
                         current_since = last_timestamp + 1
@@ -192,18 +198,18 @@ class DataFetcher:
                     except Exception as e:
                         if "too_many_requests" in str(e).lower():
                             retry_count += 1
-                            if retry_count > max_retries:
+                            if retry_count > FETCH_MAX_RETRIES:
                                 logger.warning("Max retries reached for %s %s, returning %d candles fetched so far.", symbol, timeframe, len(ohlcv))
                                 break
-                            wait_time = min(2 ** retry_count, 30)
-                            logger.info("Rate limited, waiting %ds (retry %d/%d)...", wait_time, retry_count, max_retries)
+                            wait_time = min(2 ** retry_count, FETCH_BACKOFF_MAX_SECONDS)
+                            logger.info("Rate limited, waiting %ds (retry %d/%d)...", wait_time, retry_count, FETCH_MAX_RETRIES)
                             time.sleep(wait_time)
                             continue
                         break
             else:
                 # Limit based backward fetch
                 limit = limit or config.LIMIT
-                chunk_size = 200 if config.EXCHANGE_ID == 'upbit' else 500
+                chunk_size = FETCH_CHUNK_SIZE_UPBIT if config.EXCHANGE_ID == 'upbit' else FETCH_CHUNK_SIZE_DEFAULT
                 last_since = None
                 while len(ohlcv) < limit:
                     fetch_limit = min(chunk_size, limit - len(ohlcv))
@@ -228,7 +234,7 @@ class DataFetcher:
         """
         if not data:
             return
-        chunk_size = 1000
+        chunk_size = DB_SAVE_CHUNK_SIZE
         total_saved = 0
         try:
             for i in range(0, len(data), chunk_size):

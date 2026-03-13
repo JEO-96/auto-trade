@@ -7,12 +7,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import { getActiveBots, type ActiveBotPublic } from '@/lib/api/bot';
-import { getStrategyLabel, BOT_TIMEFRAMES } from '@/lib/constants';
-
-const TIMEFRAME_LABEL: Record<string, string> = {};
-for (const t of BOT_TIMEFRAMES) TIMEFRAME_LABEL[t.value] = t.label;
-
-const POLL_INTERVAL = 15000; // 15초
+import { getStrategyLabel, TIMEFRAME_LABEL_MAP, LIVE_BOTS_LIVE_BOTS_POLL_INTERVAL_MS_MS } from '@/lib/constants';
 
 export default function LiveBotsPage() {
     const [bots, setBots] = useState<ActiveBotPublic[]>([]);
@@ -31,7 +26,7 @@ export default function LiveBotsPage() {
 
     useEffect(() => {
         fetchBots();
-        const interval = setInterval(fetchBots, POLL_INTERVAL);
+        const interval = setInterval(fetchBots, LIVE_BOTS_POLL_INTERVAL_MS);
         return () => clearInterval(interval);
     }, [fetchBots]);
 
@@ -135,7 +130,7 @@ export default function LiveBotsPage() {
                                                 <span className="text-[10px] text-gray-600">|</span>
                                                 <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
                                                     <Clock className="w-2.5 h-2.5" />
-                                                    {TIMEFRAME_LABEL[bot.timeframe] ?? bot.timeframe}
+                                                    {TIMEFRAME_LABEL_MAP[bot.timeframe] ?? bot.timeframe}
                                                 </span>
                                             </div>
                                         </div>

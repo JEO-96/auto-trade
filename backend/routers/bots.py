@@ -1,9 +1,8 @@
 import asyncio
 import logging
-from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 import bot_manager
 import credit_service
@@ -16,7 +15,7 @@ from constants import (
     VALID_TIMEFRAMES,
 )
 from dependencies import get_db, get_current_user
-from sqlalchemy.orm import joinedload
+from utils import parse_symbols, mask_nickname
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +41,9 @@ def get_active_bots(db: Session = Depends(get_db)):
 
     result = []
     for bot in bots:
-        # 닉네임은 익명화 (첫 글자 + **)
-        raw_name = (bot.owner.nickname or bot.owner.email.split('@')[0]) if bot.owner else "익명"
-        masked = raw_name[0] + "**" if len(raw_name) >= 1 else "익명"
+        raw_name = (bot.owner.nickname or bot.owner.email.split('@')[0]) if bot.owner else None
         result.append(schemas.ActiveBotPublic(
-            nickname=masked,
+            nickname=mask_nickname(raw_name),
             symbol=bot.symbol,
             timeframe=bot.timeframe,
             strategy_name=bot.strategy_name,
@@ -75,7 +72,7 @@ def _is_bot_running(bot_id: int) -> bool:
 
 def _validate_symbol(symbol: str) -> None:
     """심볼 형식 검증 (예: BTC/KRW 또는 BTC/KRW,ETH/KRW)"""
-    symbols = [s.strip() for s in symbol.split(',') if s.strip()]
+    symbols = parse_symbols(symbol)
     if not symbols:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

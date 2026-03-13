@@ -9,3 +9,11 @@ export interface ExchangeKeyCreateRequest {
     api_key: string;
     api_secret: string;
 }
+
+export interface BalanceItem {
+    currency: string;
+    total: number;
+    free: number;
+    used: number;
+    avg_buy_price: number | null;
+}

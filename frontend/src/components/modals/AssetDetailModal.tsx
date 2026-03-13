@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { X, PieChart, TrendingUp } from 'lucide-react';
 import { formatKRW, formatCryptoAmount } from '@/lib/utils';
+import { CHART_COLORS } from '@/lib/constants';
 import type { BalanceItem } from '@/lib/api/keys';
 
 export interface AssetDetailModalProps {
@@ -10,20 +11,6 @@ export interface AssetDetailModalProps {
     onClose: () => void;
     balances: BalanceItem[];
 }
-
-/* ── Palette for donut chart segments ── */
-const CHART_COLORS = [
-    '#6366f1', // indigo
-    '#10b981', // emerald
-    '#f59e0b', // amber
-    '#ef4444', // red
-    '#8b5cf6', // violet
-    '#06b6d4', // cyan
-    '#ec4899', // pink
-    '#14b8a6', // teal
-    '#f97316', // orange
-    '#64748b', // slate
-];
 
 interface AssetWithValue {
     currency: string;

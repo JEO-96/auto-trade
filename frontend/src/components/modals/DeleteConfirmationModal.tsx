@@ -2,6 +2,7 @@
 
 import { Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import ModalWrapper from '@/components/ui/ModalWrapper';
 
 export interface DeleteConfirmationModalProps {
     isOpen: boolean;
@@ -20,11 +21,9 @@ export default function DeleteConfirmationModal({
     onCancel,
     loading = false,
 }: DeleteConfirmationModalProps) {
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
-            <div className="w-full max-w-sm bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl p-6">
+        <ModalWrapper isOpen={isOpen} maxWidth="max-w-sm">
+            <div className="p-6">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="w-9 h-9 bg-red-500/10 rounded-xl flex items-center justify-center border border-red-500/20">
                         <Trash2 className="w-5 h-5 text-red-400" />
@@ -56,6 +55,6 @@ export default function DeleteConfirmationModal({
                     </Button>
                 </div>
             </div>
-        </div>
+        </ModalWrapper>
     );
 }

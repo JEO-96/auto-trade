@@ -13,7 +13,7 @@ import type { BotFormData } from '@/components/modals/BotFormModal';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import SummaryStats from '@/components/sections/SummaryStats';
 import AssetDetailModal from '@/components/modals/AssetDetailModal';
-import { BOT_POLL_INTERVAL_MS, BOT_STRATEGIES, BOT_TIMEFRAMES, BOT_STATUS } from '@/lib/constants';
+import { BOT_POLL_INTERVAL_MS, BOT_STATUS } from '@/lib/constants';
 import {
     getBotList, getBotStatus, getBotLogs, startBot, stopBot,
     createBot, updateBot, deleteBot,
@@ -25,16 +25,6 @@ import type { BotConfig, TradeLog } from '@/types/bot';
 
 type ModalMode = 'create' | 'edit';
 
-const STRATEGY_LABEL_MAP: Record<string, string> = {};
-for (const s of BOT_STRATEGIES) {
-    STRATEGY_LABEL_MAP[s.value] = s.label;
-}
-
-// 폴백용 정적 라벨 맵
-const STATIC_TIMEFRAME_LABEL_MAP: Record<string, string> = {};
-for (const t of BOT_TIMEFRAMES) {
-    STATIC_TIMEFRAME_LABEL_MAP[t.value] = t.label;
-}
 
 const defaultFormState: BotFormData = {
     symbols: ['BTC/KRW'],
@@ -49,9 +39,6 @@ export default function DashboardPage() {
     const [bots, setBots] = useState<BotConfig[]>([]);
     const [botStatuses, setBotStatuses] = useState<Record<number, boolean>>({});
     const [loading, setLoading] = useState(true);
-
-    // 타임프레임 라벨 맵
-    const TIMEFRAME_LABEL_MAP = STATIC_TIMEFRAME_LABEL_MAP;
 
     // Selected bot for trade logs
     const [selectedBotId, setSelectedBotId] = useState<number | null>(null);
@@ -392,8 +379,6 @@ export default function DashboardPage() {
                                 isRunning={!!botStatuses[bot.id]}
                                 isSelected={selectedBotId === bot.id}
                                 isActionLoading={!!actionLoading[bot.id]}
-                                strategyLabelMap={STRATEGY_LABEL_MAP}
-                                timeframeLabelMap={TIMEFRAME_LABEL_MAP}
                                 onSelect={setSelectedBotId}
                                 onStart={handleStartClick}
                                 onStop={handleStop}

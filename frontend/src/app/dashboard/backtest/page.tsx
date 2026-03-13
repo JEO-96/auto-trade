@@ -7,7 +7,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
-import { SYMBOLS, STRATEGIES, BOT_TIMEFRAMES, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel } from '@/lib/constants';
+import { SYMBOLS, STRATEGIES, BACKTEST_TIMEFRAMES, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel } from '@/lib/constants';
 import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle } from '@/lib/api/backtest';
 import { getBacktestSettings } from '@/lib/api/settings';
 import { getErrorMessage, formatKRW } from '@/lib/utils';
@@ -15,9 +15,6 @@ import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryIt
 
 // 백테스트용 전략 목록 (james_* 시리즈)
 const ALL_BACKTEST_STRATEGIES = [...STRATEGIES];
-
-// 백테스트용 타임프레임 (15분 이하 제외)
-const ALL_BACKTEST_TIMEFRAMES = BOT_TIMEFRAMES.filter(t => !['1m', '5m', '15m'].includes(t.value));
 
 export default function BacktestPage() {
     const [loading, setLoading] = useState(false);
@@ -44,7 +41,7 @@ export default function BacktestPage() {
     const [strategyTimeframeMap, setStrategyTimeframeMap] = useState<Record<string, string[]>>(() => {
         const fallback: Record<string, string[]> = {};
         for (const s of ALL_BACKTEST_STRATEGIES) {
-            fallback[s.value] = ALL_BACKTEST_TIMEFRAMES.map(t => t.value);
+            fallback[s.value] = BACKTEST_TIMEFRAMES.map(t => t.value);
         }
         return fallback;
     });
@@ -119,7 +116,7 @@ export default function BacktestPage() {
                 // 설정 로드 실패 시 전체 표시 (하위 호환)
                 const fallback: Record<string, string[]> = {};
                 for (const s of ALL_BACKTEST_STRATEGIES) {
-                    fallback[s.value] = ALL_BACKTEST_TIMEFRAMES.map(t => t.value);
+                    fallback[s.value] = BACKTEST_TIMEFRAMES.map(t => t.value);
                 }
                 setStrategyTimeframeMap(fallback);
             }
@@ -173,7 +170,7 @@ export default function BacktestPage() {
         [strategyTimeframeMap],
     );
     const allowedTimeframes = useMemo(
-        () => ALL_BACKTEST_TIMEFRAMES.filter(t => (strategyTimeframeMap[form.strategy_name] ?? []).includes(t.value)),
+        () => BACKTEST_TIMEFRAMES.filter(t => (strategyTimeframeMap[form.strategy_name] ?? []).includes(t.value)),
         [strategyTimeframeMap, form.strategy_name],
     );
 

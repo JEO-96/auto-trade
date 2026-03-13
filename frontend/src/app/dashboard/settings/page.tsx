@@ -6,13 +6,12 @@ import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageContainer from '@/components/ui/PageContainer';
 import { useAuth } from '@/contexts/AuthContext';
-import { STRATEGIES, BOT_TIMEFRAMES } from '@/lib/constants';
+import { STRATEGIES, BACKTEST_TIMEFRAMES } from '@/lib/constants';
 import { getBacktestSettings, updateBacktestSettings } from '@/lib/api/settings';
 import { getErrorMessage } from '@/lib/utils';
 
 const ALL_STRATEGIES = STRATEGIES;
-// 15분 이하(1m, 5m, 15m) 제외
-const ALL_TIMEFRAMES = BOT_TIMEFRAMES.filter(t => !['1m', '5m', '15m'].includes(t.value));
+const ALL_TIMEFRAMES = BACKTEST_TIMEFRAMES;
 
 export default function SettingsPage() {
     const { user, isLoading: authLoading } = useAuth();

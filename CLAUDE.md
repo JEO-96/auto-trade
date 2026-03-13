@@ -24,11 +24,13 @@ backtested/
 │   ├── database.py             # PostgreSQL connection (AWS RDS) with connection pooling
 │   ├── settings.py             # Pydantic BaseSettings — centralized config from .env
 │   ├── auth.py                 # JWT creation/verification helpers (reads from settings)
-│   ├── dependencies.py         # FastAPI Depends() providers (get_db, get_current_user, get_admin_user)
+│   ├── dependencies.py         # FastAPI Depends() providers (get_db, get_current_user, get_admin_user, get_user_or_404)
 │   ├── bot_manager.py          # Async bot task lifecycle management
 │   ├── credit_service.py       # Credit balance management & trade fee processing
 │   ├── notifications.py        # Kakao Talk message notifications
-│   ├── crypto_utils.py         # Fernet encryption/decryption for API keys
+│   ├── crypto_utils.py         # Fernet encryption/decryption + API key masking
+│   ├── kakao_service.py        # Kakao OAuth token exchange & user info (decoupled from router)
+│   ├── utils.py                # Common helpers (safe_json_loads, parse_symbols, mask_nickname)
 │   ├── log_config.py           # Centralized logging setup
 │   ├── requirements.txt        # Python dependencies
 │   ├── Dockerfile
@@ -43,7 +45,7 @@ backtested/
 │   │   ├── admin.py            # Admin: user listing, approval, rejection, credit adjustment
 │   │   └── community.py        # Community: posts, comments, likes, chat, profiles, strategy reviews
 │   └── core/
-│       ├── config.py           # Legacy config (Kakao API key)
+│       ├── config.py           # Trading parameters (RISK_PER_TRADE, RSI/MACD defaults)
 │       ├── data_fetcher.py     # CCXT OHLCV fetcher with PostgreSQL caching
 │       ├── execution.py        # Paper/live trade execution engine
 │       ├── strategy.py         # Strategy factory: get_strategy(name)
@@ -372,6 +374,18 @@ All API calls must go through this client, never fetch directly.
 ### 13. Frontend Constants
 `frontend/src/lib/constants.ts` — centralized strategy lists, symbol lists, timeframes, and poll intervals.
 Separate `STRATEGIES` (for backtest) and `BOT_STRATEGIES` (for bot creation) lists.
+Derived constants: `TIMEFRAME_LABEL_MAP`, `BACKTEST_TIMEFRAMES`, `CHART_COLORS`, `LIVE_BOTS_POLL_INTERVAL_MS`.
+Components import label maps directly from constants instead of receiving them as props.
+
+### 14. Backend Constants
+`backend/constants.py` — centralized trading parameters and configuration values.
+Includes `STRATEGY_LABELS` (Korean display names), data fetcher tuning (`FETCH_CHUNK_SIZE_*`, `FETCH_MAX_RETRIES`, `FETCH_BACKOFF_MAX_SECONDS`, `DB_SAVE_CHUNK_SIZE`).
+
+### 15. Common Utilities
+`backend/utils.py` — shared helper functions to eliminate duplication:
+- `safe_json_loads()` — safe JSON parsing with fallback default
+- `parse_symbols()` — comma-separated symbol string to list
+- `mask_nickname()` — anonymize user nicknames (첫 글자 + **)
 
 ---
 
@@ -488,7 +502,10 @@ Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stor
 - Tailwind CSS for all styling; custom classes defined in `globals.css`
 - Auth state managed via localStorage JWT + `AuthGuard` component
 - UI text may be Korean (existing codebase convention)
-- Reusable UI components in `frontend/src/components/ui/`
+- Reusable UI components in `frontend/src/components/ui/` (ModalWrapper, ModalHeader, Button, Badge, etc.)
+- All modals use `ModalWrapper` + `ModalHeader` from `components/ui/ModalWrapper.tsx`
+- Label maps (`TIMEFRAME_LABEL_MAP`, `getStrategyLabel`, `CHART_COLORS`) centralized in `constants.ts`
+- Type definitions in `frontend/src/types/` — API layer re-exports via `export type { X } from '@/types/...'`
 
 ### Git
 - Main production branch: `main`

@@ -62,3 +62,25 @@ const STRATEGY_LABEL_MAP: Record<string, string> = Object.fromEntries([
 export function getStrategyLabel(strategyName: string): string {
     return STRATEGY_LABEL_MAP[strategyName] ?? strategyName;
 }
+
+/** 타임프레임 value → label 매핑 (공통) */
+export const TIMEFRAME_LABEL_MAP: Record<string, string> = Object.fromEntries(
+    BOT_TIMEFRAMES.map(t => [t.value, t.label]),
+);
+
+/** 백테스트/설정에서 제외할 초단기 타임프레임 */
+export const EXCLUDED_SHORT_TIMEFRAMES = ['1m', '5m', '15m'] as const;
+
+/** 백테스트/설정용 타임프레임 (초단기 제외) */
+export const BACKTEST_TIMEFRAMES = BOT_TIMEFRAMES.filter(
+    t => !(EXCLUDED_SHORT_TIMEFRAMES as readonly string[]).includes(t.value),
+);
+
+/** 실시간 봇 현황 폴링 간격 (ms) */
+export const LIVE_BOTS_POLL_INTERVAL_MS = 15000;
+
+/** 차트 컬러 팔레트 (도넛차트, 자산 분포 등) */
+export const CHART_COLORS = [
+    '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+    '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#64748b',
+] as const;

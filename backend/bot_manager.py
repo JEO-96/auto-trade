@@ -13,6 +13,7 @@ from constants import (
     MAX_CONSECUTIVE_ERRORS,
     MAX_RISK_MULTIPLIER,
     STOP_LOSS_COOLDOWN_SECONDS,
+    STRATEGY_LABELS,
 )
 from core import config
 from core.data_fetcher import DataFetcher
@@ -29,6 +30,7 @@ from position_manager import (  # noqa: F401 — re-exported for backward compat
     set_bot_active,
 )
 from trade_logger import save_trade_log  # noqa: F401 — re-exported for backward compatibility
+from utils import parse_symbols
 
 logger = logging.getLogger(__name__)
 
@@ -36,20 +38,6 @@ logger = logging.getLogger(__name__)
 # In production, use Celery + Redis for scaling.
 active_bots: dict[int, asyncio.Task] = {}
 
-# 전략 이름 → 한국어 라벨 매핑 (카카오 알림용)
-STRATEGY_LABELS: dict[str, str] = {
-    'steady_compounder': '스테디 복리',
-    'momentum_breakout_pro_stable': '모멘텀 안정형',
-    'james_pro_stable': '모멘텀 안정형',
-    'momentum_stable': '모멘텀 안정형',
-    'momentum_breakout_pro_aggressive': '모멘텀 공격형',
-    'james_pro_aggressive': '모멘텀 공격형',
-    'momentum_aggressive': '모멘텀 공격형',
-    'momentum_breakout_elite': '모멘텀 엘리트',
-    'james_pro_elite': '모멘텀 엘리트',
-    'momentum_elite': '모멘텀 엘리트',
-    'momentum_breakout_basic': '모멘텀 기본',
-}
 
 
 def _load_bot_config(bot_config_id: int) -> Optional[dict]:
@@ -60,8 +48,7 @@ def _load_bot_config(bot_config_id: int) -> Optional[dict]:
             logger.warning("[Bot %d] Bot configuration not found. Stopping.", bot_config_id)
             return None
 
-        symbol_str = bot_config.symbol or "BTC/KRW"
-        symbols = [s.strip() for s in symbol_str.split(',') if s.strip()]
+        symbols = parse_symbols(bot_config.symbol or "BTC/KRW")
 
         return {
             "symbols": symbols,
@@ -245,24 +232,21 @@ def _build_tick_feedback(
     )
 
 
-async def run_bot_loop(bot_config_id: int) -> None:
-    logger.info("--- [Bot %d] Engine Started (Portfolio Mode) ---", bot_config_id)
-    fetcher = DataFetcher()
-
+def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
+    """봇 루프 시작에 필요한 설정, 전략, 실행 엔진, 포지션을 초기화.
+    실패 시 None 반환, 성공 시 초기화된 상태 dict 반환."""
     cfg = _load_bot_config(bot_config_id)
     if cfg is None:
         set_bot_active(bot_config_id, False)
-        return
+        return None
 
     symbols: list[str] = cfg["symbols"]
-    timeframe: str = cfg["timeframe"]
     liquid_capital: float = cfg["liquid_capital"]
     paper_trading: bool = cfg["paper_trading"]
-    strategy_name: str = cfg["strategy_name"]
     user_id: int = cfg["user_id"]
 
     from core.strategy import get_strategy
-    strategy = get_strategy(strategy_name)
+    strategy = get_strategy(cfg["strategy_name"])
 
     api_key: Optional[str] = None
     api_secret: Optional[str] = None
@@ -279,34 +263,63 @@ async def run_bot_loop(bot_config_id: int) -> None:
             else:
                 logger.error("[Bot %d] No API key found for user %d. Cannot start live trading.", bot_config_id, user_id)
                 set_bot_active(bot_config_id, False)
-                return
+                return None
 
     execution = ExecutionEngine(
         api_key=api_key,
         api_secret=api_secret,
         exchange_name=exchange_name,
-        paper_trading=paper_trading
+        paper_trading=paper_trading,
     )
 
-    # 실매매 모드인데 거래소 연결 실패 시 봇 정지
     if not paper_trading and not execution.is_live_ready():
         logger.error("[Bot %d] Exchange connection failed. Stopping bot.", bot_config_id)
         set_bot_active(bot_config_id, False)
-        return
+        return None
 
     # Portfolio State — DB에서 복구 시도
     active_positions: dict = load_positions_from_db(bot_config_id)
-    # 손절 쿨다운 추적: {symbol: datetime}
     cooldown_until: dict[str, datetime] = {}
 
-    # 포지션이 복구된 경우, liquid_capital에서 보유 금액 차감
     for sym, pos in active_positions.items():
         invested: float = pos['entry_price'] * pos['position_amount']
         liquid_capital -= invested
         logger.info("[Bot %d] Recovered position %s: entry=%.0f, qty=%.4f", bot_config_id, sym, pos['entry_price'], pos['position_amount'])
 
-    # DB에 활성 상태 표시
     set_bot_active(bot_config_id, True)
+
+    return {
+        "symbols": symbols,
+        "timeframe": cfg["timeframe"],
+        "liquid_capital": liquid_capital,
+        "paper_trading": paper_trading,
+        "strategy_name": cfg["strategy_name"],
+        "user_id": user_id,
+        "strategy": strategy,
+        "execution": execution,
+        "active_positions": active_positions,
+        "cooldown_until": cooldown_until,
+    }
+
+
+async def run_bot_loop(bot_config_id: int) -> None:
+    logger.info("--- [Bot %d] Engine Started (Portfolio Mode) ---", bot_config_id)
+    fetcher = DataFetcher()
+
+    init = _initialize_bot_engine(bot_config_id)
+    if init is None:
+        return
+
+    symbols: list[str] = init["symbols"]
+    timeframe: str = init["timeframe"]
+    liquid_capital: float = init["liquid_capital"]
+    paper_trading: bool = init["paper_trading"]
+    strategy_name: str = init["strategy_name"]
+    user_id: int = init["user_id"]
+    strategy = init["strategy"]
+    execution: ExecutionEngine = init["execution"]
+    active_positions: dict = init["active_positions"]
+    cooldown_until: dict[str, datetime] = init["cooldown_until"]
 
     consecutive_errors: int = 0
 

@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { BOT_MODE_LABELS } from '@/lib/constants';
+import { BOT_MODE_LABELS, getStrategyLabel, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
 import { formatKRW } from '@/lib/utils';
 import type { BotConfig } from '@/types/bot';
 
@@ -14,8 +14,6 @@ export interface BotCardProps {
     isRunning: boolean;
     isSelected: boolean;
     isActionLoading: boolean;
-    strategyLabelMap: Record<string, string>;
-    timeframeLabelMap: Record<string, string>;
     onSelect: (botId: number) => void;
     onStart: (botId: number) => void;
     onStop: (botId: number) => void;
@@ -28,8 +26,6 @@ export default function BotCard({
     isRunning,
     isSelected,
     isActionLoading,
-    strategyLabelMap,
-    timeframeLabelMap,
     onSelect,
     onStart,
     onStop,
@@ -89,8 +85,8 @@ export default function BotCard({
 
             {/* Bot details */}
             <div className="flex items-center gap-4 text-[11px] text-gray-500 mb-4">
-                <span>{strategyLabelMap[bot.strategy_name] ?? bot.strategy_name}</span>
-                <span>{timeframeLabelMap[bot.timeframe] ?? bot.timeframe}</span>
+                <span>{getStrategyLabel(bot.strategy_name)}</span>
+                <span>{TIMEFRAME_LABEL_MAP[bot.timeframe] ?? bot.timeframe}</span>
             </div>
 
             <div className="flex items-center justify-between mb-4">

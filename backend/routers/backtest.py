@@ -1,5 +1,4 @@
 import logging
-import json
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -8,6 +7,7 @@ from sqlalchemy.orm import Session
 import models, schemas
 from dependencies import get_db, get_current_user
 from core.vector_backtester import VectorBacktester, backtest_tasks
+from utils import safe_json_loads
 import database
 
 logger = logging.getLogger(__name__)
@@ -175,7 +175,7 @@ def get_backtest_history(
         results.append(schemas.BacktestHistoryResponse(
             id=h.id,
             title=h.title,
-            symbols=json.loads(h.symbols) if h.symbols else [],
+            symbols=safe_json_loads(h.symbols, []),
             timeframe=h.timeframe,
             strategy_name=h.strategy_name,
             initial_capital=h.initial_capital,
@@ -207,7 +207,7 @@ def get_backtest_history_detail(
     return schemas.BacktestHistoryDetailResponse(
         id=history.id,
         title=history.title,
-        symbols=json.loads(history.symbols) if history.symbols else [],
+        symbols=safe_json_loads(history.symbols, []),
         timeframe=history.timeframe,
         strategy_name=history.strategy_name,
         initial_capital=history.initial_capital,
@@ -218,7 +218,7 @@ def get_backtest_history_detail(
         end_date=history.end_date,
         commission_rate=history.commission_rate,
         created_at=history.created_at,
-        result_data=json.loads(history.result_data) if history.result_data else None,
+        result_data=safe_json_loads(history.result_data),
     )
 
 
@@ -288,7 +288,7 @@ def share_backtest_to_community(
     # 공유용 요약 데이터 생성
     backtest_summary = {
         "strategy_name": history.strategy_name,
-        "symbols": json.loads(history.symbols) if history.symbols else [],
+        "symbols": safe_json_loads(history.symbols, []),
         "timeframe": history.timeframe,
         "initial_capital": history.initial_capital,
         "final_capital": history.final_capital,

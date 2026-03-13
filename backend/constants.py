@@ -63,3 +63,29 @@ CREDIT_LOSS_REFUND_RATE: float = 0.10      # 손실의 10% 환불
 MIN_CHARGE_AMOUNT: int = 1000              # 최소 충전 금액 (원)
 MAX_CHARGE_AMOUNT: int = 1000000           # 최대 충전 금액 (원)
 TOSS_CONFIRM_URL: str = "https://api.tosspayments.com/v1/payments/confirm"
+
+# ──────────────────────────────────────────────
+# 데이터 페칭 (Data Fetcher)
+# ──────────────────────────────────────────────
+FETCH_CHUNK_SIZE_UPBIT: int = 200          # Upbit API 1회 요청 최대 캔들 수
+FETCH_CHUNK_SIZE_DEFAULT: int = 500        # 기타 거래소 1회 요청 최대 캔들 수
+DB_SAVE_CHUNK_SIZE: int = 1000             # DB 벌크 저장 청크 크기
+FETCH_MAX_RETRIES: int = 5                 # 레이트 리밋 재시도 최대 횟수
+FETCH_BACKOFF_MAX_SECONDS: int = 30        # 재시도 대기 최대 시간 (초)
+
+# ──────────────────────────────────────────────
+# 전략 라벨 (Strategy Labels) — 카카오 알림용
+# ──────────────────────────────────────────────
+STRATEGY_LABELS: dict[str, str] = {
+    'steady_compounder': '스테디 복리',
+    'momentum_breakout_pro_stable': '모멘텀 안정형',
+    'james_pro_stable': '모멘텀 안정형',
+    'momentum_stable': '모멘텀 안정형',
+    'momentum_breakout_pro_aggressive': '모멘텀 공격형',
+    'james_pro_aggressive': '모멘텀 공격형',
+    'momentum_aggressive': '모멘텀 공격형',
+    'momentum_breakout_elite': '모멘텀 엘리트',
+    'james_pro_elite': '모멘텀 엘리트',
+    'momentum_elite': '모멘텀 엘리트',
+    'momentum_breakout_basic': '모멘텀 기본',
+}
