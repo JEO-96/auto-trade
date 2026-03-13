@@ -99,7 +99,9 @@ export default function BotCard({
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-0.5">운용 자본</p>
-                    <p className="text-sm font-semibold text-white font-mono">{formatKRW(bot.allocated_capital ?? 0)}</p>
+                    <p className="text-sm font-semibold text-white font-mono">
+                        {bot.paper_trading_mode ? formatKRW(bot.allocated_capital ?? 0) : '잔고 100%'}
+                    </p>
                 </div>
                 <div className="text-right">
                     <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-0.5">RSI / Vol MA</p>

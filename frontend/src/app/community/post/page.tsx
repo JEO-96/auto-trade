@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
     ArrowLeft, Heart, Star, MessageCircle, Trash2, Send, User as UserIcon, LogIn
@@ -45,6 +45,8 @@ function StarDisplay({ rating }: { rating: number }) {
 export default function PublicPostDetailPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const pathname = usePathname();
+    const basePath = pathname?.startsWith('/dashboard') ? '/dashboard/community' : '/community';
     const { user, isAuthenticated } = useAuth();
     const postId = Number(searchParams.get('id'));
 
@@ -129,7 +131,7 @@ export default function PublicPostDetailPage() {
         setShowDeletePost(false);
         try {
             await deletePost(post.id);
-            router.push('/community');
+            router.push(basePath);
         } catch (err) {
             console.error('게시글 삭제 실패', err);
         }
@@ -157,7 +159,7 @@ export default function PublicPostDetailPage() {
     return (
         <div className="max-w-3xl mx-auto">
             <Link
-                href="/community"
+                href={basePath}
                 className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-6"
             >
                 <ArrowLeft className="w-3.5 h-3.5" />

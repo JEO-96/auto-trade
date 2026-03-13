@@ -1,16 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import PublicPostDetailPage from '@/app/community/post/page';
 
-export default function DashboardPostRedirect() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const id = searchParams.get('id');
-
-    useEffect(() => {
-        router.replace(`/community/post?id=${id}`);
-    }, [router, id]);
-
-    return null;
+export default function DashboardPostDetailPage() {
+    return (
+        <div className="p-6 lg:p-8">
+            <PublicPostDetailPage />
+        </div>
+    );
 }

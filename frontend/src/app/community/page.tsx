@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
     MessageSquare, Heart, Star, TrendingUp, BarChart2,
     MessageCircle, Plus, ChevronLeft, ChevronRight, FlaskConical, LogIn
@@ -48,7 +49,7 @@ function StarRating({ rating }: { rating: number }) {
     );
 }
 
-function PostCard({ post, onLikeToggle, isLoggedIn }: { post: CommunityPost; onLikeToggle: (id: number) => void; isLoggedIn: boolean }) {
+function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: CommunityPost; onLikeToggle: (id: number) => void; isLoggedIn: boolean; basePath: string }) {
     const badge = POST_TYPE_BADGE[post.post_type];
     const timeAgo = getTimeAgo(post.created_at);
 
@@ -70,7 +71,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn }: { post: CommunityPost; onL
                         )}
                     </div>
                     <Link
-                        href={`/community/post?id=${post.id}`}
+                        href={`${basePath}/post?id=${post.id}`}
                         className="text-white font-bold text-sm hover:text-primary transition-colors line-clamp-1"
                     >
                         {post.title}
@@ -144,7 +145,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn }: { post: CommunityPost; onL
                         {post.like_count}
                     </button>
                     <Link
-                        href={`/community/post?id=${post.id}`}
+                        href={`${basePath}/post?id=${post.id}`}
                         className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary transition-colors"
                     >
                         <MessageCircle className="w-3.5 h-3.5" />
@@ -181,6 +182,8 @@ function getTimeAgo(dateString: string): string {
 
 export default function PublicCommunityPage() {
     const { isAuthenticated } = useAuth();
+    const pathname = usePathname();
+    const basePath = pathname?.startsWith('/dashboard') ? '/dashboard/community' : '/community';
     const [posts, setPosts] = useState<CommunityPost[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
@@ -305,6 +308,7 @@ export default function PublicCommunityPage() {
                                 post={post}
                                 onLikeToggle={handleLikeToggle}
                                 isLoggedIn={isAuthenticated}
+                                basePath={basePath}
                             />
                         ))}
                     </div>

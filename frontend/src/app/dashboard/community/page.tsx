@@ -1,14 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import PublicCommunityPage from '@/app/community/page';
 
-export default function DashboardCommunityRedirect() {
-    const router = useRouter();
-
-    useEffect(() => {
-        router.replace('/community');
-    }, [router]);
-
-    return null;
+export default function DashboardCommunityPage() {
+    return (
+        <div className="p-6 pr-16 lg:p-8 lg:pr-8 max-w-5xl mx-auto">
+            <PublicCommunityPage />
+        </div>
+    );
 }

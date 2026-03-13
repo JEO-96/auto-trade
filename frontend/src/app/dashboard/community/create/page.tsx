@@ -72,7 +72,7 @@ export default function CreatePostPage() {
             }
 
             await createPost(data);
-            router.push('/community');
+            router.push('/dashboard/community');
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : '게시글 작성에 실패했습니다.';
             setError(msg);
@@ -84,7 +84,7 @@ export default function CreatePostPage() {
     return (
         <PageContainer maxWidth="max-w-3xl">
             <Link
-                href="/community"
+                href="/dashboard/community"
                 className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-6"
             >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -273,7 +273,7 @@ export default function CreatePostPage() {
                         <Button type="submit" loading={submitting}>
                             게시하기
                         </Button>
-                        <Link href="/community">
+                        <Link href="/dashboard/community">
                             <Button variant="ghost" type="button">취소</Button>
                         </Link>
                     </div>

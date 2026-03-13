@@ -279,7 +279,7 @@ export default function ProfilePage() {
                 ) : myPosts.length === 0 ? (
                     <div className="text-center py-8">
                         <p className="text-xs text-gray-600 mb-3">작성한 게시글이 없습니다.</p>
-                        <Link href="/community">
+                        <Link href="/dashboard/community">
                             <Button variant="ghost" size="sm">커뮤니티 바로가기</Button>
                         </Link>
                     </div>
@@ -290,7 +290,7 @@ export default function ProfilePage() {
                             return (
                                 <Link
                                     key={post.id}
-                                    href={`/community/post?id=${post.id}`}
+                                    href={`/dashboard/community/post?id=${post.id}`}
                                     className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors group"
                                 >
                                     <Badge variant={badge.variant}>{badge.label}</Badge>
