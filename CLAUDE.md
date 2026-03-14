@@ -7,7 +7,7 @@
 - **Frontend:** Next.js 14 (TypeScript) with Tailwind CSS
 - **Infrastructure:** Docker Compose, Nginx (SSL), GitHub Actions CI/CD
 - **Exchange:** Upbit via CCXT library (주식 확장 예정)
-- **Auth:** Kakao OAuth 2.0 + JWT (admin approval required for new users)
+- **Auth:** Kakao OAuth 2.0 + JWT (가입 즉시 로그인 가능, 관리자 승인 불필요)
 - **Credit System:** 성과 기반 수수료 (수익 10% 차감, 손실 10% 환불), 토스페이먼츠 결제 연동
 - **Production URL:** https://backtested.bot
 
@@ -354,9 +354,9 @@ Prevents rate limit issues; always prefer using `DataFetcher` over raw CCXT call
 `backend/core/execution.py` — `ExecutionEngine` wraps real and paper trading behind the same interface.
 `BotConfig.paper_trading_mode = True` prevents real orders from being placed.
 
-### 9. Admin Approval System
-New users register with `is_active=False`. Admins (`is_admin=True`) approve users via `/admin/users/{id}/approve`.
-Unapproved users cannot log in (403 Forbidden).
+### 9. User Registration (Auto-Approve)
+New users register with `is_active=True` (auto-approved). Kakao 가입 시 크레딧 보너스 1000 자동 지급.
+Admin panel still exists for user management (비활성화/크레딧 조정 등).
 
 ### 10. Dependency Injection
 `backend/dependencies.py` — provides:
@@ -608,3 +608,25 @@ curl -X POST https://backtested.bot/api/backtest/ \
 | `lucide-react` | Icon library |
 | `tailwindcss` | CSS utility framework |
 | `@tosspayments/payment-sdk` | Toss Payments v1 PG SDK (API 개별 연동 키 사용) |
+
+---
+
+## Improvement Roadmap (전략 개발 제외)
+
+### P0 — 안정성/보안
+- [ ] **자동화 테스트**: 핵심 로직 단위 테스트 (크레딧 차감, 봇 시작/정지, 포지션 저장)
+- [ ] **카카오 토큰 암호화**: `kakao_access_token`, `kakao_refresh_token` Fernet 암호화 (현재 평문)
+- [ ] **에러 모니터링**: Sentry 연동 또는 텔레그램으로 서버 에러 알림
+- [ ] **DB 백업 검증**: AWS RDS 백업 정책 확인, point-in-time recovery 테스트
+
+### P1 — 사용자 경험
+- [ ] **온보딩 가이드**: 첫 방문 시 단계별 안내 (API 키 등록 → 백테스트 → 봇 생성)
+- [ ] **봇 성과 대시보드**: 수익률 차트, 일별/주별 PnL, 최대 드로다운 시각화
+- [ ] **알림 세분화**: 매매 체결/봇 상태/시스템 알림 구분, 알림 on/off 설정
+- [ ] **모바일 최적화**: PWA 지원 (홈화면 추가, 오프라인 캐시)
+
+### P2 — 확장성/편의
+- [ ] **관리자 대시보드 강화**: 전체 봇 현황, 매출 통계, 시스템 헬스 모니터링
+- [ ] **커뮤니티 활성화**: 전략 랭킹, 실시간 수익률 리더보드
+- [ ] **다국어 지원**: 영어 UI (해외 사용자 대비)
+- [ ] **거래소 확장**: 빗썸/바이낸스 추가 (CCXT 기반 구조 준비됨)
