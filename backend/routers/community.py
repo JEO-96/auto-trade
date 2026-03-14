@@ -1,14 +1,17 @@
 import logging
 import json
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case, and_
 
 import models
 import schemas
+from constants import STRATEGY_LABELS
 from dependencies import get_db, get_current_user, get_current_user_optional
+from utils import mask_nickname
 
 logger = logging.getLogger(__name__)
 
@@ -521,6 +524,159 @@ async def send_chat_message(
         content=message.content,
         created_at=message.created_at,
     )
+
+
+# -------- Leaderboard --------
+
+@router.get("/leaderboard", response_model=schemas.LeaderboardResponse)
+async def get_leaderboard(
+    period: str = Query("all", regex="^(all|monthly|weekly)$"),
+    limit: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    """봇별 수익률 리더보드 (공개 API)"""
+    # 기간 필터
+    time_filter = []
+    if period == "weekly":
+        cutoff = datetime.utcnow() - timedelta(days=7)
+        time_filter.append(models.TradeLog.timestamp >= cutoff.isoformat())
+    elif period == "monthly":
+        cutoff = datetime.utcnow() - timedelta(days=30)
+        time_filter.append(models.TradeLog.timestamp >= cutoff.isoformat())
+
+    # 봇별 집계: total_pnl, win_count, total_trades
+    query = (
+        db.query(
+            models.BotConfig.id.label("bot_id"),
+            models.BotConfig.user_id,
+            models.BotConfig.strategy_name,
+            models.BotConfig.paper_trading_mode,
+            models.BotConfig.allocated_capital,
+            models.User.nickname,
+            func.sum(func.coalesce(models.TradeLog.pnl, 0)).label("total_pnl"),
+            func.count(models.TradeLog.id).label("total_trades"),
+            func.sum(
+                case(
+                    (and_(models.TradeLog.pnl.isnot(None), models.TradeLog.pnl > 0), 1),
+                    else_=0,
+                )
+            ).label("win_count"),
+        )
+        .join(models.TradeLog, models.TradeLog.bot_id == models.BotConfig.id)
+        .join(models.User, models.User.id == models.BotConfig.user_id)
+        .filter(
+            models.TradeLog.side == "SELL",  # PnL은 매도 시에만 기록
+            *time_filter,
+        )
+        .group_by(
+            models.BotConfig.id,
+            models.BotConfig.user_id,
+            models.BotConfig.strategy_name,
+            models.BotConfig.paper_trading_mode,
+            models.BotConfig.allocated_capital,
+            models.User.nickname,
+        )
+        .having(func.count(models.TradeLog.id) >= 5)  # 최소 5건 이상
+        .order_by(func.sum(func.coalesce(models.TradeLog.pnl, 0)).desc())
+        .limit(limit)
+        .all()
+    )
+
+    rankings = []
+    for idx, row in enumerate(query, start=1):
+        total_trades = row.total_trades or 0
+        win_count = row.win_count or 0
+        total_pnl = float(row.total_pnl or 0)
+        allocated = float(row.allocated_capital or 1)
+        win_rate = round((win_count / total_trades) * 100, 1) if total_trades > 0 else 0.0
+        return_rate = round((total_pnl / allocated) * 100, 2) if allocated > 0 else 0.0
+        strategy_name = row.strategy_name or "momentum_stable"
+
+        rankings.append(schemas.LeaderboardEntry(
+            rank=idx,
+            nickname=mask_nickname(row.nickname),
+            strategy_name=strategy_name,
+            strategy_label=STRATEGY_LABELS.get(strategy_name, strategy_name),
+            total_pnl=round(total_pnl, 0),
+            win_rate=win_rate,
+            total_trades=total_trades,
+            return_rate=return_rate,
+            is_live=not row.paper_trading_mode,
+        ))
+
+    return schemas.LeaderboardResponse(
+        rankings=rankings,
+        period=period,
+        updated_at=datetime.utcnow(),
+    )
+
+
+@router.get("/strategy-rankings", response_model=schemas.StrategyRankingsResponse)
+async def get_strategy_rankings(
+    db: Session = Depends(get_db),
+):
+    """전략별 평균 성과 요약 (공개 API)"""
+    # 봇별 집계 서브쿼리
+    bot_stats = (
+        db.query(
+            models.BotConfig.id.label("bot_id"),
+            models.BotConfig.strategy_name,
+            models.BotConfig.allocated_capital,
+            func.sum(func.coalesce(models.TradeLog.pnl, 0)).label("total_pnl"),
+            func.count(models.TradeLog.id).label("total_trades"),
+            func.sum(
+                case(
+                    (and_(models.TradeLog.pnl.isnot(None), models.TradeLog.pnl > 0), 1),
+                    else_=0,
+                )
+            ).label("win_count"),
+        )
+        .join(models.TradeLog, models.TradeLog.bot_id == models.BotConfig.id)
+        .filter(models.TradeLog.side == "SELL")
+        .group_by(
+            models.BotConfig.id,
+            models.BotConfig.strategy_name,
+            models.BotConfig.allocated_capital,
+        )
+        .having(func.count(models.TradeLog.id) >= 5)
+        .subquery()
+    )
+
+    # 전략별 그룹핑
+    results = (
+        db.query(
+            bot_stats.c.strategy_name,
+            func.count(bot_stats.c.bot_id).label("total_users"),
+            func.sum(bot_stats.c.total_trades).label("total_trades"),
+            func.avg(
+                bot_stats.c.total_pnl / func.nullif(bot_stats.c.allocated_capital, 0) * 100
+            ).label("avg_return_rate"),
+            func.avg(
+                bot_stats.c.win_count * 100.0 / func.nullif(bot_stats.c.total_trades, 0)
+            ).label("avg_win_rate"),
+            func.max(
+                bot_stats.c.total_pnl / func.nullif(bot_stats.c.allocated_capital, 0) * 100
+            ).label("best_return_rate"),
+        )
+        .group_by(bot_stats.c.strategy_name)
+        .order_by(func.avg(bot_stats.c.total_pnl / func.nullif(bot_stats.c.allocated_capital, 0) * 100).desc())
+        .all()
+    )
+
+    strategies = []
+    for row in results:
+        strategy_name = row.strategy_name or "momentum_stable"
+        strategies.append(schemas.StrategyRankingEntry(
+            strategy_name=strategy_name,
+            strategy_label=STRATEGY_LABELS.get(strategy_name, strategy_name),
+            avg_return_rate=round(float(row.avg_return_rate or 0), 2),
+            avg_win_rate=round(float(row.avg_win_rate or 0), 1),
+            total_users=row.total_users or 0,
+            total_trades=row.total_trades or 0,
+            best_return_rate=round(float(row.best_return_rate or 0), 2),
+        ))
+
+    return schemas.StrategyRankingsResponse(strategies=strategies)
 
 
 # -------- Strategy Reviews --------

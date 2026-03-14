@@ -24,6 +24,42 @@ class UserResponse(UserBase):
         from_attributes = True
 
 # -------- Admin Schemas --------
+class AdminDashboardUsers(BaseModel):
+    total: int
+    active: int
+    pending: int
+    new_today: int
+
+class AdminDashboardBots(BaseModel):
+    total_configs: int
+    running_now: int
+    live_bots: int
+    paper_bots: int
+
+class AdminDashboardTrades(BaseModel):
+    total_trades: int
+    today_trades: int
+    total_pnl: float
+    today_pnl: float
+
+class AdminDashboardRevenue(BaseModel):
+    total_credit_purchased: float
+    total_profit_fees: float
+    total_loss_refunds: float
+    net_revenue: float
+
+class AdminDashboardSystem(BaseModel):
+    active_bot_count: int
+    db_connection_ok: bool
+    uptime_info: str
+
+class AdminDashboardResponse(BaseModel):
+    users: AdminDashboardUsers
+    bots: AdminDashboardBots
+    trades: AdminDashboardTrades
+    revenue: AdminDashboardRevenue
+    system: AdminDashboardSystem
+
 class AdminUserResponse(BaseModel):
     id: int
     email: str
@@ -418,6 +454,39 @@ class BotPerformanceResponse(BaseModel):
     max_drawdown: float
     daily_pnl: List[DailyPnl]
     weekly_pnl: List[WeeklyPnl]
+
+
+# -------- Leaderboard Schemas --------
+class LeaderboardEntry(BaseModel):
+    rank: int
+    nickname: str
+    strategy_name: str
+    strategy_label: str
+    total_pnl: float
+    win_rate: float
+    total_trades: int
+    return_rate: float
+    is_live: bool
+
+
+class LeaderboardResponse(BaseModel):
+    rankings: List[LeaderboardEntry]
+    period: str
+    updated_at: datetime
+
+
+class StrategyRankingEntry(BaseModel):
+    strategy_name: str
+    strategy_label: str
+    avg_return_rate: float
+    avg_win_rate: float
+    total_users: int
+    total_trades: int
+    best_return_rate: float
+
+
+class StrategyRankingsResponse(BaseModel):
+    strategies: List[StrategyRankingEntry]
 
 
 class ChatMessageCreate(BaseModel):

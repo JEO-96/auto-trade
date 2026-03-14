@@ -27,4 +27,8 @@ export type {
     ChatMessage,
     UserProfile,
     StrategyRating,
+    LeaderboardEntry,
+    LeaderboardResponse,
+    StrategyRankingEntry,
+    StrategyRankingsResponse,
 } from './community';

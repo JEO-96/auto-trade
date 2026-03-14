@@ -12,6 +12,14 @@ import {
     AlertTriangle,
     Search,
     RefreshCw,
+    Bot,
+    TrendingUp,
+    DollarSign,
+    Activity,
+    Zap,
+    Database,
+    ArrowUpRight,
+    ArrowDownRight,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -21,8 +29,10 @@ import PageContainer from '@/components/ui/PageContainer';
 import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import { isAxiosError } from 'axios';
+import StatCard from '@/components/ui/StatCard';
 import { getInitials, formatDateCompact } from '@/lib/utils';
-import { getUsers, getPendingUsers, approveUser, rejectUser } from '@/lib/api/admin';
+import { getUsers, getPendingUsers, approveUser, rejectUser, getAdminDashboard } from '@/lib/api/admin';
+import type { AdminDashboard } from '@/lib/api/admin';
 import type { User } from '@/types/user';
 
 type TabFilter = 'all' | 'pending' | 'approved' | 'rejected';
@@ -31,6 +41,7 @@ export default function AdminPage() {
     const router = useRouter();
     const [users, setUsers] = useState<User[]>([]);
     const [pendingUsers, setPendingUsers] = useState<User[]>([]);
+    const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
     const [loading, setLoading] = useState(true);
     const [forbidden, setForbidden] = useState(false);
     const [activeTab, setActiveTab] = useState<TabFilter>('all');
@@ -42,12 +53,14 @@ export default function AdminPage() {
 
     const fetchUsers = useCallback(async () => {
         try {
-            const [allUsers, pending] = await Promise.all([
+            const [allUsers, pending, dashboardData] = await Promise.all([
                 getUsers(),
                 getPendingUsers(),
+                getAdminDashboard(),
             ]);
             setUsers(allUsers);
             setPendingUsers(pending);
+            setDashboard(dashboardData);
         } catch (err: unknown) {
             if (isAxiosError(err) && err.response?.status === 403) {
                 setForbidden(true);
@@ -223,6 +236,170 @@ export default function AdminPage() {
                     새로고침
                 </button>
             </header>
+
+            {/* ========== 대시보드 통계 ========== */}
+            {dashboard && (
+                <>
+                    {/* 주요 지표 카드 */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <StatCard
+                            title="전체 사용자"
+                            value={dashboard.users.total.toLocaleString()}
+                            icon={<Users className="w-4 h-4" />}
+                            subtitle={
+                                <div className="flex items-center gap-1 text-secondary">
+                                    <ArrowUpRight className="w-3.5 h-3.5" />
+                                    <span className="text-xs">오늘 +{dashboard.users.new_today}</span>
+                                </div>
+                            }
+                        />
+                        <StatCard
+                            title="실행중 봇"
+                            value={dashboard.bots.running_now}
+                            icon={<Bot className="w-4 h-4" />}
+                            accentColor="from-accent/10"
+                            subtitle={
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <span className="text-orange-400">실매매 {dashboard.bots.live_bots}</span>
+                                    <span>·</span>
+                                    <span>모의 {dashboard.bots.paper_bots}</span>
+                                </div>
+                            }
+                        />
+                        <StatCard
+                            title="오늘 거래"
+                            value={dashboard.trades.today_trades.toLocaleString()}
+                            icon={<TrendingUp className="w-4 h-4" />}
+                            accentColor="from-secondary/10"
+                            subtitle={
+                                <div className={`flex items-center gap-1 text-xs ${dashboard.trades.today_pnl >= 0 ? 'text-secondary' : 'text-red-400'}`}>
+                                    {dashboard.trades.today_pnl >= 0
+                                        ? <ArrowUpRight className="w-3.5 h-3.5" />
+                                        : <ArrowDownRight className="w-3.5 h-3.5" />
+                                    }
+                                    <span>{dashboard.trades.today_pnl >= 0 ? '+' : ''}{dashboard.trades.today_pnl.toLocaleString()} KRW</span>
+                                </div>
+                            }
+                        />
+                        <StatCard
+                            title="순수익"
+                            value={`${dashboard.revenue.net_revenue >= 0 ? '+' : ''}${dashboard.revenue.net_revenue.toLocaleString()}`}
+                            icon={<DollarSign className="w-4 h-4" />}
+                            accentColor={dashboard.revenue.net_revenue >= 0 ? 'from-secondary/10' : 'from-red-500/10'}
+                            subtitle={
+                                <span className="text-xs text-gray-500">크레딧 기준</span>
+                            }
+                        />
+                    </div>
+
+                    {/* 봇 현황 + 매출 통계 + 시스템 헬스 */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+                        {/* 봇 현황 */}
+                        <div className="glass-panel p-5 rounded-2xl">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Bot className="w-4 h-4 text-primary" />
+                                <h3 className="text-sm font-semibold text-white">봇 현황</h3>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">전체 봇 설정</span>
+                                    <span className="text-sm font-semibold text-white">{dashboard.bots.total_configs}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">현재 실행중</span>
+                                    <span className="text-sm font-semibold text-primary">{dashboard.bots.running_now}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">실매매 봇</span>
+                                    <span className="text-sm font-semibold text-orange-400">{dashboard.bots.live_bots}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">모의투자 봇</span>
+                                    <span className="text-sm font-semibold text-gray-300">{dashboard.bots.paper_bots}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 매출 통계 */}
+                        <div className="glass-panel p-5 rounded-2xl">
+                            <div className="flex items-center gap-2 mb-4">
+                                <DollarSign className="w-4 h-4 text-secondary" />
+                                <h3 className="text-sm font-semibold text-white">매출 통계</h3>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">크레딧 판매</span>
+                                    <span className="text-sm font-semibold text-secondary">+{dashboard.revenue.total_credit_purchased.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">수수료 수입</span>
+                                    <span className="text-sm font-semibold text-secondary">+{dashboard.revenue.total_profit_fees.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500">손실 환불</span>
+                                    <span className="text-sm font-semibold text-red-400">-{dashboard.revenue.total_loss_refunds.toLocaleString()}</span>
+                                </div>
+                                <div className="border-t border-white/[0.06] pt-2 flex justify-between items-center">
+                                    <span className="text-xs font-semibold text-gray-400">순수익</span>
+                                    <span className={`text-sm font-bold ${dashboard.revenue.net_revenue >= 0 ? 'text-secondary' : 'text-red-400'}`}>
+                                        {dashboard.revenue.net_revenue >= 0 ? '+' : ''}{dashboard.revenue.net_revenue.toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 시스템 헬스 */}
+                        <div className="glass-panel p-5 rounded-2xl">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Activity className="w-4 h-4 text-primary" />
+                                <h3 className="text-sm font-semibold text-white">시스템 상태</h3>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                                        <Database className="w-3 h-3" />
+                                        DB 연결
+                                    </span>
+                                    {dashboard.system.db_connection_ok ? (
+                                        <Badge variant="success">
+                                            <Zap className="w-3 h-3" />
+                                            정상
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="danger">
+                                            <XCircle className="w-3 h-3" />
+                                            오류
+                                        </Badge>
+                                    )}
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                                        <Bot className="w-3 h-3" />
+                                        활성 봇
+                                    </span>
+                                    <span className="text-sm font-semibold text-white">{dashboard.system.active_bot_count}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                                        <TrendingUp className="w-3 h-3" />
+                                        총 거래
+                                    </span>
+                                    <span className="text-sm font-semibold text-white">{dashboard.trades.total_trades.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                                        <TrendingUp className="w-3 h-3" />
+                                        총 손익
+                                    </span>
+                                    <span className={`text-sm font-semibold ${dashboard.trades.total_pnl >= 0 ? 'text-secondary' : 'text-red-400'}`}>
+                                        {dashboard.trades.total_pnl >= 0 ? '+' : ''}{dashboard.trades.total_pnl.toLocaleString()} KRW
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
 
             {/* ========== 사용자 관리 섹션 ========== */}
 

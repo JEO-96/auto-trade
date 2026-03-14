@@ -7,6 +7,8 @@ import type {
     ChatMessage,
     UserProfile,
     StrategyRating,
+    LeaderboardResponse,
+    StrategyRankingsResponse,
 } from '@/types/community';
 import type { User } from '@/types/user';
 
@@ -107,5 +109,18 @@ export async function getStrategyReviews(strategyName: string, timeframe?: strin
 
 export async function getStrategyRating(strategyName: string): Promise<StrategyRating> {
     const res = await api.get<StrategyRating>(`/community/strategies/${strategyName}/rating`);
+    return res.data;
+}
+
+// Leaderboard
+export async function getLeaderboard(period: string = 'all', limit: number = 20): Promise<LeaderboardResponse> {
+    const res = await api.get<LeaderboardResponse>('/community/leaderboard', {
+        params: { period, limit },
+    });
+    return res.data;
+}
+
+export async function getStrategyRankings(): Promise<StrategyRankingsResponse> {
+    const res = await api.get<StrategyRankingsResponse>('/community/strategy-rankings');
     return res.data;
 }

@@ -87,3 +87,35 @@ export interface StrategyRating {
     average_rating: number;
     review_count: number;
 }
+
+export interface LeaderboardEntry {
+    rank: number;
+    nickname: string;
+    strategy_name: string;
+    strategy_label: string;
+    total_pnl: number;
+    win_rate: number;
+    total_trades: number;
+    return_rate: number;
+    is_live: boolean;
+}
+
+export interface LeaderboardResponse {
+    rankings: LeaderboardEntry[];
+    period: string;
+    updated_at: string;
+}
+
+export interface StrategyRankingEntry {
+    strategy_name: string;
+    strategy_label: string;
+    avg_return_rate: number;
+    avg_win_rate: number;
+    total_users: number;
+    total_trades: number;
+    best_return_rate: number;
+}
+
+export interface StrategyRankingsResponse {
+    strategies: StrategyRankingEntry[];
+}

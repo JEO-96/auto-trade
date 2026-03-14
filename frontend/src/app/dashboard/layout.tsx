@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield, MessageSquare, UserCircle, Radio, Coins, TrendingUp } from 'lucide-react';
+import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield, MessageSquare, UserCircle, Radio, Coins, TrendingUp, Trophy } from 'lucide-react';
 import NavItem from '@/components/ui/NavItem';
 import AuthGuard from '@/components/AuthGuard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -79,6 +79,7 @@ export default function DashboardLayout({
                         <NavItem href="/dashboard/live-bots" icon={<Radio className="w-[18px] h-[18px]" />} label="실시간 봇 현황" />
                         <NavItem href="/dashboard/credits" icon={<Coins className="w-[18px] h-[18px]" />} label="크레딧" />
                         <NavItem href="/dashboard/community" icon={<MessageSquare className="w-[18px] h-[18px]" />} label="커뮤니티" />
+                        <NavItem href="/dashboard/community/leaderboard" icon={<Trophy className="w-[18px] h-[18px]" />} label="리더보드" />
                         <NavItem href="/dashboard/settings" icon={<Settings className="w-[18px] h-[18px]" />} label="시스템 설정" />
                         {user?.is_admin && (
                             <NavItem href="/dashboard/admin" icon={<Shield className="w-[18px] h-[18px]" />} label="사용자 관리" />
