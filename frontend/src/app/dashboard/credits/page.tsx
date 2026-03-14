@@ -122,14 +122,14 @@ export default function CreditsPage() {
 
     return (
         <PageContainer>
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-white">크레딧</h1>
-                    <p className="text-sm text-gray-400 mt-1">1원 = 1크레딧 | 실매매 수익의 10% 수수료, 손실 시 10% 환불</p>
+                    <p className="text-sm text-gray-400 mt-1">수익이 날 때만 수수료를 내는 공정한 시스템</p>
                 </div>
                 <button
                     onClick={() => { setShowChargeModal(true); setChargeError(''); }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl transition-colors"
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl transition-colors shrink-0 whitespace-nowrap w-full sm:w-auto"
                 >
                     <Plus className="w-4 h-4" />
                     충전하기
@@ -182,11 +182,27 @@ export default function CreditsPage() {
                             <span className="text-sm text-gray-400">총 사용</span>
                         </div>
                         <p className="text-2xl font-bold text-red-400">
-                            -{balance.total_spent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            {balance.total_spent > 0 ? '-' : ''}{balance.total_spent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </p>
                     </div>
                 </div>
             )}
+
+            {/* 수수료 안내 */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8 text-xs">
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                    <p className="text-gray-500 mb-1">충전 비율</p>
+                    <p className="text-white font-semibold">1원 = 1크레딧</p>
+                </div>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                    <p className="text-gray-500 mb-1">수익 수수료</p>
+                    <p className="text-white font-semibold">실매매 수익의 10%</p>
+                </div>
+                <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                    <p className="text-gray-500 mb-1">손실 환불</p>
+                    <p className="text-white font-semibold">실매매 손실의 10% 환불</p>
+                </div>
+            </div>
 
             {/* 거래 내역 */}
             <div className="bg-surface/60 backdrop-blur-xl border border-white/[0.06] rounded-2xl overflow-hidden">

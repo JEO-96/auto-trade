@@ -103,7 +103,7 @@ export default function ApiKeysPage() {
                     <KeyRound className="w-6 h-6 text-secondary" />
                     거래소 연동 설정
                 </h1>
-                <p className="text-sm text-gray-500">CCXT 연동을 위한 거래소 API 키를 관리합니다.</p>
+                <p className="text-sm text-gray-500">자동매매에 필요한 거래소 API 키를 관리합니다.</p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

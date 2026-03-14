@@ -129,7 +129,7 @@ export default function Home() {
                             </Link>
                         </div>
 
-                        <p className="text-gray-700">© 2025 Backtested. All rights reserved.</p>
+                        <p className="text-gray-700">© {new Date().getFullYear()} Backtested. All rights reserved.</p>
                     </div>
                 </footer>
             </div>

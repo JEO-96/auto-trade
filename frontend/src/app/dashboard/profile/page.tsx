@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { User as UserIcon, Check, Heart, MessageCircle, Mail, Calendar, Send, Link2, Unlink, Bell, Copy } from 'lucide-react';
+import { User as UserIcon, Check, Heart, MessageCircle, Mail, Calendar, Send, Link2, Unlink, Bell } from 'lucide-react';
 import PageContainer from '@/components/ui/PageContainer';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Badge from '@/components/ui/Badge';
@@ -231,24 +231,10 @@ export default function ProfilePage() {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-xs text-gray-400 space-y-2">
-                            <p>1. 텔레그램에서 <a href="https://t.me/backtested_alert_bot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">@backtested_alert_bot</a>을 검색하고 <span className="text-white font-medium">/start</span>를 보내세요.</p>
-                            <p>2. 아래 링크를 복사하여 브라우저에서 열면 Chat ID를 확인할 수 있습니다:</p>
-                            <div className="flex items-center gap-2">
-                                <code className="flex-1 font-mono text-[10px] text-gray-500 break-all bg-white/[0.02] px-2 py-1.5 rounded-lg">https://api.telegram.org/bot8776556922:AAE-LnZxTnRPQJRI2WTnsRxTAxEWAOYd0ec/getUpdates</code>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        navigator.clipboard.writeText('https://api.telegram.org/bot8776556922:AAE-LnZxTnRPQJRI2WTnsRxTAxEWAOYd0ec/getUpdates');
-                                        toast.success('링크가 복사되었습니다.');
-                                    }}
-                                    className="shrink-0 p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors text-gray-500 hover:text-white"
-                                    title="복사"
-                                >
-                                    <Copy className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                            <p>3. 응답에서 <span className="text-white font-medium">{'"chat":{"id": 숫자}'}</span> 부분의 숫자를 아래에 입력하세요.</p>
+                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-xs text-gray-400 space-y-2.5">
+                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">1</span>텔레그램에서 <a href="https://t.me/backtested_alert_bot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-medium">@backtested_alert_bot</a>을 검색하고 <span className="text-white font-medium">/start</span>를 보내세요.</p>
+                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">2</span>봇이 응답하면, <span className="text-white font-medium">/chatid</span>를 입력하세요. 봇이 Chat ID를 알려줍니다.</p>
+                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">3</span>받은 숫자를 아래에 입력하면 연동 완료!</p>
                         </div>
                         <form onSubmit={handleSaveTelegram} className="flex items-end gap-3">
                             <div className="flex-1">
