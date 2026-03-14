@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <!-- Maskable icons need a safe zone (inner 80% circle), so content is centered with padding -->
+  <rect width="512" height="512" fill="#020617"/>
+  <!-- Chart bars (centered, scaled to safe zone) -->
+  <rect x="132" y="300" width="44" height="92" rx="6" fill="#3B82F6" opacity="0.6"/>
+  <rect x="192" y="256" width="44" height="136" rx="6" fill="#3B82F6" opacity="0.75"/>
+  <rect x="252" y="212" width="44" height="180" rx="6" fill="#3B82F6" opacity="0.9"/>
+  <rect x="312" y="168" width="44" height="224" rx="6" fill="#3B82F6"/>
+  <!-- Trend line -->
+  <path d="M154 292 L214 248 L274 204 L334 160" stroke="#8B5CF6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="334" cy="160" r="9" fill="#A78BFA"/>
+  <!-- Pulse -->
+  <circle cx="366" cy="146" r="11" fill="#10B981"/>
+  <circle cx="366" cy="146" r="18" fill="none" stroke="#10B981" stroke-width="2.5" opacity="0.4"/>
+</svg>

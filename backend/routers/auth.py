@@ -137,6 +137,38 @@ def get_me(current_user: models.User = Depends(get_current_user), db: Session = 
         is_admin=current_user.is_admin,
         credit_balance=credit.balance,
         telegram_chat_id=current_user.telegram_chat_id,
+        notification_trade=current_user.notification_trade if current_user.notification_trade is not None else True,
+        notification_bot_status=current_user.notification_bot_status if current_user.notification_bot_status is not None else True,
+        notification_system=current_user.notification_system if current_user.notification_system is not None else True,
+    )
+
+
+@router.get("/notifications", response_model=schemas.NotificationSettings)
+def get_notification_settings(current_user: models.User = Depends(get_current_user)):
+    """현재 알림 설정 조회"""
+    return schemas.NotificationSettings(
+        notification_trade=current_user.notification_trade if current_user.notification_trade is not None else True,
+        notification_bot_status=current_user.notification_bot_status if current_user.notification_bot_status is not None else True,
+        notification_system=current_user.notification_system if current_user.notification_system is not None else True,
+    )
+
+
+@router.put("/notifications", response_model=schemas.NotificationSettings)
+def update_notification_settings(
+    data: schemas.NotificationSettings,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """알림 설정 업데이트"""
+    current_user.notification_trade = data.notification_trade
+    current_user.notification_bot_status = data.notification_bot_status
+    current_user.notification_system = data.notification_system
+    db.commit()
+    db.refresh(current_user)
+    return schemas.NotificationSettings(
+        notification_trade=current_user.notification_trade,
+        notification_bot_status=current_user.notification_bot_status,
+        notification_system=current_user.notification_system,
     )
 
 

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { Activity, Settings2, Plus } from 'lucide-react';
+import OnboardingGuide from '@/components/OnboardingGuide';
 import RiskDisclaimerModal from '@/components/RiskDisclaimerModal';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -19,7 +20,8 @@ import {
     getBotList, getBotStatus, getBotLogs, startBot, stopBot,
     createBot, updateBot, deleteBot,
 } from '@/lib/api/bot';
-import { getUpbitBalance, type BalanceItem } from '@/lib/api/keys';
+import { getKeys, getUpbitBalance, type BalanceItem } from '@/lib/api/keys';
+import { getBacktestHistory } from '@/lib/api/backtest';
 import { getBacktestSettings } from '@/lib/api/settings';
 import { useStrategies } from '@/lib/useStrategies';
 import { getErrorMessage } from '@/lib/utils';
@@ -76,6 +78,10 @@ export default function DashboardPage() {
 
     // 전략별 허용 타임프레임 설정
     const [strategyTimeframeMap, setStrategyTimeframeMap] = useState<Record<string, string[]>>({});
+
+    // Onboarding state
+    const [hasKeys, setHasKeys] = useState(false);
+    const [hasBacktests, setHasBacktests] = useState(false);
 
     const fetchBots = useCallback(async () => {
         try {
@@ -134,6 +140,13 @@ export default function DashboardPage() {
         fetchBalance();
         getBacktestSettings()
             .then(s => setStrategyTimeframeMap(s.strategy_timeframes))
+            .catch(() => {});
+        // Onboarding: check keys & backtest history
+        getKeys()
+            .then(keys => setHasKeys(keys.length > 0))
+            .catch(() => {});
+        getBacktestHistory(1, 1)
+            .then(history => setHasBacktests(history.length > 0))
             .catch(() => {});
     }, [fetchBots, fetchBalance]);
 
@@ -342,6 +355,13 @@ export default function DashboardPage() {
                     </Button>
                 </div>
             </header>
+
+            {/* Onboarding Guide */}
+            <OnboardingGuide
+                hasKeys={hasKeys}
+                hasBacktests={hasBacktests}
+                hasBots={bots.length > 0}
+            />
 
             {/* Summary Stats */}
             <SummaryStats

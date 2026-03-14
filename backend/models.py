@@ -14,6 +14,9 @@ class User(Base):
     kakao_access_token = Column(String, nullable=True) # For "Send to Me" messages
     kakao_refresh_token = Column(String, nullable=True) # For token auto-refresh
     telegram_chat_id = Column(String, nullable=True) # 텔레그램 알림용 chat_id
+    notification_trade = Column(Boolean, default=True)       # 매매 체결 알림
+    notification_bot_status = Column(Boolean, default=True)  # 봇 시작/정지 알림
+    notification_system = Column(Boolean, default=True)      # 시스템/공지 알림
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False) # 관리자 여부
     created_at = Column(DateTime, default=lambda: datetime.utcnow()) # Added registration time

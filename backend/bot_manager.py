@@ -18,7 +18,7 @@ from constants import (
 from core import config
 from core.data_fetcher import DataFetcher
 from core.execution import ExecutionEngine
-from notifications import send_telegram_message
+from notifications import send_telegram_message, send_trade_notification, send_bot_status_notification
 
 # ──────────────────────────────────────────────
 # 분리된 모듈에서 임포트 + 하위 호환성을 위한 재수출
@@ -193,8 +193,13 @@ def _process_symbol_entry(
 
 
 def _send_trade_notification(user_id: int, msg: str) -> None:
-    """Fire-and-forget Telegram notification wrapped in asyncio.create_task."""
-    asyncio.create_task(send_telegram_message(msg, user_id=user_id))
+    """Fire-and-forget trade notification wrapped in asyncio.create_task."""
+    asyncio.create_task(send_trade_notification(user_id, msg))
+
+
+def _send_bot_status_notification(user_id: int, msg: str) -> None:
+    """Fire-and-forget bot status notification wrapped in asyncio.create_task."""
+    asyncio.create_task(send_bot_status_notification(user_id, msg))
 
 
 # 타임프레임별 캔들 마감 간격 (분)
@@ -379,7 +384,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
         except Exception:
             symbol_price_lines.append(f"  {sym}: 조회 실패")
 
-    _send_trade_notification(user_id, (
+    _send_bot_status_notification(user_id, (
         f"🟢 봇 시작\n"
         f"모드: {mode_label}\n"
         f"전략: {strategy_label}\n"
@@ -554,7 +559,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     logger.error("[Bot %d] Too many consecutive errors. Stopping bot.", bot_config_id)
                     # 에러로 중단해도 포지션은 DB에 저장
                     save_positions_to_db(bot_config_id, active_positions)
-                    _send_trade_notification(user_id, f"🔴 봇 자동 종료\n전략: {strategy_label}\n사유: 연속 오류 {MAX_CONSECUTIVE_ERRORS}회")
+                    _send_bot_status_notification(user_id, f"🔴 봇 자동 종료\n전략: {strategy_label}\n사유: 연속 오류 {MAX_CONSECUTIVE_ERRORS}회")
                     break
             finally:
                 current_db.close()
@@ -566,12 +571,12 @@ async def run_bot_loop(bot_config_id: int) -> None:
         logger.info("--- [Bot %d] Engine Stopped (graceful) ---", bot_config_id)
         # 포지션은 DB에 유지 (재시작 시 복구 가능)
         save_positions_to_db(bot_config_id, active_positions)
-        _send_trade_notification(user_id, f"🔴 봇 종료\n전략: {strategy_label}\n종목: {symbols_str}")
+        _send_bot_status_notification(user_id, f"🔴 봇 종료\n전략: {strategy_label}\n종목: {symbols_str}")
         raise
     except Exception as e:
         logger.error("[Bot %d] Fatal error in bot loop: %s", bot_config_id, e)
         logger.debug(traceback.format_exc())
-        _send_trade_notification(user_id, f"🔴 봇 비정상 종료\n전략: {strategy_label}\n오류: {str(e)[:100]}")
+        _send_bot_status_notification(user_id, f"🔴 봇 비정상 종료\n전략: {strategy_label}\n오류: {str(e)[:100]}")
     finally:
         # Clean up from active_bots so status correctly reports Stopped
         active_bots.pop(bot_config_id, None)

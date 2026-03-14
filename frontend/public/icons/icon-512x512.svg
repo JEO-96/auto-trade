@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="80" fill="#020617"/>
+  <rect x="8" y="8" width="496" height="496" rx="72" fill="#0F172A" stroke="#1E293B" stroke-width="4"/>
+  <!-- Chart bars -->
+  <rect x="100" y="300" width="52" height="112" rx="8" fill="#3B82F6" opacity="0.6"/>
+  <rect x="172" y="248" width="52" height="164" rx="8" fill="#3B82F6" opacity="0.75"/>
+  <rect x="244" y="196" width="52" height="216" rx="8" fill="#3B82F6" opacity="0.9"/>
+  <rect x="316" y="140" width="52" height="272" rx="8" fill="#3B82F6"/>
+  <!-- Trend line -->
+  <path d="M126 290 L198 238 L270 186 L342 130" stroke="#8B5CF6" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="126" cy="290" r="10" fill="#8B5CF6"/>
+  <circle cx="198" cy="238" r="10" fill="#8B5CF6"/>
+  <circle cx="270" cy="186" r="10" fill="#8B5CF6"/>
+  <circle cx="342" cy="130" r="10" fill="#A78BFA"/>
+  <!-- Pulse indicator -->
+  <circle cx="380" cy="110" r="14" fill="#10B981"/>
+  <circle cx="380" cy="110" r="22" fill="none" stroke="#10B981" stroke-width="3" opacity="0.4"/>
+</svg>

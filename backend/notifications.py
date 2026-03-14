@@ -69,3 +69,39 @@ async def send_telegram_message(
     except Exception as e:
         logger.error("[Telegram] Error sending message: %s", e)
         return False
+
+
+def _check_user_notification_setting(user_id: int, setting_name: str) -> bool:
+    """유저의 알림 설정을 확인. 설정이 없거나 조회 실패 시 True(전송) 반환."""
+    try:
+        import database
+        from models import User
+        with database.get_db_session() as db:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                return True
+            return getattr(user, setting_name, True)
+    except Exception as e:
+        logger.error("[Telegram] Failed to check notification setting for user %d: %s", user_id, e)
+        return True  # 조회 실패 시 기본적으로 전송
+
+
+async def send_trade_notification(user_id: int, message: str) -> bool:
+    """매매 체결 알림 — 유저의 notification_trade 설정 확인 후 전송."""
+    if not _check_user_notification_setting(user_id, "notification_trade"):
+        logger.debug("[Telegram] Trade notification disabled for user %d", user_id)
+        return False
+    return await send_telegram_message(message, user_id=user_id)
+
+
+async def send_bot_status_notification(user_id: int, message: str) -> bool:
+    """봇 상태 변경 알림 — 유저의 notification_bot_status 설정 확인 후 전송."""
+    if not _check_user_notification_setting(user_id, "notification_bot_status"):
+        logger.debug("[Telegram] Bot status notification disabled for user %d", user_id)
+        return False
+    return await send_telegram_message(message, user_id=user_id)
+
+
+async def send_system_notification(message: str) -> bool:
+    """시스템 알림 — 관리자 chat_id로 전송 (사용자 설정과 무관하게 항상 전송)."""
+    return await send_telegram_message(message)

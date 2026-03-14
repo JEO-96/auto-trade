@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield, MessageSquare, UserCircle, Radio, Coins } from 'lucide-react';
+import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield, MessageSquare, UserCircle, Radio, Coins, TrendingUp } from 'lucide-react';
 import NavItem from '@/components/ui/NavItem';
 import AuthGuard from '@/components/AuthGuard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -75,6 +75,7 @@ export default function DashboardLayout({
                         <NavItem href="/dashboard" icon={<LayoutDashboard className="w-[18px] h-[18px]" />} label="대시보드" />
                         <NavItem href="/dashboard/keys" icon={<Key className="w-[18px] h-[18px]" />} label="API 설정" />
                         <NavItem href="/dashboard/backtest" icon={<BarChart2 className="w-[18px] h-[18px]" />} label="백테스팅" />
+                        <NavItem href="/dashboard/performance" icon={<TrendingUp className="w-[18px] h-[18px]" />} label="성과 분석" />
                         <NavItem href="/dashboard/live-bots" icon={<Radio className="w-[18px] h-[18px]" />} label="실시간 봇 현황" />
                         <NavItem href="/dashboard/credits" icon={<Coins className="w-[18px] h-[18px]" />} label="크레딧" />
                         <NavItem href="/dashboard/community" icon={<MessageSquare className="w-[18px] h-[18px]" />} label="커뮤니티" />

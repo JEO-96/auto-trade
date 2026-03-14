@@ -7,6 +7,15 @@ export interface User {
     created_at?: string;
     credit_balance?: number;
     telegram_chat_id?: string;
+    notification_trade?: boolean;
+    notification_bot_status?: boolean;
+    notification_system?: boolean;
+}
+
+export interface NotificationSettings {
+    notification_trade: boolean;
+    notification_bot_status: boolean;
+    notification_system: boolean;
 }
 
 export interface CreditBalance {

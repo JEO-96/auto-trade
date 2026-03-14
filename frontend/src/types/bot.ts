@@ -52,3 +52,24 @@ export interface ActiveBotPublic {
     strategy_name: string | null;
     paper_trading_mode: boolean;
 }
+
+export interface DailyPnl {
+    date: string;
+    pnl: number;
+    cumulative_pnl: number;
+}
+
+export interface WeeklyPnl {
+    week: string;
+    pnl: number;
+}
+
+export interface BotPerformance {
+    bot_id: number;
+    total_pnl: number;
+    total_trades: number;
+    win_rate: number;
+    max_drawdown: number;
+    daily_pnl: DailyPnl[];
+    weekly_pnl: WeeklyPnl[];
+}

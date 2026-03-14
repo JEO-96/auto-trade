@@ -16,6 +16,9 @@ class UserResponse(UserBase):
     is_admin: bool = False
     credit_balance: Optional[float] = None
     telegram_chat_id: Optional[str] = None
+    notification_trade: bool = True
+    notification_bot_status: bool = True
+    notification_system: bool = True
 
     class Config:
         from_attributes = True
@@ -247,6 +250,12 @@ class TelegramChatIdUpdate(BaseModel):
     chat_id: str
 
 
+class NotificationSettings(BaseModel):
+    notification_trade: bool = True
+    notification_bot_status: bool = True
+    notification_system: bool = True
+
+
 class UserProfileResponse(BaseModel):
     id: int
     nickname: Optional[str] = None
@@ -389,6 +398,26 @@ class PaymentHistoryResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# -------- Bot Performance Schemas --------
+class DailyPnl(BaseModel):
+    date: str
+    pnl: float
+    cumulative_pnl: float
+
+class WeeklyPnl(BaseModel):
+    week: str
+    pnl: float
+
+class BotPerformanceResponse(BaseModel):
+    bot_id: int
+    total_pnl: float
+    total_trades: int
+    win_rate: float
+    max_drawdown: float
+    daily_pnl: List[DailyPnl]
+    weekly_pnl: List[WeeklyPnl]
 
 
 class ChatMessageCreate(BaseModel):

@@ -1,5 +1,7 @@
 import asyncio
 import logging
+from collections import defaultdict
+from datetime import datetime
 
 import ccxt
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -337,6 +339,88 @@ def get_bot_trade_logs(bot_id: int, current_user: models.User = Depends(get_curr
         models.TradeLog.bot_id == bot_id
     ).order_by(models.TradeLog.id.desc()).limit(100).all()
     return logs
+
+@router.get("/performance/{bot_id}", response_model=schemas.BotPerformanceResponse)
+def get_bot_performance(
+    bot_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """봇 성과 통계: 총 PnL, 승률, 최대 드로다운, 일별/주별 PnL"""
+    _get_user_bot(bot_id, current_user.id, db)
+
+    # SELL 거래만 PnL이 있으므로 전체 조회 후 필터
+    logs = (
+        db.query(models.TradeLog)
+        .filter(models.TradeLog.bot_id == bot_id)
+        .order_by(models.TradeLog.timestamp.asc())
+        .all()
+    )
+
+    # PnL이 있는 거래 (SELL)만 통계 대상
+    pnl_trades = [log for log in logs if log.pnl is not None]
+    total_trades = len(pnl_trades)
+    total_pnl = sum(t.pnl for t in pnl_trades)
+    win_count = sum(1 for t in pnl_trades if t.pnl > 0)
+    win_rate = (win_count / total_trades * 100) if total_trades > 0 else 0.0
+
+    # 일별 PnL 집계
+    daily_map: dict[str, float] = defaultdict(float)
+    for t in pnl_trades:
+        try:
+            date_str = datetime.fromisoformat(t.timestamp.replace("Z", "+00:00")).strftime("%Y-%m-%d")
+        except (ValueError, AttributeError):
+            date_str = t.timestamp[:10] if t.timestamp and len(t.timestamp) >= 10 else "unknown"
+        daily_map[date_str] += t.pnl
+
+    cumulative = 0.0
+    daily_pnl = []
+    for date_str in sorted(daily_map.keys()):
+        cumulative += daily_map[date_str]
+        daily_pnl.append(schemas.DailyPnl(
+            date=date_str,
+            pnl=round(daily_map[date_str], 2),
+            cumulative_pnl=round(cumulative, 2),
+        ))
+
+    # 주별 PnL 집계 (ISO week)
+    weekly_map: dict[str, float] = defaultdict(float)
+    for t in pnl_trades:
+        try:
+            dt = datetime.fromisoformat(t.timestamp.replace("Z", "+00:00"))
+            iso = dt.isocalendar()
+            week_str = f"{iso[0]}-W{iso[1]:02d}"
+        except (ValueError, AttributeError):
+            week_str = "unknown"
+        weekly_map[week_str] += t.pnl
+
+    weekly_pnl = [
+        schemas.WeeklyPnl(week=w, pnl=round(weekly_map[w], 2))
+        for w in sorted(weekly_map.keys())
+    ]
+
+    # 최대 드로다운 (누적 PnL 기준, %)
+    max_drawdown = 0.0
+    if daily_pnl:
+        peak = daily_pnl[0].cumulative_pnl
+        for dp in daily_pnl:
+            if dp.cumulative_pnl > peak:
+                peak = dp.cumulative_pnl
+            if peak > 0:
+                dd = (dp.cumulative_pnl - peak) / peak * 100
+                if dd < max_drawdown:
+                    max_drawdown = dd
+
+    return schemas.BotPerformanceResponse(
+        bot_id=bot_id,
+        total_pnl=round(total_pnl, 2),
+        total_trades=total_trades,
+        win_rate=round(win_rate, 1),
+        max_drawdown=round(max_drawdown, 1),
+        daily_pnl=daily_pnl,
+        weekly_pnl=weekly_pnl,
+    )
+
 
 @router.get("/list", response_model=list[schemas.BotConfigResponse])
 def list_user_bots(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
