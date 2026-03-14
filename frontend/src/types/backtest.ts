@@ -13,6 +13,11 @@ export interface EquityCurvePoint {
     value: number;
 }
 
+export interface PriceChangePoint {
+    time: string;
+    value: number;
+}
+
 export interface BacktestResult {
     status?: string;
     initial_capital: number;
@@ -20,6 +25,8 @@ export interface BacktestResult {
     total_trades: number;
     trades: BacktestTrade[];
     equity_curve?: EquityCurvePoint[];
+    price_changes?: Record<string, PriceChangePoint[]>;
+    btc_benchmark?: PriceChangePoint[] | null;
 }
 
 export interface BacktestFormParams {

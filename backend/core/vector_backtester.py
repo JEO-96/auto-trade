@@ -198,6 +198,39 @@ class VectorBacktester:
             for ts, val in equity_series.items()
         ]
 
+        # 6. Extract price change rates for charting (% change from first price)
+        price_changes = {}
+        for symbol in close_df.columns:
+            series = close_df[symbol].dropna()
+            if len(series) > 0:
+                first_price = series.iloc[0]
+                price_changes[symbol] = [
+                    {"time": str(ts), "value": round(((val / first_price) - 1) * 100, 4)}
+                    for ts, val in series.items()
+                ]
+
+        # 7. Fetch BTC benchmark if not already in symbols
+        btc_benchmark = None
+        if "BTC/KRW" not in close_df.columns:
+            try:
+                btc_df = self.fetcher.fetch_ohlcv(
+                    "BTC/KRW", timeframe, limit=limit,
+                    start_date=start_date, end_date=end_date, db=db,
+                )
+                if btc_df is not None and len(btc_df) > 0:
+                    btc_indexed = btc_df.set_index('timestamp')['close']
+                    # Align to same time range
+                    common_idx = close_df.index.intersection(btc_indexed.index)
+                    if len(common_idx) > 0:
+                        btc_aligned = btc_indexed.loc[common_idx]
+                        first_btc = btc_aligned.iloc[0]
+                        btc_benchmark = [
+                            {"time": str(ts), "value": round(((val / first_btc) - 1) * 100, 4)}
+                            for ts, val in btc_aligned.items()
+                        ]
+            except Exception as e:
+                logger.warning("Failed to fetch BTC benchmark: %s", e)
+
         # Safely get total trade count across different vectorbt versions
         try:
             total_trades = int(portfolio.trades.count())
@@ -213,7 +246,9 @@ class VectorBacktester:
             "final_capital": float(portfolio.final_value()),
             "total_trades": total_trades,
             "trades": formatted_trades,
-            "equity_curve": equity_curve
+            "equity_curve": equity_curve,
+            "price_changes": price_changes,
+            "btc_benchmark": btc_benchmark,
         }
 
     # ------------------------------------------------------------------

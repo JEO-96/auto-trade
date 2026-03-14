@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Pencil, Check } from 'lucide-react';
+import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Pencil, Check, ArrowLeft } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
@@ -13,6 +13,7 @@ import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktes
 import { getBacktestSettings } from '@/lib/api/settings';
 import { useStrategies } from '@/lib/useStrategies';
 import { getErrorMessage, formatKRW } from '@/lib/utils';
+import BacktestComparisonChart from '@/components/BacktestComparisonChart';
 import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryItem } from '@/types/backtest';
 
 export default function BacktestPage() {
@@ -29,6 +30,8 @@ export default function BacktestPage() {
     const [historyList, setHistoryList] = useState<BacktestHistoryItem[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [viewingHistoryId, setViewingHistoryId] = useState<number | null>(null);
+    const [viewingHistoryMeta, setViewingHistoryMeta] = useState<BacktestHistoryItem | null>(null);
+    const [detailMode, setDetailMode] = useState(false);
 
     // 공유 모달 상태
     const [shareModal, setShareModal] = useState<{ historyId: number } | null>(null);
@@ -72,11 +75,22 @@ export default function BacktestPage() {
             if (detail.result_data) {
                 setResult(detail.result_data);
                 setViewingHistoryId(id);
-                setActiveTab('run');
+                // Find meta info from history list
+                const meta = historyList.find(h => h.id === id) || null;
+                setViewingHistoryMeta(meta);
+                setDetailMode(true);
             }
         } catch (err) {
             console.error('백테스트 상세 로드 실패', err);
         }
+    };
+
+    const exitDetailMode = () => {
+        setDetailMode(false);
+        setResult(null);
+        setViewingHistoryId(null);
+        setViewingHistoryMeta(null);
+        setActiveTab('history');
     };
 
     const handleShare = async () => {
@@ -275,6 +289,231 @@ export default function BacktestPage() {
             setLoading(false);
         }
     };
+
+    // Detail mode: full-width results view
+    if (detailMode && result) {
+        const pnlPct = ((result.final_capital - result.initial_capital) / (result.initial_capital || 1)) * 100;
+        const isProfit = result.final_capital >= result.initial_capital;
+        const metaTitle = viewingHistoryMeta?.title || (viewingHistoryMeta ? getStrategyLabel(viewingHistoryMeta.strategy_name) : '백테스트 결과');
+
+        return (
+            <PageContainer>
+                {/* 공유 모달 */}
+                {shareModal && typeof document !== 'undefined' && createPortal(
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShareModal(null)}>
+                        <div className="rounded-2xl p-6 w-full max-w-md mx-4 bg-[#0f172a] border border-white/[0.08] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-base font-bold text-white">커뮤니티에 공유</h3>
+                                <button onClick={() => setShareModal(null)} className="text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
+                            </div>
+                            {shareSuccess ? (
+                                <div className="text-center py-8">
+                                    <CheckCircle2 className="w-10 h-10 text-secondary mx-auto mb-3" />
+                                    <p className="text-sm text-secondary font-semibold">커뮤니티에 공유되었습니다!</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <input
+                                        value={shareTitle}
+                                        onChange={(e) => setShareTitle(e.target.value)}
+                                        placeholder="제목을 입력하세요"
+                                        maxLength={100}
+                                        className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-3 focus:border-primary/30 transition-colors"
+                                    />
+                                    <textarea
+                                        value={shareContent}
+                                        onChange={(e) => setShareContent(e.target.value)}
+                                        placeholder="소감이나 분석 내용을 작성하세요 (선택)"
+                                        rows={3}
+                                        className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-4 resize-none focus:border-primary/30 transition-colors"
+                                    />
+                                    <div className="flex gap-2">
+                                        <Button onClick={handleShare} loading={sharing} disabled={!shareTitle.trim()} size="sm">
+                                            <Share2 className="w-3.5 h-3.5" /> 공유하기
+                                        </Button>
+                                        <Button variant="ghost" size="sm" onClick={() => setShareModal(null)}>취소</Button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>,
+                    document.body
+                )}
+
+                {/* Header with back button */}
+                <header className="mb-6">
+                    <button
+                        onClick={exitDetailMode}
+                        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors mb-4"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        기록으로 돌아가기
+                    </button>
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold text-white mb-1">{metaTitle}</h1>
+                            {viewingHistoryMeta && (
+                                <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                                    <span className="text-gray-400">{getStrategyLabel(viewingHistoryMeta.strategy_name)}</span>
+                                    <span>{(viewingHistoryMeta.symbols || []).join(', ')}</span>
+                                    <span>{viewingHistoryMeta.timeframe}</span>
+                                    {viewingHistoryMeta.start_date && viewingHistoryMeta.end_date && (
+                                        <span>{viewingHistoryMeta.start_date} ~ {viewingHistoryMeta.end_date}</span>
+                                    )}
+                                    {viewingHistoryMeta.commission_rate != null && (
+                                        <span>수수료 {(viewingHistoryMeta.commission_rate * 100).toFixed(2)}%</span>
+                                    )}
+                                    <span>{new Date(viewingHistoryMeta.created_at).toLocaleDateString('ko-KR')}</span>
+                                </div>
+                            )}
+                        </div>
+                        <button
+                            onClick={() => {
+                                setShareModal({ historyId: viewingHistoryId! });
+                                setShareTitle(`${metaTitle} 백테스트 결과`);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/20 shrink-0"
+                        >
+                            <Share2 className="w-3.5 h-3.5" /> 커뮤니티 공유
+                        </button>
+                    </div>
+                </header>
+
+                <div className="flex flex-col gap-5">
+                    <p className="text-xs text-gray-500">
+                        * 이 결과는 과거 데이터 시뮬레이션이며 실제 수익을 보장하지 않습니다.
+                    </p>
+
+                    {/* Stats - full width */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="glass-panel p-5 rounded-2xl">
+                            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">누적 수익</p>
+                            <p className={`text-2xl font-bold truncate ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {isProfit ? '+' : ''}₩{Math.round(result.final_capital - result.initial_capital).toLocaleString()}
+                            </p>
+                            <div className={`inline-flex items-center gap-1 text-xs font-medium mt-2 ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {isProfit ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                {pnlPct > 0 ? '+' : ''}{pnlPct.toFixed(2)}%
+                            </div>
+                        </div>
+
+                        <div className="glass-panel p-5 rounded-2xl">
+                            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">초기 투자금</p>
+                            <p className="text-2xl font-bold text-white truncate">₩{Math.round(result.initial_capital).toLocaleString()}</p>
+                        </div>
+
+                        <div className="glass-panel p-5 rounded-2xl">
+                            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">최종 자산</p>
+                            <p className="text-2xl font-bold text-white truncate">₩{Math.round(result.final_capital).toLocaleString()}</p>
+                        </div>
+
+                        <div className="glass-panel p-5 rounded-2xl">
+                            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">매매 횟수</p>
+                            <p className="text-2xl font-bold text-primary">
+                                {result.total_trades}<span className="text-sm text-gray-500 ml-1 font-medium">회</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Charts side by side on large screens */}
+                    {result.equity_curve && result.equity_curve.length > 0 && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                            {/* Equity Curve */}
+                            <div className="glass-panel p-6 rounded-2xl">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-base font-bold flex items-center gap-2">
+                                        <TrendingUp className="w-4 h-4 text-primary" />
+                                        자산 성장 추이
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-primary"></div>
+                                        <span className="text-xs text-gray-500">포트폴리오 가치</span>
+                                    </div>
+                                </div>
+                                <div className="h-[280px] w-full">
+                                    <EquityCurveChart data={result.equity_curve} />
+                                </div>
+                            </div>
+
+                            {/* Comparison Chart */}
+                            <div className="glass-panel p-6 rounded-2xl">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-base font-bold flex items-center gap-2">
+                                        <Activity className="w-4 h-4 text-emerald-400" />
+                                        전략 vs 시장 비교
+                                    </h3>
+                                    <span className="text-[10px] text-gray-500">변동률 (%) 기준</span>
+                                </div>
+                                <BacktestComparisonChart
+                                    equityCurve={result.equity_curve}
+                                    priceChanges={result.price_changes}
+                                    btcBenchmark={result.btc_benchmark}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Trade History - full width */}
+                    <div className="glass-panel rounded-2xl overflow-hidden">
+                        <div className="p-5 border-b border-white/[0.04] flex justify-between items-center">
+                            <h3 className="text-base font-bold flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                매매 이력
+                            </h3>
+                            <span className="text-xs text-gray-500">{result.trades.length}건</span>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 border-b border-white/[0.04]">
+                                        <th className="px-5 py-3 text-left">일시</th>
+                                        <th className="px-5 py-3 text-left">종목</th>
+                                        <th className="px-5 py-3 text-center">구분</th>
+                                        <th className="px-5 py-3 text-right">가격</th>
+                                        <th className="px-5 py-3 text-right">수익</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/[0.03]">
+                                    {result.trades.map((trade: BacktestTrade, idx: number) => (
+                                        <tr key={idx} className="hover:bg-white/[0.02] transition-colors text-sm">
+                                            <td className="px-5 py-4">
+                                                <p className="text-xs text-gray-300">
+                                                    {new Date(trade.time).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}
+                                                </p>
+                                                <p className="text-[10px] text-gray-600 mt-0.5">
+                                                    {new Date(trade.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                                </p>
+                                            </td>
+                                            <td className="px-5 py-4">
+                                                <span className="font-semibold text-white">{trade.symbol?.split('/')[0]}</span>
+                                            </td>
+                                            <td className="px-5 py-4 text-center">
+                                                <Badge variant={trade.side === TRADE_SIDE.BUY ? 'success' : 'danger'}>
+                                                    {TRADE_SIDE_LABELS[trade.side]}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-5 py-4 text-right font-mono text-sm text-gray-300 whitespace-nowrap">
+                                                ₩{Math.round(Number(trade.price ?? 0)).toLocaleString()}
+                                            </td>
+                                            <td className="px-5 py-4 text-right whitespace-nowrap">
+                                                <p className={`font-mono text-sm font-medium ${trade.pnl > 0 ? 'text-emerald-400' : trade.pnl < 0 ? 'text-red-400' : 'text-gray-600'}`}>
+                                                    {trade.pnl !== 0 ? (trade.pnl > 0 ? `+₩${Math.round(Number(trade.pnl)).toLocaleString()}` : `-₩${Math.round(Math.abs(trade.pnl)).toLocaleString()}`) : '-'}
+                                                </p>
+                                                <p className="text-[10px] text-gray-600 font-mono mt-0.5">
+                                                    ₩{Math.round(Number(trade.capital ?? 0)).toLocaleString()}
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </PageContainer>
+        );
+    }
 
     return (
         <PageContainer>
@@ -767,6 +1006,24 @@ export default function BacktestPage() {
                                     <div className="h-[280px] w-full">
                                         <EquityCurveChart data={result.equity_curve} />
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Comparison Chart: Strategy vs Coin Prices */}
+                            {result.equity_curve && result.equity_curve.length > 0 && (
+                                <div className="glass-panel p-6 rounded-2xl">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-base font-bold flex items-center gap-2">
+                                            <Activity className="w-4 h-4 text-emerald-400" />
+                                            전략 vs 시장 비교
+                                        </h3>
+                                        <span className="text-[10px] text-gray-500">변동률 (%) 기준</span>
+                                    </div>
+                                    <BacktestComparisonChart
+                                        equityCurve={result.equity_curve}
+                                        priceChanges={result.price_changes}
+                                        btcBenchmark={result.btc_benchmark}
+                                    />
                                 </div>
                             )}
 
