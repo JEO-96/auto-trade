@@ -105,6 +105,7 @@ backtested/
 │   │   │   ├── RiskDisclaimerModal.tsx # Risk warning modal for live trading
 │   │   │   ├── OnboardingGuide.tsx     # 첫 방문 시 단계별 온보딩 안내
 │   │   │   ├── ServiceWorkerRegistration.tsx # PWA 서비스 워커 등록
+│   │   │   ├── BacktestComparisonChart.tsx # 전략 수익률 vs 코인 가격 vs BTC 벤치마크 비교 차트 (recharts)
 │   │   │   └── ui/                     # StatCard, NavItem, Badge, Button, Input, LoadingSpinner, EmptyState, PageContainer, Toast
 │   │   ├── modals/
 │   │   │   ├── DeleteConfirmationModal.tsx  # Reusable delete confirmation dialog
@@ -384,6 +385,8 @@ Requires `FERNET_KEY` environment variable. All exchange API key storage uses th
 `backend/routers/backtest.py` — backtest tasks run in threads, tracked in-memory by UUID.
 Results are persisted to `BacktestHistory` table on completion for later retrieval.
 Backtest results can be shared to community via `/backtest/history/{id}/share`.
+Backtest results include `price_changes` (coin price % change) and `btc_benchmark` (BTC % change if not in portfolio) for comparison charting.
+History detail view uses a dedicated full-width layout (`detailMode`) separate from the run tab.
 
 ### 7. Data Caching
 `backend/core/data_fetcher.py` — checks `OHLCV` table before calling CCXT API.
