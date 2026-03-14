@@ -275,6 +275,9 @@ export default function DashboardPage() {
     const hasLiveBot = bots.some((b) => !b.paper_trading_mode && b.id !== editingBotId);
     const liveBotLimitReached = hasLiveBot;
 
+    // 업비트 보유 KRW 현금 잔고
+    const availableKrw = balances.find((b) => b.currency === 'KRW')?.free;
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-[80vh]">
@@ -314,6 +317,7 @@ export default function DashboardPage() {
                 formError={formError}
                 formLoading={formLoading}
                 liveBotLimitReached={liveBotLimitReached}
+                availableKrw={availableKrw}
                 strategyTimeframeMap={strategyTimeframeMap}
                 strategies={botStrategies}
                 onSubmit={handleFormSubmit}

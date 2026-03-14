@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+import ccxt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
@@ -14,6 +15,7 @@ from constants import (
     SYMBOL_PATTERN,
     VALID_TIMEFRAMES,
 )
+from crypto_utils import decrypt_key
 from dependencies import get_db, get_current_user
 from utils import parse_symbols, mask_nickname
 
@@ -245,12 +247,45 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
     if _is_bot_running(bot_id):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bot already running.")
 
-    # 실매매 봇은 크레딧 잔액 확인
+    # 실매매 봇 검증: 크레딧 + 운용자본 vs 업비트 KRW 잔고
     if not bot.paper_trading_mode:
         if not credit_service.check_sufficient_credits(db, current_user.id):
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
                 detail="크레딧이 부족합니다. 크레딧을 충전한 후 다시 시도해주세요.",
+            )
+
+        # 업비트 KRW 잔고 조회 → allocated_capital 초과 불가
+        exchange_key = db.query(models.ExchangeKey).filter(
+            models.ExchangeKey.user_id == current_user.id,
+            models.ExchangeKey.exchange_name == "upbit",
+        ).first()
+        if not exchange_key:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="등록된 Upbit API 키가 없습니다. 먼저 API 키를 등록해주세요.",
+            )
+        try:
+            api_key = decrypt_key(exchange_key.api_key_encrypted)
+            api_secret = decrypt_key(exchange_key.api_secret_encrypted)
+            exchange = ccxt.upbit({
+                "apiKey": api_key,
+                "secret": api_secret,
+                "enableRateLimit": True,
+            })
+            balance = exchange.fetch_balance()
+            krw_free = float(balance.get("KRW", {}).get("free", 0))
+        except Exception as e:
+            logger.error("Failed to fetch Upbit balance for user %d: %s", current_user.id, e)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="업비트 잔고 조회에 실패했습니다. 잠시 후 다시 시도해주세요.",
+            )
+
+        if bot.allocated_capital > krw_free:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"운용 자본({bot.allocated_capital:,.0f}원)이 업비트 보유 현금({krw_free:,.0f}원)보다 큽니다. 금액을 줄여주세요.",
             )
 
     task = asyncio.create_task(bot_manager.run_bot_loop(bot_id))

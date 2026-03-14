@@ -204,16 +204,22 @@ _TIMEFRAME_MINUTES: dict[str, int] = {
     '12h': 720, '1d': 1440, '1w': 10080,
 }
 
-def _get_current_candle_slot(timeframe: str) -> int:
-    """현재 캔들 슬롯 번호를 반환. 같은 캔들 구간 내에서는 동일한 값.
-    예: 4h봉이면 0시~3시59분 → 0, 4시~7시59분 → 1, ...
+def _get_nearest_candle_close(timeframe: str) -> int:
+    """현재 시각에서 가장 가까운 캔들 마감 시각(분)을 반환.
+    tolerance 범위 내에서 마감 전/후 모두 같은 값을 반환하여 중복 알림 방지.
+    예: 1h봉, 4:58 → 300(=5시), 5:01 → 300(=5시)
     """
     interval = _TIMEFRAME_MINUTES.get(timeframe, 0)
     if interval <= 0:
         return -1
     now = datetime.now()
     minutes_since_midnight = now.hour * 60 + now.minute
-    return minutes_since_midnight // interval
+    # 가장 가까운 마감 시각 = interval의 배수 중 현재 시각에 가장 가까운 것
+    lower = (minutes_since_midnight // interval) * interval
+    upper = lower + interval
+    if (minutes_since_midnight - lower) <= (upper - minutes_since_midnight):
+        return lower
+    return upper
 
 
 def _is_candle_close_time(timeframe: str, tolerance_minutes: int = 2) -> bool:
@@ -349,7 +355,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
     cooldown_until: dict[str, datetime] = init["cooldown_until"]
 
     consecutive_errors: int = 0
-    last_feedback_candle_slot: int = -1  # 마지막으로 피드백을 보낸 캔들 슬롯
+    last_feedback_candle_close: int = -1  # 마지막으로 피드백을 보낸 캔들 마감 시각(분)
 
     # 봇 시작 알림
     mode_label = "모의투자" if paper_trading else "실매매"
@@ -520,12 +526,12 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     list(active_positions.keys()),
                 )
 
-                # 캔들 마감 시점에 1회만 피드백 전송 (같은 캔들 슬롯에서 중복 전송 방지)
-                current_candle_slot = _get_current_candle_slot(timeframe)
+                # 캔들 마감 시점에 1회만 피드백 전송 (가장 가까운 마감 시각 기준 중복 방지)
+                nearest_close = _get_nearest_candle_close(timeframe)
                 if (signal_details
                         and _is_candle_close_time(timeframe)
-                        and current_candle_slot != last_feedback_candle_slot):
-                    last_feedback_candle_slot = current_candle_slot
+                        and nearest_close != last_feedback_candle_close):
+                    last_feedback_candle_close = nearest_close
 
                     # 실매매 모드: 업비트 실제 잔고 조회
                     real_balance_krw: float | None = None

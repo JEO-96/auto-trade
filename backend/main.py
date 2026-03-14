@@ -1,15 +1,17 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from log_config import setup_logging
+from log_config import setup_logging, setup_error_monitoring
 
 setup_logging(level=logging.INFO)
+setup_error_monitoring()
 
 import bot_manager
 import database
@@ -53,6 +55,25 @@ app.include_router(admin.router)
 app.include_router(community.router)
 app.include_router(credits.router)
 app.include_router(settings_router.router)
+
+logger = logging.getLogger(__name__)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """처리되지 않은 예외를 로깅하고 500 응답 반환."""
+    logger.error(
+        "Unhandled exception on %s %s: %s",
+        request.method,
+        request.url.path,
+        str(exc),
+        exc_info=exc,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
 
 if __name__ == "__main__":
     import uvicorn

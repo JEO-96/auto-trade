@@ -23,6 +23,8 @@ export interface BotFormModalProps {
     formError: string | null;
     formLoading: boolean;
     liveBotLimitReached: boolean;
+    /** 업비트 보유 KRW 현금 잔고 (실매매 자본 상한) */
+    availableKrw?: number;
     /** 전략별 허용 타임프레임 매핑 (backtest 전략 키 기준) */
     strategyTimeframeMap?: Record<string, string[]>;
     /** API에서 가져온 전략 목록 (없으면 하드코딩 상수 사용) */
@@ -39,6 +41,7 @@ export default function BotFormModal({
     formError,
     formLoading,
     liveBotLimitReached,
+    availableKrw,
     strategyTimeframeMap,
     strategies,
     onSubmit,
@@ -189,26 +192,40 @@ export default function BotFormModal({
                         )}
                     </div>
 
-                    {/* Capital - 모의투자에서만 표시 (실매매는 잔고 100% 사용) */}
-                    {formData.paper_trading_mode && (
-                        <div>
-                            <label className="text-xs text-gray-500 font-medium mb-1.5 block">운용 자본 (KRW)</label>
-                            <div className="relative">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">&#8361;</div>
-                                <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={Number(formData.allocated_capital ?? 0).toLocaleString()}
-                                    onChange={(e) => {
-                                        const val = e.target.value.replace(/[^0-9]/g, '');
-                                        onFormChange({ ...formData, allocated_capital: val ? Number(val) : 0 });
-                                    }}
-                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl pl-10 pr-4 py-3 text-sm font-bold text-white focus:border-primary/30 transition-colors font-mono"
-                                    placeholder="0"
-                                />
-                            </div>
+                    {/* Capital */}
+                    <div>
+                        <label className="text-xs text-gray-500 font-medium mb-1.5 block">
+                            운용 자본 (KRW)
+                            {!formData.paper_trading_mode && availableKrw !== undefined && (
+                                <span className="ml-2 text-gray-600">
+                                    보유 현금: {Math.floor(availableKrw).toLocaleString()}원
+                                </span>
+                            )}
+                        </label>
+                        <div className="relative">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">&#8361;</div>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                value={Number(formData.allocated_capital ?? 0).toLocaleString()}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    onFormChange({ ...formData, allocated_capital: val ? Number(val) : 0 });
+                                }}
+                                className={`w-full bg-white/[0.03] border rounded-xl pl-10 pr-4 py-3 text-sm font-bold text-white focus:border-primary/30 transition-colors font-mono ${
+                                    !formData.paper_trading_mode && availableKrw !== undefined && formData.allocated_capital > Math.floor(availableKrw)
+                                        ? 'border-red-500/40'
+                                        : 'border-white/[0.06]'
+                                }`}
+                                placeholder="0"
+                            />
                         </div>
-                    )}
+                        {!formData.paper_trading_mode && availableKrw !== undefined && formData.allocated_capital > Math.floor(availableKrw) && (
+                            <p className="mt-1.5 text-xs text-red-400">
+                                보유 현금({Math.floor(availableKrw).toLocaleString()}원)보다 큰 금액은 입력할 수 없습니다.
+                            </p>
+                        )}
+                    </div>
 
                     <div className="flex gap-3 pt-2">
                         <Button
@@ -227,6 +244,7 @@ export default function BotFormModal({
                             className="flex-1"
                             type="submit"
                             loading={formLoading}
+                            disabled={!formData.paper_trading_mode && availableKrw !== undefined && formData.allocated_capital > Math.floor(availableKrw)}
                         >
                             {mode === 'create' ? '생성' : '저장'}
                         </Button>

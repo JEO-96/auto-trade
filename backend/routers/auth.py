@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from typing import Union
 import models, schemas, auth
 import credit_service
+from crypto_utils import encrypt_token
 from dependencies import get_db, get_current_user
 from kakao_service import exchange_code_for_tokens, get_user_info, verify_token, KakaoAuthError
 from slowapi import Limiter
@@ -67,9 +68,10 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
             is_new_user = True
 
     user.nickname = nickname
-    user.kakao_access_token = kakao_token
+    # 카카오 토큰 Fernet 암호화 후 저장
+    user.kakao_access_token = encrypt_token(kakao_token)
     if kakao_refresh:
-        user.kakao_refresh_token = kakao_refresh
+        user.kakao_refresh_token = encrypt_token(kakao_refresh)
 
     db.commit()
     db.refresh(user)
@@ -109,7 +111,8 @@ async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteR
     else:
         user.email = data.email
 
-    user.kakao_access_token = data.kakao_token
+    # 카카오 토큰 Fernet 암호화 후 저장
+    user.kakao_access_token = encrypt_token(data.kakao_token)
     # kakao_complete_register에서는 refresh_token이 없으므로 기존 값 유지
     db.commit()
     db.refresh(user)
