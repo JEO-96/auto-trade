@@ -16,7 +16,9 @@ export async function deleteKey(keyId: number): Promise<void> {
     await api.delete(`/keys/${keyId}`);
 }
 
-export async function getUpbitBalance(): Promise<BalanceItem[]> {
-    const res = await api.get<{ balances: BalanceItem[] }>('/keys/balance');
+export async function getUpbitBalance(exchangeName: string = 'upbit'): Promise<BalanceItem[]> {
+    const res = await api.get<{ balances: BalanceItem[] }>('/keys/balance', {
+        params: { exchange_name: exchangeName },
+    });
     return res.data.balances;
 }

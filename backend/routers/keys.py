@@ -1,12 +1,12 @@
 import logging
 
 import ccxt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 import models, schemas
 from dependencies import get_db, get_current_user
-from crypto_utils import encrypt_key, decrypt_key, mask_api_key
+from crypto_utils import encrypt_key, decrypt_key, mask_api_key, create_exchange
 
 logger = logging.getLogger(__name__)
 
@@ -76,25 +76,28 @@ def delete_exchange_key(
 
 
 @router.get("/balance", response_model=schemas.BalanceResponse)
-async def get_upbit_balance(
+async def get_exchange_balance(
+    exchange_name: str = Query("upbit", description="거래소 이름 (upbit, bithumb)"),
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Fetch the current user's Upbit account balances via ccxt."""
+    """Fetch the current user's exchange account balances via ccxt."""
+
+    exchange_label = exchange_name.upper()
 
     # 1. Look up the user's stored exchange key
     exchange_key = (
         db.query(models.ExchangeKey)
         .filter(
             models.ExchangeKey.user_id == current_user.id,
-            models.ExchangeKey.exchange_name == "upbit",
+            models.ExchangeKey.exchange_name == exchange_name,
         )
         .first()
     )
     if not exchange_key:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="등록된 Upbit API 키가 없습니다. 먼저 API 키를 등록해주세요.",
+            detail=f"등록된 {exchange_label} API 키가 없습니다. 먼저 API 키를 등록해주세요.",
         )
 
     # 2. Decrypt credentials
@@ -108,30 +111,31 @@ async def get_upbit_balance(
             detail="API 키 복호화에 실패했습니다. 키를 다시 등록해주세요.",
         )
 
-    # 3. Create ccxt upbit instance and fetch balance
+    # 3. Create ccxt exchange instance and fetch balance
     try:
-        exchange = ccxt.upbit({
-            "apiKey": api_key,
-            "secret": api_secret,
-            "enableRateLimit": True,
-        })
+        exchange = create_exchange(exchange_name, api_key, api_secret)
         raw_balance = exchange.fetch_balance()
     except ccxt.AuthenticationError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Upbit API 인증에 실패했습니다. API 키와 시크릿을 확인해주세요.",
+            detail=f"{exchange_label} API 인증에 실패했습니다. API 키와 시크릿을 확인해주세요.",
         )
     except ccxt.NetworkError as exc:
-        logger.warning("Network error fetching Upbit balance for user %s: %s", current_user.id, exc)
+        logger.warning("Network error fetching %s balance for user %s: %s", exchange_label, current_user.id, exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Upbit 서버와의 통신에 실패했습니다. 잠시 후 다시 시도해주세요.",
+            detail=f"{exchange_label} 서버와의 통신에 실패했습니다. 잠시 후 다시 시도해주세요.",
         )
     except ccxt.ExchangeError as exc:
-        logger.warning("Exchange error fetching Upbit balance for user %s: %s", current_user.id, exc)
+        logger.warning("Exchange error fetching %s balance for user %s: %s", exchange_label, current_user.id, exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Upbit 거래소 오류: {exc}",
+            detail=f"{exchange_label} 거래소 오류: {exc}",
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
         )
 
     # 4. Filter to non-zero balances and build response

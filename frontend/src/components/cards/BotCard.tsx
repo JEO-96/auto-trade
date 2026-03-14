@@ -92,6 +92,9 @@ export default function BotCard({
 
             {/* Bot details */}
             <div className="flex items-center gap-4 text-[11px] text-gray-500 mb-4">
+                <span className="uppercase font-semibold text-[10px] bg-white/[0.06] px-1.5 py-0.5 rounded">
+                    {bot.exchange_name || 'upbit'}
+                </span>
                 <span>{getStrategyLabel(bot.strategy_name)}</span>
                 <span>{TIMEFRAME_LABEL_MAP[bot.timeframe] ?? bot.timeframe}</span>
             </div>

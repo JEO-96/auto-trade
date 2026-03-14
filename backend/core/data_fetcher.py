@@ -18,9 +18,11 @@ from constants import (
 logger = logging.getLogger(__name__)
 
 class DataFetcher:
-    def __init__(self):
-        # Initialize exchange instance
-        exchange_class = getattr(ccxt, config.EXCHANGE_ID)
+    def __init__(self, exchange_id: str = None):
+        # Initialize exchange instance (공개 데이터용 — API 키 불필요)
+        eid = exchange_id or config.EXCHANGE_ID
+        exchange_class = getattr(ccxt, eid)
+        self.exchange_id = eid
         self.exchange = exchange_class({
             'apiKey': config.API_KEY,
             'secret': config.API_SECRET,
@@ -209,7 +211,7 @@ class DataFetcher:
             else:
                 # Limit based backward fetch
                 limit = limit or config.LIMIT
-                chunk_size = FETCH_CHUNK_SIZE_UPBIT if config.EXCHANGE_ID == 'upbit' else FETCH_CHUNK_SIZE_DEFAULT
+                chunk_size = FETCH_CHUNK_SIZE_UPBIT if self.exchange_id == 'upbit' else FETCH_CHUNK_SIZE_DEFAULT
                 last_since = None
                 while len(ohlcv) < limit:
                     fetch_limit = min(chunk_size, limit - len(ohlcv))

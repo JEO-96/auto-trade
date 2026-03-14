@@ -59,6 +59,7 @@ def _load_bot_config(bot_config_id: int) -> Optional[dict]:
             "liquid_capital": bot_config.allocated_capital,
             "paper_trading": bot_config.paper_trading_mode,
             "strategy_name": getattr(bot_config, 'strategy_name', 'james_pro_stable'),
+            "exchange_name": getattr(bot_config, 'exchange_name', 'upbit'),
             "user_id": bot_config.user_id,
         }
 
@@ -288,16 +289,18 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
 
     api_key: Optional[str] = None
     api_secret: Optional[str] = None
-    exchange_name: str = 'upbit'
+    exchange_name: str = cfg.get("exchange_name", "upbit") or "upbit"
 
     if not paper_trading:
         with database.get_db_session() as db_new:
-            exchange_key = db_new.query(models.ExchangeKey).filter(models.ExchangeKey.user_id == user_id).first()
+            exchange_key = db_new.query(models.ExchangeKey).filter(
+                models.ExchangeKey.user_id == user_id,
+                models.ExchangeKey.exchange_name == exchange_name,
+            ).first()
             if exchange_key:
                 from crypto_utils import decrypt_key
                 api_key = decrypt_key(exchange_key.api_key_encrypted)
                 api_secret = decrypt_key(exchange_key.api_secret_encrypted)
-                exchange_name = exchange_key.exchange_name
             else:
                 logger.error("[Bot %d] No API key found for user %d. Cannot start live trading.", bot_config_id, user_id)
                 set_bot_active(bot_config_id, False)
@@ -332,6 +335,7 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
         "liquid_capital": liquid_capital,
         "paper_trading": paper_trading,
         "strategy_name": cfg["strategy_name"],
+        "exchange_name": exchange_name,
         "user_id": user_id,
         "strategy": strategy,
         "execution": execution,
@@ -342,11 +346,13 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
 
 async def run_bot_loop(bot_config_id: int) -> None:
     logger.info("--- [Bot %d] Engine Started (Portfolio Mode) ---", bot_config_id)
-    fetcher = DataFetcher()
 
     init = _initialize_bot_engine(bot_config_id)
     if init is None:
         return
+
+    fetcher_exchange_id = init.get("exchange_name", "upbit") or "upbit"
+    fetcher = DataFetcher(exchange_id=fetcher_exchange_id)
 
     symbols: list[str] = init["symbols"]
     timeframe: str = init["timeframe"]

@@ -33,6 +33,7 @@ type ModalMode = 'create' | 'edit';
 const defaultFormState: BotFormData = {
     symbols: ['BTC/KRW'],
     timeframe: '1h',
+    exchange_name: 'upbit',
     strategy_name: 'momentum_breakout_pro_stable',
     paper_trading_mode: true,
     allocated_capital: 1000000,
@@ -217,6 +218,7 @@ export default function DashboardPage() {
         setFormData({
             symbols: bot.symbol.split(',').map(s => s.trim()).filter(Boolean),
             timeframe: bot.timeframe,
+            exchange_name: bot.exchange_name || 'upbit',
             strategy_name: bot.strategy_name,
             paper_trading_mode: bot.paper_trading_mode,
             allocated_capital: bot.allocated_capital,
@@ -240,6 +242,7 @@ export default function DashboardPage() {
                 await createBot({
                     symbol: symbolStr,
                     timeframe: formData.timeframe,
+                    exchange_name: formData.exchange_name,
                     strategy_name: formData.strategy_name,
                     paper_trading_mode: formData.paper_trading_mode,
                     allocated_capital: formData.allocated_capital,
@@ -248,6 +251,7 @@ export default function DashboardPage() {
                 await updateBot(editingBotId, {
                     symbol: symbolStr,
                     timeframe: formData.timeframe,
+                    exchange_name: formData.exchange_name,
                     strategy_name: formData.strategy_name,
                     paper_trading_mode: formData.paper_trading_mode,
                     allocated_capital: formData.allocated_capital,

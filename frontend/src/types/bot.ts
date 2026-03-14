@@ -3,6 +3,7 @@ export interface BotConfig {
     user_id?: number;
     symbol: string;
     timeframe: string;
+    exchange_name: string;
     strategy_name: string;
     paper_trading_mode: boolean;
     allocated_capital: number;
@@ -16,6 +17,7 @@ export interface BotConfig {
 export interface BotCreateRequest {
     symbol: string;
     timeframe?: string;
+    exchange_name?: string;
     strategy_name?: string;
     paper_trading_mode?: boolean;
     allocated_capital?: number;
@@ -24,6 +26,7 @@ export interface BotCreateRequest {
 export interface BotMultiCreateRequest {
     symbols: string[];
     timeframe?: string;
+    exchange_name?: string;
     strategy_name?: string;
     paper_trading_mode?: boolean;
     allocated_capital?: number;

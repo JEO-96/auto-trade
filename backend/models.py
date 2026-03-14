@@ -47,6 +47,7 @@ class BotConfig(Base):
     paper_trading_mode = Column(Boolean, default=True)
     allocated_capital = Column(Float, default=1000000.0)
 
+    exchange_name = Column(String, default="upbit")  # 거래소 선택 (upbit, bithumb)
     strategy_name = Column(String, default="james_pro_stable")
 
     # James Momentum specific parameters

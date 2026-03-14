@@ -1,5 +1,10 @@
 export const SYMBOLS = ['BTC/KRW', 'ETH/KRW', 'SOL/KRW', 'XRP/KRW'] as const;
 
+export const EXCHANGES = [
+    { value: 'upbit', label: '업비트 (Upbit)' },
+    { value: 'bithumb', label: '빗썸 (Bithumb)' },
+] as const;
+
 export const BOT_STRATEGIES = [
     { value: 'momentum_breakout_basic', label: '모멘텀 돌파 (기본)' },
     { value: 'momentum_breakout_pro_stable', label: '모멘텀 돌파 Pro (안정형)' },

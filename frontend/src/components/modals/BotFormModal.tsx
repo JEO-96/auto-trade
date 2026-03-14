@@ -5,12 +5,13 @@ import { Plus, Edit3, AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { SelectInput } from '@/components/ui/Input';
 import ModalWrapper, { ModalHeader } from '@/components/ui/ModalWrapper';
-import { SYMBOLS, BOT_STRATEGIES, BOT_TIMEFRAMES, BOT_TO_BACKTEST_STRATEGY } from '@/lib/constants';
+import { SYMBOLS, BOT_STRATEGIES, BOT_TIMEFRAMES, BOT_TO_BACKTEST_STRATEGY, EXCHANGES } from '@/lib/constants';
 import type { StrategyItem } from '@/lib/api/settings';
 
 export interface BotFormData {
     symbols: string[];
     timeframe: string;
+    exchange_name: string;
     strategy_name: string;
     paper_trading_mode: boolean;
     allocated_capital: number;
@@ -72,6 +73,17 @@ export default function BotFormModal({
                             {formError}
                         </div>
                     )}
+
+                    <SelectInput
+                        type="select"
+                        label="거래소 (Exchange)"
+                        value={formData.exchange_name}
+                        onChange={(e) => onFormChange({ ...formData, exchange_name: e.target.value })}
+                    >
+                        {EXCHANGES.map((ex) => (
+                            <option key={ex.value} value={ex.value}>{ex.label}</option>
+                        ))}
+                    </SelectInput>
 
                     <div>
                         <label className="text-xs text-gray-500 font-medium mb-2 block">

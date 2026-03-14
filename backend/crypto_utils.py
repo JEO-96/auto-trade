@@ -72,3 +72,15 @@ def mask_api_key(key: str) -> str:
     if len(key) >= 4:
         return key[:4] + "*" * 10
     return "****"
+
+
+def create_exchange(exchange_name: str, api_key: str, api_secret: str):
+    """거래소별 ccxt 인스턴스 생성 팩토리 함수."""
+    import ccxt
+
+    if exchange_name == "upbit":
+        return ccxt.upbit({"apiKey": api_key, "secret": api_secret, "enableRateLimit": True})
+    elif exchange_name == "bithumb":
+        return ccxt.bithumb({"apiKey": api_key, "secret": api_secret, "enableRateLimit": True})
+    else:
+        raise ValueError(f"Unsupported exchange: {exchange_name}")

@@ -9,6 +9,7 @@ import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import { getKeys, saveKey, deleteKey } from '@/lib/api/keys';
+import { EXCHANGES } from '@/lib/constants';
 import type { ExchangeKeyPreview } from '@/types/keys';
 
 export default function ApiKeysPage() {
@@ -122,7 +123,9 @@ export default function ApiKeysPage() {
                             value={exchangeName}
                             onChange={(e) => setExchangeName(e.target.value)}
                         >
-                            <option value="upbit">Upbit (업비트)</option>
+                            {EXCHANGES.map((ex) => (
+                                <option key={ex.value} value={ex.value}>{ex.label}</option>
+                            ))}
                         </SelectInput>
 
                         {isUpdate && (
@@ -275,6 +278,15 @@ export default function ApiKeysPage() {
                                     className="bg-secondary/[0.08] hover:bg-secondary/[0.15] text-secondary px-4 py-2 rounded-lg border border-secondary/20 flex items-center gap-2 transition-colors text-xs font-medium"
                                 >
                                     업비트 API 관리
+                                </a>
+                                <a
+                                    href="https://www.bithumb.com/api_support/management_api"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-white/[0.04] hover:bg-white/[0.08] text-white px-4 py-2 rounded-lg border border-white/[0.06] flex items-center gap-2 transition-colors text-xs font-medium"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                                    빗썸 API 관리
                                 </a>
                             </div>
                             <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">

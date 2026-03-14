@@ -120,6 +120,7 @@ class BalanceResponse(BaseModel):
 class BotConfigCreate(BaseModel):
     symbol: str
     timeframe: str = "1h"
+    exchange_name: str = "upbit"
     strategy_name: str = "momentum_stable"
     paper_trading_mode: bool = True
     allocated_capital: float = 1000000.0
@@ -133,6 +134,7 @@ class BotConfigUpdate(BaseModel):
     """봇 설정 수정용 스키마 - 모든 필드 선택적"""
     symbol: Optional[str] = None
     timeframe: Optional[str] = None
+    exchange_name: Optional[str] = None
     strategy_name: Optional[str] = None
     paper_trading_mode: Optional[bool] = None
     allocated_capital: Optional[float] = None
@@ -146,6 +148,7 @@ class BotConfigResponse(BaseModel):
     id: int
     symbol: str
     timeframe: str
+    exchange_name: str = "upbit"
     strategy_name: Optional[str] = None
     is_active: bool
     paper_trading_mode: bool
