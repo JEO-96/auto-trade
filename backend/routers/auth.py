@@ -24,9 +24,6 @@ def login_for_access_token(request: Request, form_data: OAuth2PasswordRequestFor
     if not user or not user.hashed_password or not auth.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
 
-    if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Approval pending. Please contact admin.")
-
     access_token_expires = auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
@@ -58,14 +55,16 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
     # 2. Check if user exists or create new
     user = db.query(models.User).filter(models.User.kakao_id == kakao_id).first()
 
+    is_new_user = False
     if not user:
         user_by_email = db.query(models.User).filter(models.User.email == email).first()
         if user_by_email:
             user = user_by_email
             user.kakao_id = kakao_id
         else:
-            user = models.User(email=email, kakao_id=kakao_id)
+            user = models.User(email=email, kakao_id=kakao_id, is_active=True)
             db.add(user)
+            is_new_user = True
 
     user.nickname = nickname
     user.kakao_access_token = kakao_token
@@ -75,8 +74,8 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
     db.commit()
     db.refresh(user)
 
-    if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="승인 대기 중입니다. 관리자에게 문의하세요.")
+    if is_new_user:
+        credit_service.initialize_credits(db, user.id)
 
     access_token = auth.create_access_token(
         data={"sub": user.email},
@@ -101,10 +100,12 @@ async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteR
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 사용 중인 이메일입니다.")
 
     # Create or link user
+    is_new_user = False
     user = db.query(models.User).filter(models.User.kakao_id == data.kakao_id).first()
     if not user:
-        user = models.User(email=data.email, kakao_id=data.kakao_id, nickname=data.nickname)
+        user = models.User(email=data.email, kakao_id=data.kakao_id, nickname=data.nickname, is_active=True)
         db.add(user)
+        is_new_user = True
     else:
         user.email = data.email
 
@@ -113,8 +114,8 @@ async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteR
     db.commit()
     db.refresh(user)
 
-    if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="승인 대기 중입니다. 관리자에게 문의하세요.")
+    if is_new_user:
+        credit_service.initialize_credits(db, user.id)
 
     access_token = auth.create_access_token(
         data={"sub": user.email},

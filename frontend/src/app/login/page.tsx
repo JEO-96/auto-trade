@@ -109,8 +109,7 @@ export default function LoginPage() {
                     )}
 
                     <p className="text-xs text-gray-500 mt-6 leading-relaxed text-center">
-                        첫 로그인 시 자동으로 가입되며,<br />
-                        관리자 승인 후 서비스를 이용할 수 있습니다.
+                        첫 로그인 시 자동으로 가입됩니다.
                     </p>
 
                     {/* 개발 전용 테스트 로그인 */}

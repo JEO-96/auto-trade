@@ -57,7 +57,7 @@ export default function TermsPage() {
                     <section>
                         <h2 className="text-base font-semibold text-white mb-3">제4조 (서비스 이용 자격)</h2>
                         <ul className="space-y-2 list-disc list-inside">
-                            <li>본 서비스는 관리자의 사전 승인을 받은 이용자에게만 제공됩니다.</li>
+                            <li>본 서비스는 카카오 계정으로 가입한 이용자에게 제공됩니다.</li>
                             <li>이용자는 가상자산 투자에 관한 충분한 지식과 경험을 보유하고 있어야 합니다.</li>
                             <li>이용자는 본인의 재정 상황을 고려하여 스스로 감당할 수 있는 금액으로만 투자해야 합니다.</li>
                         </ul>
