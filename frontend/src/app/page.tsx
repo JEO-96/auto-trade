@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
-import { Activity, ShieldCheck, Zap, ArrowRight, TrendingUp, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, Zap, ArrowRight, TrendingUp, LayoutDashboard } from 'lucide-react';
+import Logo from '@/components/Logo';
 import Link from 'next/link';
 
 export default function Home() {
@@ -9,12 +10,7 @@ export default function Home() {
             {/* Navigation */}
             <header className="fixed top-0 w-full z-50 bg-background/60 backdrop-blur-xl border-b border-white/[0.04] py-4 px-6 md:px-12">
                 <div className="max-w-6xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
-                            <Activity className="w-4 h-4 text-primary" />
-                        </div>
-                        <span className="text-base font-extrabold tracking-tight text-white">BACKTESTED</span>
-                    </div>
+                    <Logo size="md" />
 
                     <Link
                         href="/dashboard"

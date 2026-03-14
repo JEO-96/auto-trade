@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { Activity, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import Logo from '@/components/Logo';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import KakaoLoginButton from '@/components/KakaoLoginButton';
@@ -30,11 +31,8 @@ export default function LoginPage() {
                 <div className="absolute top-[20%] left-[10%] w-[60%] h-[60%] bg-primary/[0.06] rounded-full blur-[120px] pointer-events-none" />
 
                 <div className="relative z-10 max-w-md">
-                    <div className="flex items-center gap-2.5 mb-8">
-                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
-                            <Activity className="w-5 h-5 text-primary" />
-                        </div>
-                        <span className="text-xl font-extrabold tracking-tight">BACKTESTED</span>
+                    <div className="mb-8">
+                        <Logo size="lg" />
                     </div>
 
                     <h1 className="text-3xl font-bold tracking-tight mb-4 leading-snug text-white">
@@ -67,11 +65,8 @@ export default function LoginPage() {
             <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
                 <div className="w-full max-w-sm">
                     {/* Mobile logo */}
-                    <div className="flex items-center gap-2.5 mb-10 lg:hidden">
-                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
-                            <Activity className="w-4 h-4 text-primary" />
-                        </div>
-                        <span className="text-base font-extrabold tracking-tight">BACKTESTED</span>
+                    <div className="mb-10 lg:hidden">
+                        <Logo size="md" />
                     </div>
 
                     <div className="mb-8">

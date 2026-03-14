@@ -1,14 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" fill="none">
-  <!-- Maskable icons need a safe zone (inner 80% circle), so content is centered with padding -->
-  <rect width="192" height="192" fill="#020617"/>
-  <!-- Chart bars (centered, scaled to safe zone) -->
-  <rect x="52" y="112" width="16" height="34" rx="3" fill="#3B82F6" opacity="0.6"/>
-  <rect x="74" y="96" width="16" height="50" rx="3" fill="#3B82F6" opacity="0.75"/>
-  <rect x="96" y="80" width="16" height="66" rx="3" fill="#3B82F6" opacity="0.9"/>
-  <rect x="118" y="64" width="16" height="82" rx="3" fill="#3B82F6"/>
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="192" y2="192" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="barGrad" x1="0" y1="152" x2="0" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#60A5FA"/>
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="36" y1="96" x2="156" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#A78BFA"/>
+    </linearGradient>
+  </defs>
+  <!-- Full bleed background for maskable -->
+  <rect width="192" height="192" fill="url(#bgGrad)"/>
+  <!-- Safe zone content (centered, 80% of canvas) -->
+  <!-- Chart bars -->
+  <rect x="40" y="118" width="20" height="34" rx="4" fill="url(#barGrad)" opacity="0.4"/>
+  <rect x="66" y="100" width="20" height="52" rx="4" fill="url(#barGrad)" opacity="0.55"/>
+  <rect x="92" y="78" width="20" height="74" rx="4" fill="url(#barGrad)" opacity="0.7"/>
+  <rect x="118" y="58" width="20" height="94" rx="4" fill="url(#barGrad)" opacity="0.85"/>
   <!-- Trend line -->
-  <path d="M60 108 L82 92 L104 76 L126 60" stroke="#8B5CF6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <circle cx="126" cy="60" r="3.5" fill="#A78BFA"/>
-  <!-- Pulse -->
-  <circle cx="138" cy="54" r="4" fill="#10B981"/>
+  <path d="M50 112 L76 92 L102 70 L128 50" stroke="url(#lineGrad)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Data points -->
+  <circle cx="50" cy="112" r="4" fill="#8B5CF6"/>
+  <circle cx="76" cy="92" r="4" fill="#8B5CF6"/>
+  <circle cx="102" cy="70" r="4" fill="#8B5CF6"/>
+  <circle cx="128" cy="50" r="4.5" fill="#A78BFA"/>
+  <!-- Checkmark badge -->
+  <g transform="translate(136, 128)">
+    <circle cx="0" cy="0" r="14" fill="#10B981"/>
+    <path d="M-6 0 L-2 4 L6 -3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
 </svg>

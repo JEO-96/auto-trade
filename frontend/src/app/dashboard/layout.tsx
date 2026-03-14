@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield, MessageSquare, UserCircle, Radio, Coins, TrendingUp, Trophy } from 'lucide-react';
+import { Key, LogOut, Settings, LayoutDashboard, BarChart2, Menu, X, Shield, MessageSquare, UserCircle, Radio, Coins, TrendingUp, Trophy } from 'lucide-react';
+import Logo from '@/components/Logo';
 import NavItem from '@/components/ui/NavItem';
 import AuthGuard from '@/components/AuthGuard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,17 +48,7 @@ export default function DashboardLayout({
                     <div className="p-6 pb-2">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
-                                    <Activity className="w-5 h-5 text-primary" />
-                                </div>
-                                <div>
-                                    <span className="text-base font-extrabold tracking-tight text-white block leading-none">
-                                        BACKTESTED
-                                    </span>
-                                    <span className="text-[9px] font-semibold text-gray-500 tracking-widest uppercase">
-                                        Auto Trading
-                                    </span>
-                                </div>
+                                <Logo size="md" />
                             </div>
                             {/* 사이드바 내부 닫기 버튼 */}
                             <button

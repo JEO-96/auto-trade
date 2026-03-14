@@ -1,16 +1,14 @@
 'use client';
 import Link from 'next/link';
-import { Activity, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 export default function PrivacyPage() {
     return (
         <div className="min-h-screen bg-background px-6 py-12">
             <div className="max-w-2xl mx-auto">
-                <div className="flex items-center gap-2.5 mb-10">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
-                        <Activity className="w-4 h-4 text-primary" />
-                    </div>
-                    <span className="text-base font-extrabold tracking-tight text-white">BACKTESTED</span>
+                <div className="mb-10">
+                    <Logo size="md" />
                 </div>
 
                 <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors mb-8">
