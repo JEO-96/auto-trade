@@ -127,20 +127,16 @@ class VectorBacktester:
 
         self._update_progress(task_id, 50.0, "Aligning data and generating signals...")
 
-        # 2. Build unified close / entries / ATR DataFrames
+        # 2. Build unified close / entries DataFrames
         all_timestamps = sorted(set().union(
             *(df['timestamp'].tolist() for df in ohlcv_data.values())
         ))
         close_df = pd.DataFrame(index=all_timestamps)
         entries_df = pd.DataFrame(index=all_timestamps)
-        atr_df = pd.DataFrame(index=all_timestamps)
 
         for symbol, df in ohlcv_data.items():
             df_indexed = df.set_index('timestamp')
             close_df[symbol] = df_indexed['close']
-
-            if 'ATR_14' in df_indexed.columns:
-                atr_df[symbol] = df_indexed['ATR_14']
 
             signals = [
                 self.strategy.check_buy_signal(df_indexed, idx)
@@ -153,8 +149,6 @@ class VectorBacktester:
         # that started trading later than others in the portfolio
         close_df.ffill(inplace=True)
         close_df.bfill(inplace=True)
-        atr_df.ffill(inplace=True)
-        atr_df.bfill(inplace=True)
 
         # Drop any rows that still have NaN (should not happen after ffill+bfill,
         # but guard against completely empty columns)
@@ -162,7 +156,6 @@ class VectorBacktester:
         if nan_rows.any():
             close_df = close_df[~nan_rows]
             entries_df = entries_df[~nan_rows]
-            atr_df = atr_df.reindex(close_df.index)
 
         if close_df.empty:
             return {"status": "error", "message": "No valid price data after alignment."}
@@ -179,40 +172,13 @@ class VectorBacktester:
             f"Executing vectorbt simulation for {len(ohlcv_data)} assets...",
         )
 
-        # 3. 전략별 ATR 기반 동적 SL/TP 계산
-        sl_multiplier = getattr(self.strategy, 'atr_sl_multiplier', 1.5)
-        tp_multiplier = getattr(self.strategy, 'atr_tp_multiplier', 3.0)
-
-        if not atr_df.empty and not atr_df.isna().all().all():
-            # SL% = (ATR * sl_multiplier) / close
-            # TP% = (ATR * sl_multiplier * tp_multiplier) / close
-            sl_pct_df = (atr_df * sl_multiplier) / close_df
-            tp_pct_df = (atr_df * sl_multiplier * tp_multiplier) / close_df
-
-            # NaN/무한대 방지: 합리적 범위로 클리핑
-            sl_pct_df = sl_pct_df.clip(lower=0.005, upper=0.15).fillna(0.015)
-            tp_pct_df = tp_pct_df.clip(lower=0.01, upper=0.50).fillna(0.03)
-
-            sl_stop = sl_pct_df
-            tp_stop = tp_pct_df
-            logger.info("Using dynamic ATR-based SL/TP (sl_mult=%.1f, tp_mult=%.1f) "
-                       "SL avg=%.2f%%, TP avg=%.2f%%",
-                       sl_multiplier, tp_multiplier,
-                       sl_pct_df.mean().mean() * 100, tp_pct_df.mean().mean() * 100)
-        else:
-            # ATR 없으면 고정 비율 폴백
-            sl_stop = 0.015
-            tp_stop = sl_stop * tp_multiplier
-            logger.warning("ATR data unavailable, using fixed SL=%.1f%% TP=%.1f%%",
-                          sl_stop * 100, tp_stop * 100)
-
-        # 4. Execute Vectorized Portfolio
+        # 3. Execute Vectorized Portfolio
         portfolio = vbt.Portfolio.from_signals(
             close=close_df,
             entries=entries_df,
             exits=None,
-            sl_stop=sl_stop,
-            tp_stop=tp_stop,
+            sl_stop=0.015,
+            tp_stop=0.03,
             init_cash=initial_capital,
             fees=fees,
             freq=timeframe,

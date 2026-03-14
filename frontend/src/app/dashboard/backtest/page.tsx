@@ -8,16 +8,15 @@ import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
-import { SYMBOLS, STRATEGIES, BACKTEST_TIMEFRAMES, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel } from '@/lib/constants';
+import { SYMBOLS, BACKTEST_TIMEFRAMES, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel } from '@/lib/constants';
 import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle } from '@/lib/api/backtest';
 import { getBacktestSettings } from '@/lib/api/settings';
+import { useStrategies } from '@/lib/useStrategies';
 import { getErrorMessage, formatKRW } from '@/lib/utils';
 import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryItem } from '@/types/backtest';
 
-// 백테스트용 전략 목록 (james_* 시리즈)
-const ALL_BACKTEST_STRATEGIES = [...STRATEGIES];
-
 export default function BacktestPage() {
+    const { backtestStrategies } = useStrategies();
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<BacktestResult | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -45,7 +44,7 @@ export default function BacktestPage() {
     // 설정에서 허용된 전략별 타임프레임 매핑
     const [strategyTimeframeMap, setStrategyTimeframeMap] = useState<Record<string, string[]>>(() => {
         const fallback: Record<string, string[]> = {};
-        for (const s of ALL_BACKTEST_STRATEGIES) {
+        for (const s of backtestStrategies) {
             fallback[s.value] = BACKTEST_TIMEFRAMES.map(t => t.value);
         }
         return fallback;
@@ -120,7 +119,7 @@ export default function BacktestPage() {
             } catch {
                 // 설정 로드 실패 시 전체 표시 (하위 호환)
                 const fallback: Record<string, string[]> = {};
-                for (const s of ALL_BACKTEST_STRATEGIES) {
+                for (const s of backtestStrategies) {
                     fallback[s.value] = BACKTEST_TIMEFRAMES.map(t => t.value);
                 }
                 setStrategyTimeframeMap(fallback);
@@ -174,7 +173,7 @@ export default function BacktestPage() {
 
     // 현재 전략에 허용된 전략/타임프레임 목록
     const allowedStrategies = useMemo(
-        () => ALL_BACKTEST_STRATEGIES.filter(s => s.value in strategyTimeframeMap),
+        () => backtestStrategies.filter(s => s.value in strategyTimeframeMap),
         [strategyTimeframeMap],
     );
     const allowedTimeframes = useMemo(

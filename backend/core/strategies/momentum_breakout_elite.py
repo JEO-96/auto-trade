@@ -61,9 +61,9 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
         prev = df.iloc[current_idx - 1]
 
         rsi_val = current.get(self.rsi_col, None)
-        adx_val = current.get('ADX_14', None)
-        dmp_val = current.get('DMP_14', None)
-        dmn_val = current.get('DMN_14', None)
+        adx_val = current.get(self.adx_col, None)
+        dmp_val = current.get(self.dmp_col, None)
+        dmn_val = current.get(self.dmn_col, None)
         macd_val = current.get(self.macd_col, None)
         macds_val = current.get(self.macds_col, None)
         vol_avg = current.get(self.vol_ma_col, None)
@@ -124,7 +124,7 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
 
     def get_risk_multiplier(self, df: pd.DataFrame, current_idx: int) -> float:
         """Double the risk in extreme bull markets (ADX > 35)."""
-        adx = df.iloc[current_idx].get('ADX_14', 0)
+        adx = df.iloc[current_idx].get(self.adx_col, 0)
         if adx is None or pd.isna(adx):
             return 1.0
         if adx > self.risk_adx_threshold:

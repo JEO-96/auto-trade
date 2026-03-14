@@ -44,6 +44,37 @@ class ExecutionEngine:
         """실매매 가능 상태인지 확인"""
         return not self.paper_trading and self.exchange is not None
 
+    def fetch_total_balance_krw(self) -> float | None:
+        """업비트 계좌의 총 자산(KRW 환산)을 조회. 실패 시 None 반환."""
+        if not self.exchange:
+            return None
+        try:
+            balance = self.exchange.fetch_balance()
+            total_krw: float = 0.0
+
+            # KRW 현금
+            krw_free = float(balance.get('KRW', {}).get('total', 0) or 0)
+            total_krw += krw_free
+
+            # 보유 코인 평가금액
+            for currency, info in balance.items():
+                if currency in ('KRW', 'info', 'free', 'used', 'total', 'timestamp', 'datetime'):
+                    continue
+                total_amount = float(info.get('total', 0) or 0)
+                if total_amount <= 0:
+                    continue
+                try:
+                    ticker = self.exchange.fetch_ticker(f"{currency}/KRW")
+                    price = ticker.get('last', 0) or 0
+                    total_krw += total_amount * float(price)
+                except Exception:
+                    pass  # 마이너 코인 등 조회 실패 시 무시
+
+            return total_krw
+        except Exception as e:
+            logger.error("[ExecutionEngine] Failed to fetch balance: %s", e)
+            return None
+
     @staticmethod
     def _resolve_executed_price(order: dict, fallback_price: float) -> float:
         """

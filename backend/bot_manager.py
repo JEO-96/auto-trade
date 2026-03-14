@@ -109,15 +109,16 @@ def _process_symbol_exit(
         import credit_service
         credit_service.process_trade_pnl(user_id, pnl)
 
-    # Send Kakao Notification
     cost_basis: float = pos['entry_price'] * pos['position_amount']
     pnl_pct: float = (pnl / cost_basis * 100) if cost_basis > 0 else 0.0
+    pnl_emoji = "🟢" if pnl >= 0 else "🔴"
+    reason_kr = {"Stop Loss": "손절", "Take Profit": "익절"}.get(reason, reason)
     msg = (
-        f"[SELL]\n"
-        f"Symbol: {symbol}\n"
-        f"Price: {actual_price:,.0f} KRW\n"
-        f"PnL: {pnl_pct:.2f}%\n"
-        f"Reason: {reason}"
+        f"📉 [매도]\n"
+        f"종목: {symbol}\n"
+        f"체결가: {actual_price:,.0f} KRW\n"
+        f"{pnl_emoji} 손익: {pnl_pct:+.2f}% ({pnl:+,.0f} KRW)\n"
+        f"사유: {reason_kr}"
     )
     _send_trade_notification(user_id, msg)
 
@@ -179,13 +180,12 @@ def _process_symbol_entry(
     }
     save_trade_log(bot_config_id, symbol, "BUY", entry_price, qty, "Portfolio Entry")
 
-    # Send Kakao Notification
     msg = (
-        f"[BUY]\n"
-        f"Symbol: {symbol}\n"
-        f"Price: {entry_price:,.0f} KRW\n"
-        f"Amount: {qty:.4f}\n"
-        f"Status: Entry Complete"
+        f"📈 [매수]\n"
+        f"종목: {symbol}\n"
+        f"체결가: {entry_price:,.0f} KRW\n"
+        f"수량: {qty:.4f}\n"
+        f"상태: 진입 완료"
     )
     _send_trade_notification(user_id, msg)
 
@@ -237,15 +237,23 @@ def _build_tick_feedback(
     strategy_name: str,
     timeframe: str,
     total_equity: float,
+    real_balance_krw: float | None = None,
 ) -> str:
     """매 tick 카카오 피드백 메시지 생성."""
     mode_label = "모의투자" if paper_trading else "실매매"
     now_str = datetime.now().strftime("%m/%d %H:%M")
     strategy_label = STRATEGY_LABELS.get(strategy_name, strategy_name)
+
+    # 실매매: 실제 업비트 잔고 표시 / 모의투자: 봇 내부 추적 자산 표시
+    if not paper_trading and real_balance_krw is not None:
+        asset_line = f"💰 업비트 자산: {real_balance_krw:,.0f} KRW"
+    else:
+        asset_line = f"💰 자산: {total_equity:,.0f} KRW"
+
     return (
         f"📈 [{mode_label}] {strategy_label}\n"
         f"⏰ {now_str} | {timeframe}봉 분석\n"
-        f"💰 자산: {total_equity:,.0f} KRW\n"
+        f"{asset_line}\n"
         f"{'─' * 24}\n"
         + f"\n{'─' * 24}\n".join(signal_details)
     )
@@ -347,13 +355,21 @@ async def run_bot_loop(bot_config_id: int) -> None:
     mode_label = "모의투자" if paper_trading else "실매매"
     strategy_label = STRATEGY_LABELS.get(strategy_name, strategy_name)
     symbols_str = ", ".join(symbols)
+
+    # 실매매: 업비트 실제 잔고 표시
+    if not paper_trading:
+        real_balance = execution.fetch_total_balance_krw()
+        capital_line = f"💰 업비트 자산: {real_balance:,.0f} KRW" if real_balance is not None else f"자본: {liquid_capital:,.0f} KRW"
+    else:
+        capital_line = f"자본: {liquid_capital:,.0f} KRW"
+
     _send_trade_notification(user_id, (
         f"🟢 봇 시작\n"
         f"모드: {mode_label}\n"
         f"전략: {strategy_label}\n"
         f"종목: {symbols_str}\n"
         f"타임프레임: {timeframe}\n"
-        f"자본: {liquid_capital:,.0f} KRW"
+        f"{capital_line}"
     ))
 
     try:
@@ -391,13 +407,17 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     if current_idx < 1:
                         continue
 
-                    # 신호 분석 (카톡 피드백용)
+                    # 신호 분석 (텔레그램 피드백용)
                     has_buy_signal = strategy.check_buy_signal(df, current_idx)
                     current_data = df.iloc[current_idx]
-                    rsi_val = current_data.get('RSI_14', None)
-                    macd_val = current_data.get('MACD_12_26_9', None)
-                    macds_val = current_data.get('MACDs_12_26_9', None)
-                    atr_val = current_data.get('ATR_14', None)
+                    rsi_col = getattr(strategy, 'rsi_col', 'RSI_14')
+                    macd_col = getattr(strategy, 'macd_col', 'MACD_12_26_9')
+                    macds_col = getattr(strategy, 'macds_col', 'MACDs_12_26_9')
+                    rsi_val = current_data.get(rsi_col, None)
+                    macd_val = current_data.get(macd_col, None)
+                    macds_val = current_data.get(macds_col, None)
+                    atr_col = getattr(strategy, 'atr_col', 'ATR_14')
+                    atr_val = current_data.get(atr_col, None)
                     vol_ma_col = getattr(strategy, 'vol_ma_col', 'VOL_SMA_20')
                     vol_ma_val = current_data.get(vol_ma_col, 0)
                     vol_ratio = (current_data['volume'] / vol_ma_val) if vol_ma_val and not pd.isna(vol_ma_val) and vol_ma_val > 0 else 0
@@ -430,11 +450,15 @@ async def run_bot_loop(bot_config_id: int) -> None:
                             pnl_pct = ((curr_price - pos['entry_price']) / pos['entry_price'] * 100) if pos['entry_price'] > 0 else 0
                             sl_dist = ((curr_price - pos['stop_loss']) / curr_price * 100) if curr_price > 0 else 0
                             tp_dist = ((pos['take_profit'] - curr_price) / curr_price * 100) if curr_price > 0 else 0
+                            pnl_emoji = "🟢" if pnl_pct >= 0 else "🔴"
+                            rsi_str = f"{rsi_val:.1f}" if rsi_val is not None and not pd.isna(rsi_val) else "N/A"
+                            macd_str = "상승" if (macd_val is not None and macds_val is not None and not pd.isna(macd_val) and not pd.isna(macds_val) and macd_val > macds_val) else "하락"
+                            vol_str = f"{vol_ratio:.1f}x" if vol_ratio and not pd.isna(vol_ratio) else "N/A"
                             signal_details.append(
                                 f"📊 {symbol}\n"
                                 f"  보유중 | 현재가: {curr_price:,.0f}\n"
-                                f"  손익: {pnl_pct:+.2f}% | SL까지: {sl_dist:.1f}% | TP까지: {tp_dist:.1f}%\n"
-                                f"  RSI: {rsi_val:.1f}" + (f" | 신호: {'⚡매수감지' if has_buy_signal else '—'}" if rsi_val and not pd.isna(rsi_val) else "")
+                                f"  {pnl_emoji} 손익: {pnl_pct:+.2f}% | SL까지: {sl_dist:.1f}% | TP까지: {tp_dist:.1f}%\n"
+                                f"  RSI: {rsi_str} | MACD: {macd_str} | 거래량: {vol_str}"
                             )
                     else:
                         # C. Entry Check (포지션 수 제한 + 쿨다운 체크)
@@ -483,8 +507,15 @@ async def run_bot_loop(bot_config_id: int) -> None:
                         and _is_candle_close_time(timeframe)
                         and current_candle_slot != last_feedback_candle_slot):
                     last_feedback_candle_slot = current_candle_slot
+
+                    # 실매매 모드: 업비트 실제 잔고 조회
+                    real_balance_krw: float | None = None
+                    if not paper_trading:
+                        real_balance_krw = execution.fetch_total_balance_krw()
+
                     feedback_msg = _build_tick_feedback(
                         signal_details, paper_trading, strategy_name, timeframe, total_equity,
+                        real_balance_krw=real_balance_krw,
                     )
                     _send_trade_notification(user_id, feedback_msg)
 

@@ -21,6 +21,7 @@ import {
 } from '@/lib/api/bot';
 import { getUpbitBalance, type BalanceItem } from '@/lib/api/keys';
 import { getBacktestSettings } from '@/lib/api/settings';
+import { useStrategies } from '@/lib/useStrategies';
 import { getErrorMessage } from '@/lib/utils';
 import type { BotConfig, TradeLog } from '@/types/bot';
 
@@ -37,6 +38,7 @@ const defaultFormState: BotFormData = {
 
 export default function DashboardPage() {
     const toast = useToast();
+    const { botStrategies } = useStrategies();
 
     // Bot list state
     const [bots, setBots] = useState<BotConfig[]>([]);
@@ -313,6 +315,7 @@ export default function DashboardPage() {
                 formLoading={formLoading}
                 liveBotLimitReached={liveBotLimitReached}
                 strategyTimeframeMap={strategyTimeframeMap}
+                strategies={botStrategies}
                 onSubmit={handleFormSubmit}
                 onClose={() => setShowBotModal(false)}
                 onFormChange={setFormData}

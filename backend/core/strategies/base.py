@@ -29,6 +29,8 @@ class BaseStrategy(ABC):
         self.macd_slow: int = config.MACD_SLOW
         self.macd_signal: int = config.MACD_SIGNAL
         self.volume_ma_period: int = config.VOLUME_MA_PERIOD
+        self.atr_period: int = 14
+        self.adx_period: int = 14
 
         # Signal thresholds (overridden by subclasses)
         self.rsi_threshold: float = 60.0
@@ -60,13 +62,29 @@ class BaseStrategy(ABC):
     def vol_ma_col(self) -> str:
         return f"VOL_SMA_{self.volume_ma_period}"
 
+    @property
+    def atr_col(self) -> str:
+        return f"ATR_{self.atr_period}"
+
+    @property
+    def adx_col(self) -> str:
+        return f"ADX_{self.adx_period}"
+
+    @property
+    def dmp_col(self) -> str:
+        return f"DMP_{self.adx_period}"
+
+    @property
+    def dmn_col(self) -> str:
+        return f"DMN_{self.adx_period}"
+
     # ------------------------------------------------------------------
     # Common indicator application
     # ------------------------------------------------------------------
     def apply_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Apply the shared set of technical indicators:
-        RSI, MACD, Volume SMA, EMA (200/50/20), ATR(14), ADX(14).
+        RSI, MACD, Volume SMA, EMA (200/50/20), ATR, ADX.
 
         Subclasses can call super().apply_indicators(df) and then add
         additional indicators.
@@ -93,16 +111,17 @@ class BaseStrategy(ABC):
                 df[col] = ema
 
         # Volatility
-        atr_df = df.ta.atr(length=14)
+        atr_df = df.ta.atr(length=self.atr_period)
         if atr_df is not None:
-            df['ATR_14'] = atr_df
+            df[self.atr_col] = atr_df
 
         # Trend strength
-        adx_df = df.ta.adx(length=14)
+        adx_df = df.ta.adx(length=self.adx_period)
         if adx_df is not None:
-            df['ADX_14'] = adx_df['ADX_14']
-            df['DMP_14'] = adx_df['DMP_14']
-            df['DMN_14'] = adx_df['DMN_14']
+            adx_suffix = f"_{self.adx_period}"
+            df[self.adx_col] = adx_df[f'ADX{adx_suffix}']
+            df[self.dmp_col] = adx_df[f'DMP{adx_suffix}']
+            df[self.dmn_col] = adx_df[f'DMN{adx_suffix}']
 
         return df
 
@@ -128,12 +147,12 @@ class BaseStrategy(ABC):
         self, df: pd.DataFrame, idx: int, entry_price: float, fallback_pct: float = None
     ) -> float:
         """
-        Retrieve ATR_14 at the given index.
+        Retrieve ATR at the given index.
         Falls back to a percentage of entry_price when ATR is missing/invalid.
         """
         if fallback_pct is None:
             fallback_pct = self.atr_fallback_pct
-        atr = df.iloc[idx].get('ATR_14', None)
+        atr = df.iloc[idx].get(self.atr_col, None)
         if atr is None or pd.isna(atr) or atr <= 0:
             atr = entry_price * fallback_pct
         return atr

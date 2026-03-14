@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import { SelectInput } from '@/components/ui/Input';
 import ModalWrapper, { ModalHeader } from '@/components/ui/ModalWrapper';
 import { SYMBOLS, BOT_STRATEGIES, BOT_TIMEFRAMES, BOT_TO_BACKTEST_STRATEGY } from '@/lib/constants';
+import type { StrategyItem } from '@/lib/api/settings';
 
 export interface BotFormData {
     symbols: string[];
@@ -24,6 +25,8 @@ export interface BotFormModalProps {
     liveBotLimitReached: boolean;
     /** 전략별 허용 타임프레임 매핑 (backtest 전략 키 기준) */
     strategyTimeframeMap?: Record<string, string[]>;
+    /** API에서 가져온 전략 목록 (없으면 하드코딩 상수 사용) */
+    strategies?: StrategyItem[];
     onSubmit: (e: React.FormEvent) => void;
     onClose: () => void;
     onFormChange: (data: BotFormData) => void;
@@ -37,10 +40,12 @@ export default function BotFormModal({
     formLoading,
     liveBotLimitReached,
     strategyTimeframeMap,
+    strategies,
     onSubmit,
     onClose,
     onFormChange,
 }: BotFormModalProps) {
+    const displayStrategies = strategies ?? BOT_STRATEGIES.map(s => ({ value: s.value, label: s.label }));
     // 현재 선택된 봇 전략에 허용된 타임프레임 필터링
     const filteredTimeframes = useMemo(() => {
         if (!strategyTimeframeMap) return [...BOT_TIMEFRAMES];
@@ -115,7 +120,7 @@ export default function BotFormModal({
                             onFormChange({ ...formData, strategy_name: newStrategy, timeframe: newTimeframe });
                         }}
                     >
-                        {BOT_STRATEGIES.map((s) => (
+                        {displayStrategies.map((s) => (
                             <option key={s.value} value={s.value}>{s.label}</option>
                         ))}
                     </SelectInput>

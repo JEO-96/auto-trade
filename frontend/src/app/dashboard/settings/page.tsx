@@ -1,27 +1,31 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Settings, Save, CheckCircle2, ShieldAlert, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Settings, Save, CheckCircle2, ShieldAlert, ToggleLeft, ToggleRight, Eye, EyeOff } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import PageContainer from '@/components/ui/PageContainer';
 import { useAuth } from '@/contexts/AuthContext';
-import { STRATEGIES, BACKTEST_TIMEFRAMES } from '@/lib/constants';
-import { getBacktestSettings, updateBacktestSettings } from '@/lib/api/settings';
+import { BACKTEST_TIMEFRAMES } from '@/lib/constants';
+import { getBacktestSettings, updateBacktestSettings, updateStrategyVisibility } from '@/lib/api/settings';
+import { useStrategies } from '@/lib/useStrategies';
 import { getErrorMessage } from '@/lib/utils';
 
-const ALL_STRATEGIES = STRATEGIES;
 const ALL_TIMEFRAMES = BACKTEST_TIMEFRAMES;
 
 export default function SettingsPage() {
     const { user, isLoading: authLoading } = useAuth();
+    const { botStrategies, loading: strategiesLoading } = useStrategies();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [savingVisibility, setSavingVisibility] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // 전략별 허용 타임프레임 매핑
     const [strategyTimeframes, setStrategyTimeframes] = useState<Record<string, string[]>>({});
+    // 전략 공개 여부
+    const [visibility, setVisibility] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         async function load() {
@@ -30,9 +34,8 @@ export default function SettingsPage() {
                 setStrategyTimeframes(data.strategy_timeframes);
             } catch (err) {
                 console.error('설정 로드 실패', err);
-                // 폴백: 전부 허용
                 const fallback: Record<string, string[]> = {};
-                for (const s of ALL_STRATEGIES) {
+                for (const s of botStrategies) {
                     fallback[s.value] = ALL_TIMEFRAMES.map(t => t.value);
                 }
                 setStrategyTimeframes(fallback);
@@ -42,6 +45,17 @@ export default function SettingsPage() {
         }
         load();
     }, []);
+
+    // botStrategies 로드 시 visibility 초기화
+    useEffect(() => {
+        if (botStrategies.length > 0) {
+            const vis: Record<string, boolean> = {};
+            for (const s of botStrategies) {
+                vis[s.value] = s.is_public !== false;
+            }
+            setVisibility(vis);
+        }
+    }, [botStrategies]);
 
     const isStrategyEnabled = (strategy: string) => {
         return strategy in strategyTimeframes && strategyTimeframes[strategy].length > 0;
@@ -86,6 +100,23 @@ export default function SettingsPage() {
         }));
     };
 
+    const toggleVisibility = async (strategy: string) => {
+        const newVal = !visibility[strategy];
+        setVisibility(prev => ({ ...prev, [strategy]: newVal }));
+
+        setSavingVisibility(true);
+        setError(null);
+        try {
+            await updateStrategyVisibility({ [strategy]: newVal });
+        } catch (err) {
+            // 롤백
+            setVisibility(prev => ({ ...prev, [strategy]: !newVal }));
+            setError(getErrorMessage(err, '공개 설정 변경에 실패했습니다.'));
+        } finally {
+            setSavingVisibility(false);
+        }
+    };
+
     const handleSave = async () => {
         const enabledCount = Object.keys(strategyTimeframes).length;
         if (enabledCount === 0) {
@@ -127,7 +158,7 @@ export default function SettingsPage() {
         );
     }
 
-    if (loading) {
+    if (loading || strategiesLoading) {
         return (
             <PageContainer>
                 <div className="flex items-center justify-center py-20">
@@ -145,7 +176,7 @@ export default function SettingsPage() {
                     시스템 설정
                 </h1>
                 <p className="text-sm text-gray-500">
-                    백테스트에서 사용할 전략과 전략별 허용 타임프레임을 관리합니다.
+                    전략 공개 여부와 백테스트 허용 타임프레임을 관리합니다.
                 </p>
             </header>
 
@@ -155,8 +186,66 @@ export default function SettingsPage() {
                 </div>
             )}
 
+            {/* 전략 공개 설정 */}
+            <section className="mb-8">
+                <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-primary" />
+                    전략 공개 설정
+                </h2>
+                <p className="text-xs text-gray-500 mb-4">
+                    비공개 전략은 관리자만 사용할 수 있습니다. 공개로 전환하면 모든 사용자에게 노출됩니다.
+                </p>
+                <div className="grid gap-3">
+                    {botStrategies.map((s) => {
+                        const isPublic = visibility[s.value] !== false;
+                        return (
+                            <div
+                                key={s.value}
+                                className={`glass-panel rounded-xl p-4 flex items-center justify-between transition-all ${
+                                    isPublic ? 'border-primary/20' : 'border-yellow-500/20 bg-yellow-500/[0.02]'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    {isPublic ? (
+                                        <Eye className="w-4 h-4 text-primary" />
+                                    ) : (
+                                        <EyeOff className="w-4 h-4 text-yellow-500" />
+                                    )}
+                                    <div>
+                                        <p className="text-sm font-bold text-white">{s.label}</p>
+                                        <p className="text-[10px] text-gray-500 font-mono">{s.value}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => toggleVisibility(s.value)}
+                                    disabled={savingVisibility}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                        isPublic
+                                            ? 'bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25'
+                                            : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 hover:bg-yellow-500/20'
+                                    } disabled:opacity-50`}
+                                >
+                                    {isPublic ? '공개' : '비공개'}
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
+
+            {/* 백테스트 타임프레임 설정 */}
+            <section>
+                <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-primary" />
+                    백테스트 타임프레임 설정
+                </h2>
+                <p className="text-xs text-gray-500 mb-4">
+                    전략별 허용 타임프레임을 관리합니다.
+                </p>
+            </section>
+
             <div className="space-y-4">
-                {ALL_STRATEGIES.map((s) => {
+                {botStrategies.map((s) => {
                     const enabled = isStrategyEnabled(s.value);
                     const selectedTimeframes = strategyTimeframes[s.value] ?? [];
 

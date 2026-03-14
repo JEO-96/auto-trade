@@ -220,6 +220,11 @@ class BacktestSettingsUpdate(BaseModel):
     strategy_timeframes: dict[str, List[str]]
 
 
+# -------- Strategy Visibility --------
+class StrategyVisibilityUpdate(BaseModel):
+    visibility: dict[str, bool]  # {"steady_compounder_v1": true, ...}
+
+
 # -------- Active Bots (공개) --------
 class ActiveBotPublic(BaseModel):
     nickname: Optional[str] = None

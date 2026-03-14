@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Star } from 'lucide-react';
 import Link from 'next/link';
@@ -8,20 +8,29 @@ import PageContainer from '@/components/ui/PageContainer';
 import Button from '@/components/ui/Button';
 import Input, { SelectInput } from '@/components/ui/Input';
 import { createPost } from '@/lib/api/community';
-import { BOT_STRATEGIES, BOT_TIMEFRAMES } from '@/lib/constants';
+import { BOT_TIMEFRAMES } from '@/lib/constants';
+import { useStrategies } from '@/lib/useStrategies';
 import type { PostType, PostCreateRequest } from '@/types/community';
 
 export default function CreatePostPage() {
     const router = useRouter();
+    const { botStrategies } = useStrategies();
     const [postType, setPostType] = useState<PostType>('discussion');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [strategyName, setStrategyName] = useState<string>(BOT_STRATEGIES[0].value);
+    const [strategyName, setStrategyName] = useState<string>('');
     const [timeframe, setTimeframe] = useState<string>(BOT_TIMEFRAMES[3].value); // default 1h
     const [rating, setRating] = useState(5);
     const [hoverRating, setHoverRating] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    // 전략 목록 로드 시 기본값 설정
+    useEffect(() => {
+        if (botStrategies.length > 0 && !strategyName) {
+            setStrategyName(botStrategies[0].value);
+        }
+    }, [botStrategies, strategyName]);
 
     // Performance share fields
     const [perfSymbol, setPerfSymbol] = useState('BTC/KRW');
@@ -138,7 +147,7 @@ export default function CreatePostPage() {
                                 value={strategyName}
                                 onChange={(e) => setStrategyName(e.target.value)}
                             >
-                                {BOT_STRATEGIES.map((s) => (
+                                {botStrategies.map((s) => (
                                     <option key={s.value} value={s.value}>{s.label}</option>
                                 ))}
                             </SelectInput>
@@ -227,7 +236,7 @@ export default function CreatePostPage() {
                                 value={strategyName}
                                 onChange={(e) => setStrategyName(e.target.value)}
                             >
-                                {BOT_STRATEGIES.map((s) => (
+                                {botStrategies.map((s) => (
                                     <option key={s.value} value={s.value}>{s.label}</option>
                                 ))}
                             </SelectInput>

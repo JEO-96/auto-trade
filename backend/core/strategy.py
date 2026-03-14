@@ -3,6 +3,7 @@ from core.strategies.momentum_breakout_pro_stable import MomentumBreakoutProStab
 from core.strategies.momentum_breakout_pro_aggressive import MomentumBreakoutProAggressiveStrategy
 from core.strategies.momentum_breakout_elite import MomentumBreakoutEliteStrategy
 from core.strategies.steady_compounder import SteadyCompounderStrategy
+from core.strategies.steady_compounder_v1 import SteadyCompounderV1Strategy
 
 # Strategy name -> class mapping
 STRATEGY_MAP = {
@@ -13,6 +14,7 @@ STRATEGY_MAP = {
     "james_pro_aggressive": MomentumBreakoutProAggressiveStrategy,
     "momentum_aggressive": MomentumBreakoutProAggressiveStrategy,
     "steady_compounder": SteadyCompounderStrategy,
+    "steady_compounder_v1": SteadyCompounderV1Strategy,
 }
 
 DEFAULT_STRATEGY = "momentum_stable"

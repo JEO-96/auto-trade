@@ -39,12 +39,10 @@ class MomentumBreakoutProStableStrategy(BaseStrategy):
         current = df.iloc[current_idx]
         prev = df.iloc[current_idx - 1]
 
-        adx_col = "ADX_14"
-
         # Guard against NaN in critical indicator columns
         required_cols = [
             self.rsi_col, self.macd_col, self.macds_col,
-            self.vol_ma_col, adx_col, 'EMA_200', 'EMA_20',
+            self.vol_ma_col, self.adx_col, 'EMA_200', 'EMA_20',
         ]
         if not self._validate_indicators(current, required_cols):
             return False
@@ -58,7 +56,7 @@ class MomentumBreakoutProStableStrategy(BaseStrategy):
         # STABLE criteria: Moderate-High thresholds (Version 2.0)
         breakout = (
             current[self.rsi_col] > self.rsi_threshold and
-            current[adx_col] > self.adx_threshold and
+            current[self.adx_col] > self.adx_threshold and
             current[self.macd_col] > current[self.macds_col] and
             current['volume'] > current[self.vol_ma_col] * self.volume_multiplier
         )
@@ -68,7 +66,7 @@ class MomentumBreakoutProStableStrategy(BaseStrategy):
         pullback = False
         if not pd.isna(prev_ema20):
             pullback = (
-                current[adx_col] > self.pullback_adx_threshold and
+                current[self.adx_col] > self.pullback_adx_threshold and
                 prev['close'] < prev_ema20 and
                 current['close'] > current['EMA_20']
             )
