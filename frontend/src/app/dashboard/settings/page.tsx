@@ -15,7 +15,7 @@ const ALL_TIMEFRAMES = BACKTEST_TIMEFRAMES;
 
 export default function SettingsPage() {
     const { user, isLoading: authLoading } = useAuth();
-    const { botStrategies, loading: strategiesLoading } = useStrategies();
+    const { botStrategies, backtestStrategies, loading: strategiesLoading } = useStrategies();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -35,7 +35,7 @@ export default function SettingsPage() {
             } catch (err) {
                 console.error('설정 로드 실패', err);
                 const fallback: Record<string, string[]> = {};
-                for (const s of botStrategies) {
+                for (const s of backtestStrategies) {
                     fallback[s.value] = ALL_TIMEFRAMES.map(t => t.value);
                 }
                 setStrategyTimeframes(fallback);
@@ -245,7 +245,7 @@ export default function SettingsPage() {
             </section>
 
             <div className="space-y-4">
-                {botStrategies.map((s) => {
+                {backtestStrategies.map((s) => {
                     const enabled = isStrategyEnabled(s.value);
                     const selectedTimeframes = strategyTimeframes[s.value] ?? [];
 

@@ -363,13 +363,25 @@ async def run_bot_loop(bot_config_id: int) -> None:
     else:
         capital_line = f"자본: {liquid_capital:,.0f} KRW"
 
+    # 종목별 현재가 조회
+    symbol_price_lines: list[str] = []
+    for sym in symbols:
+        try:
+            ticker = fetcher.exchange.fetch_ticker(sym)
+            price = ticker.get('last', 0)
+            symbol_price_lines.append(f"  {sym}: {float(price):,.0f} KRW")
+        except Exception:
+            symbol_price_lines.append(f"  {sym}: 조회 실패")
+
     _send_trade_notification(user_id, (
         f"🟢 봇 시작\n"
         f"모드: {mode_label}\n"
         f"전략: {strategy_label}\n"
-        f"종목: {symbols_str}\n"
         f"타임프레임: {timeframe}\n"
-        f"{capital_line}"
+        f"{capital_line}\n"
+        f"{'─' * 24}\n"
+        f"📊 종목 현재가\n"
+        + "\n".join(symbol_price_lines)
     ))
 
     try:
@@ -391,7 +403,14 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     if df is None or df.empty:
                         continue
 
-                    curr_price: float = float(df.iloc[-1]['close'])
+                    # 실시간 현재가: ticker API에서 가져옴 (DB 캐시 캔들은 업데이트 안 되므로)
+                    try:
+                        ticker = await asyncio.get_running_loop().run_in_executor(
+                            None, lambda s=symbol: fetcher.exchange.fetch_ticker(s)
+                        )
+                        curr_price: float = float(ticker.get('last', 0))
+                    except Exception:
+                        curr_price = float(df.iloc[-1]['close'])  # fallback
                     current_prices[symbol] = curr_price
                     if symbol in active_positions:
                         total_equity += (active_positions[symbol]['position_amount'] * curr_price)

@@ -174,7 +174,7 @@ export default function BacktestPage() {
     // 현재 전략에 허용된 전략/타임프레임 목록
     const allowedStrategies = useMemo(
         () => backtestStrategies.filter(s => s.value in strategyTimeframeMap),
-        [strategyTimeframeMap],
+        [strategyTimeframeMap, backtestStrategies],
     );
     const allowedTimeframes = useMemo(
         () => BACKTEST_TIMEFRAMES.filter(t => (strategyTimeframeMap[form.strategy_name] ?? []).includes(t.value)),

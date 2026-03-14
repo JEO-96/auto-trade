@@ -1,4 +1,5 @@
 import logging
+import os
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -133,3 +134,36 @@ def get_me(current_user: models.User = Depends(get_current_user), db: Session = 
         credit_balance=credit.balance,
         telegram_chat_id=current_user.telegram_chat_id,
     )
+
+
+# ──────────────────────────────────────────────
+# 개발 전용 테스트 로그인 (프로덕션에서는 비활성화)
+# ──────────────────────────────────────────────
+_IS_DEV = os.environ.get("ENV", "dev") != "production"
+
+if _IS_DEV:
+    @router.post("/dev-login", response_model=schemas.Token)
+    def dev_login(role: str = "user", db: Session = Depends(get_db)):
+        """개발 전용: role='admin' 또는 'user'로 테스트 로그인.
+        프로덕션 환경(ENV=production)에서는 이 엔드포인트가 등록되지 않음."""
+        is_admin = role == "admin"
+        email = "dev-admin@backtested.bot" if is_admin else "dev-user@backtested.bot"
+
+        user = db.query(models.User).filter(models.User.email == email).first()
+        if not user:
+            user = models.User(
+                email=email,
+                nickname="개발자" if is_admin else "테스트유저",
+                is_active=True,
+                is_admin=is_admin,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            credit_service.initialize_credits(db, user.id)
+
+        access_token = auth.create_access_token(
+            data={"sub": user.email},
+            expires_delta=auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES),
+        )
+        return {"access_token": access_token, "token_type": "bearer"}

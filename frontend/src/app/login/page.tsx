@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import KakaoLoginButton from '@/components/KakaoLoginButton';
 import { useAuth } from '@/contexts/AuthContext';
+import api from '@/lib/api';
 
 export default function LoginPage() {
     const [termsAgreed, setTermsAgreed] = useState(false);
@@ -111,6 +112,37 @@ export default function LoginPage() {
                         첫 로그인 시 자동으로 가입되며,<br />
                         관리자 승인 후 서비스를 이용할 수 있습니다.
                     </p>
+
+                    {/* 개발 전용 테스트 로그인 */}
+                    {process.env.NODE_ENV === 'development' && (
+                        <div className="mt-6 p-4 rounded-xl border border-dashed border-white/10 bg-white/[0.02]">
+                            <p className="text-[10px] text-gray-600 font-mono uppercase mb-3">Dev Only</p>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        const res = await api.post('/auth/dev-login?role=admin');
+                                        localStorage.setItem('access_token', res.data.access_token);
+                                        window.location.href = '/dashboard';
+                                    }}
+                                    className="flex-1 px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-semibold border border-primary/20 hover:bg-primary/20 transition-colors"
+                                >
+                                    관리자 로그인
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        const res = await api.post('/auth/dev-login?role=user');
+                                        localStorage.setItem('access_token', res.data.access_token);
+                                        window.location.href = '/dashboard';
+                                    }}
+                                    className="flex-1 px-3 py-2 rounded-lg bg-accent/10 text-accent text-xs font-semibold border border-accent/20 hover:bg-accent/20 transition-colors"
+                                >
+                                    일반 유저 로그인
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="mt-10 pt-6 border-t border-white/[0.04]">
                         <Link href="/" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
