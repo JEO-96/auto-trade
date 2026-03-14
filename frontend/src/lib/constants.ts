@@ -70,6 +70,15 @@ export function getStrategyLabel(strategyName: string): string {
     return STRATEGY_LABEL_MAP[strategyName] ?? strategyName;
 }
 
+/**
+ * 거래소 내부 이름에서 사용자 친화적 레이블을 반환합니다.
+ * 매핑이 없으면 원래 이름을 그대로 반환합니다.
+ */
+export function getExchangeLabel(exchange: string): string {
+    const found = EXCHANGES.find(e => e.value === exchange);
+    return found?.label ?? exchange;
+}
+
 /** 타임프레임 value → label 매핑 (공통) */
 export const TIMEFRAME_LABEL_MAP: Record<string, string> = Object.fromEntries(
     BOT_TIMEFRAMES.map(t => [t.value, t.label]),

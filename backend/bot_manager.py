@@ -11,14 +11,12 @@ import models
 from constants import (
     MAX_CONCURRENT_POSITIONS,
     MAX_CONSECUTIVE_ERRORS,
-    MAX_RISK_MULTIPLIER,
     STOP_LOSS_COOLDOWN_SECONDS,
     STRATEGY_LABELS,
 )
-from core import config
 from core.data_fetcher import DataFetcher
 from core.execution import ExecutionEngine
-from notifications import send_telegram_message, send_trade_notification, send_bot_status_notification
+from notifications import send_trade_notification, send_bot_status_notification
 
 # ──────────────────────────────────────────────
 # 분리된 모듈에서 임포트 + 하위 호환성을 위한 재수출

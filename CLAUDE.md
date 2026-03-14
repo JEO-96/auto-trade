@@ -6,7 +6,7 @@
 - **Backend:** FastAPI (Python 3.12) with PostgreSQL (AWS RDS)
 - **Frontend:** Next.js 14 (TypeScript) with Tailwind CSS
 - **Infrastructure:** Docker Compose, Nginx (SSL), GitHub Actions CI/CD
-- **Exchange:** Upbit via CCXT library (주식 확장 예정)
+- **Exchange:** Upbit/Bithumb via CCXT library (주식 확장 예정)
 - **Auth:** Kakao OAuth 2.0 + JWT (가입 즉시 로그인 가능, 관리자 승인 불필요)
 - **Credit System:** 성과 기반 수수료 (수익 10% 차감, 손실 10% 환불), 토스페이먼츠 결제 연동
 - **Production URL:** https://backtested.bot
@@ -27,8 +27,9 @@ backtested/
 │   ├── dependencies.py         # FastAPI Depends() providers (get_db, get_current_user, get_admin_user, get_user_or_404)
 │   ├── bot_manager.py          # Async bot task lifecycle management
 │   ├── credit_service.py       # Credit balance management & trade fee processing
-│   ├── notifications.py        # Telegram bot notifications
-│   ├── crypto_utils.py         # Fernet encryption/decryption + API key masking
+│   ├── notifications.py        # Telegram bot notifications (카테고리별: trade, bot_status, system)
+│   ├── error_monitor.py        # TelegramErrorHandler — ERROR 이상 로그를 텔레그램으로 관리자 전송
+│   ├── crypto_utils.py         # Fernet encryption/decryption + API key masking + create_exchange() factory + encrypt_token/decrypt_token
 │   ├── kakao_service.py        # Kakao OAuth token exchange & user info (decoupled from router)
 │   ├── utils.py                # Common helpers (safe_json_loads, parse_symbols, mask_nickname)
 │   ├── log_config.py           # Centralized logging setup
@@ -36,14 +37,19 @@ backtested/
 │   ├── Dockerfile
 │   ├── .env.example
 │   ├── migrate_*.py            # Migration scripts (historical schema evolution)
+│   ├── tests/
+│   │   ├── conftest.py         # Test fixtures (DB session, mock users)
+│   │   └── test_core_logic.py  # 핵심 로직 단위 테스트 (크레딧, 봇, 포지션)
+│   ├── scripts/
+│   │   └── check_rds_backup.py # AWS RDS 백업 정책 검증 스크립트
 │   ├── routers/
-│   │   ├── auth.py             # POST /auth/token, POST /auth/kakao, POST /auth/kakao/complete, GET /auth/me
+│   │   ├── auth.py             # POST /auth/token, POST /auth/kakao, POST /auth/kakao/complete, GET /auth/me, GET/PUT /auth/notifications
 │   │   ├── backtest.py         # Backtest CRUD + share to community
-│   │   ├── bots.py             # Bot CRUD + start/stop/status/logs + credit check
+│   │   ├── bots.py             # Bot CRUD + start/stop/status/logs/performance + credit check + active bots
 │   │   ├── credits.py          # Credit balance, history, Toss Payments integration
 │   │   ├── keys.py             # Exchange key management + balance query
-│   │   ├── admin.py            # Admin: user listing, approval, rejection, credit adjustment
-│   │   └── community.py        # Community: posts, comments, likes, chat, profiles, strategy reviews
+│   │   ├── admin.py            # Admin: dashboard stats, user listing, approval, rejection, credit adjustment
+│   │   └── community.py        # Community: posts, comments, likes, chat, profiles, strategy reviews, leaderboard, strategy-rankings, telegram
 │   └── core/
 │       ├── config.py           # Trading parameters (RISK_PER_TRADE, RSI/MACD defaults)
 │       ├── data_fetcher.py     # CCXT OHLCV fetcher with PostgreSQL caching
@@ -77,20 +83,28 @@ backtested/
 │   │   │       ├── page.tsx    # Bot control + trade log viewer
 │   │   │       ├── backtest/page.tsx
 │   │   │       ├── keys/page.tsx
-│   │   │       ├── admin/page.tsx       # Admin user management panel
-│   │   │       ├── profile/page.tsx     # User profile page
-│   │   │       └── community/
-│   │   │           ├── page.tsx         # Community post listing
-│   │   │           ├── post/page.tsx    # Single post detail view
-│   │   │           ├── create/page.tsx  # Create new post
-│   │   │           ├── profile/page.tsx # Community user profile
-│   │   │           └── chat/page.tsx    # Real-time chat
+│   │   │       ├── performance/page.tsx   # 봇 성과 분석 (수익률 차트, PnL, 드로다운)
+│   │   │       ├── live-bots/page.tsx     # 실시간 봇 현황 (공개)
+│   │   │       ├── settings/page.tsx      # 시스템 설정
+│   │   │       ├── admin/page.tsx         # Admin user management panel
+│   │   │       ├── profile/page.tsx       # User profile page
+│   │   │       ├── community/
+│   │   │       │   ├── page.tsx           # Community post listing
+│   │   │       │   ├── post/page.tsx      # Single post detail view
+│   │   │       │   ├── create/page.tsx    # Create new post
+│   │   │       │   ├── profile/page.tsx   # Community user profile
+│   │   │       │   ├── chat/page.tsx      # Real-time chat
+│   │   │       │   └── leaderboard/page.tsx # 수익률 리더보드 + 전략 랭킹
 │   │   │       └── credits/
-│   │   │           └── page.tsx         # Credit balance, history, Toss payment
+│   │   │           └── page.tsx           # Credit balance, history, Toss payment
+│   │   ├── contexts/
+│   │   │   └── AuthContext.tsx          # Auth state context (useAuth hook)
 │   │   ├── components/
 │   │   │   ├── AuthGuard.tsx           # JWT-based route protection
 │   │   │   ├── KakaoLoginButton.tsx
 │   │   │   ├── RiskDisclaimerModal.tsx # Risk warning modal for live trading
+│   │   │   ├── OnboardingGuide.tsx     # 첫 방문 시 단계별 온보딩 안내
+│   │   │   ├── ServiceWorkerRegistration.tsx # PWA 서비스 워커 등록
 │   │   │   └── ui/                     # StatCard, NavItem, Badge, Button, Input, LoadingSpinner, EmptyState, PageContainer, Toast
 │   │   ├── modals/
 │   │   │   ├── DeleteConfirmationModal.tsx  # Reusable delete confirmation dialog
@@ -118,6 +132,10 @@ backtested/
 │   │       │   └── community.ts # Community API calls
 │   │       ├── constants.ts    # Symbols, strategies, timeframes, poll intervals
 │   │       └── utils.ts        # Shared utility functions
+│   ├── public/
+│   │   ├── manifest.json       # PWA manifest
+│   │   ├── sw.js               # Service worker (오프라인 캐시)
+│   │   └── icons/              # PWA icons (192/512, maskable, apple-touch)
 │   ├── package.json
 │   ├── tsconfig.json           # Path alias: @/* → src/*
 │   └── Dockerfile
@@ -195,9 +213,9 @@ Services:
 
 | Model | Key Fields | Notes |
 |-------|-----------|-------|
-| `User` | id, email, nickname, kakao_id, kakao_access_token, kakao_refresh_token, is_active, is_admin, created_at | `is_active` defaults to `False` (admin approval required); `is_admin` gates admin features |
+| `User` | id, email, nickname, kakao_id, kakao_access_token, kakao_refresh_token, telegram_chat_id, notification_trade, notification_bot_status, notification_system, is_active, is_admin, created_at | `is_active` defaults to `True` (auto-approved); `is_admin` gates admin features; `notification_*` boolean fields for per-category alert control |
 | `ExchangeKey` | user_id, exchange_name, api_key_encrypted, api_secret_encrypted | Encrypted with Fernet via `crypto_utils.py` |
-| `BotConfig` | user_id, symbol, timeframe, strategy_name, is_active, paper_trading_mode, allocated_capital | Holds strategy params (rsi_period, macd_fast, macd_slow, volume_ma_period) |
+| `BotConfig` | user_id, symbol, timeframe, exchange_name, strategy_name, is_active, paper_trading_mode, allocated_capital | `exchange_name` selects exchange (upbit/bithumb); Holds strategy params (rsi_period, macd_fast, macd_slow, volume_ma_period) |
 | `TradeLog` | bot_id, symbol, side, price, amount, pnl, reason | side: BUY/SELL; reason: Entry/Stop Loss/Take Profit |
 | `OHLCV` | symbol, timeframe, timestamp, open, high, low, close, volume | Caching layer to reduce CCXT API calls |
 | `BacktestHistory` | user_id, symbols, timeframe, strategy_name, initial_capital, final_capital, total_trades, result_data, status | Persistent backtest results |
@@ -209,6 +227,7 @@ Services:
 | `CreditTransaction` | user_id, amount, balance_after, tx_type, reference_id, description | 크레딧 변동 이력 (signup_bonus, profit_fee, loss_refund, purchase, admin_adjust) |
 | `PaymentOrder` | user_id, order_id, amount, credits, status, payment_key, method | 토스페이먼츠 결제 주문 (pending → confirmed/failed) |
 | `ChatMessage` | user_id, content, created_at | Simple chat messages |
+| `SystemSettings` | key, value | Key-value system configuration (JSON string values) |
 
 ### Migrations
 
@@ -220,8 +239,15 @@ python migrate_postgres.py          # PostgreSQL migration
 python migrate_active_positions.py  # active_positions table
 python migrate_admin.py             # admin fields (is_admin, created_at)
 python migrate_community.py         # community tables (posts, comments, likes)
+python migrate_community_timeframe.py # community post timeframe field
 python migrate_credits.py           # credit tables (user_credits, credit_transactions, payment_orders)
 python migrate_kakao_refresh.py     # kakao_refresh_token field
+python migrate_allowed_timeframes.py # allowed timeframes per strategy
+python migrate_system_settings.py   # system_settings table
+python migrate_telegram.py          # telegram_chat_id field
+python migrate_kakao_encrypt.py     # kakao token Fernet encryption migration
+python migrate_notifications.py     # notification_trade/bot_status/system fields
+python migrate_exchange_field.py    # exchange_name field on bot_configs
 ```
 
 ---
@@ -236,18 +262,22 @@ All routes except `/auth/*` and some `/community/*` GETs require `Authorization:
 | POST | `/auth/token` | Email/password login → JWT (rate limited: 10/min) |
 | POST | `/auth/kakao` | Kakao OAuth code → JWT (may return `requires_email` if email not provided) |
 | POST | `/auth/kakao/complete` | Complete registration with manual email input |
-| GET | `/auth/me` | Current user info |
+| GET | `/auth/me` | Current user info (includes notification settings) |
+| GET | `/auth/notifications` | 현재 알림 설정 조회 (trade/bot_status/system) |
+| PUT | `/auth/notifications` | 알림 설정 업데이트 |
 
 ### Bots (`/bot`)
 | Method | Path | Description |
 |--------|------|-------------|
+| GET | `/bot/active` | 현재 실행 중인 봇 목록 (공개, 인증 불필요, 닉네임 마스킹) |
 | POST | `/bot/` | Create new bot config (max 5/user, live max 1/user) |
 | PUT | `/bot/{bot_id}` | Update bot config (stopped state only) |
 | DELETE | `/bot/{bot_id}` | Delete bot + related data (stopped state only) |
-| POST | `/bot/start/{bot_id}` | Start async trading bot |
+| POST | `/bot/start/{bot_id}` | Start async trading bot (거래소별 잔고 검증) |
 | POST | `/bot/stop/{bot_id}` | Stop bot (warns about live positions) |
 | GET | `/bot/status/{bot_id}` | Running/Stopped status |
 | GET | `/bot/logs/{bot_id}` | Trade log history (last 100) |
+| GET | `/bot/performance/{bot_id}` | 봇 성과 통계 (총 PnL, 승률, 최대 드로다운, 일별/주별 PnL) |
 | GET | `/bot/list` | List current user's bots |
 
 ### Keys (`/keys`)
@@ -255,7 +285,7 @@ All routes except `/auth/*` and some `/community/*` GETs require `Authorization:
 |--------|------|-------------|
 | POST | `/keys/` | Add/update exchange API key (Fernet encrypted) |
 | GET | `/keys/` | List saved keys (preview only) |
-| GET | `/keys/balance` | Fetch Upbit account balances via CCXT |
+| GET | `/keys/balance` | Fetch exchange account balances via CCXT (Upbit/Bithumb) |
 
 ### Backtest (`/backtest`)
 | Method | Path | Description |
@@ -271,6 +301,7 @@ All routes except `/auth/*` and some `/community/*` GETs require `Authorization:
 ### Admin (`/admin`)
 | Method | Path | Description |
 |--------|------|-------------|
+| GET | `/admin/dashboard` | 관리자 대시보드 통계 (유저/봇/거래/매출/시스템 헬스) |
 | GET | `/admin/users` | List all users (admin only) |
 | GET | `/admin/users/pending` | List pending approval users (admin only) |
 | POST | `/admin/users/{user_id}/approve` | Approve user (set is_active=True) |
@@ -291,6 +322,9 @@ All routes except `/auth/*` and some `/community/*` GETs require `Authorization:
 | Method | Path | Description |
 |--------|------|-------------|
 | PUT | `/community/profile/nickname` | Update nickname (2-20 chars, unique) |
+| PUT | `/community/profile/telegram` | 텔레그램 Chat ID 연동 |
+| DELETE | `/community/profile/telegram` | 텔레그램 연동 해제 |
+| POST | `/community/profile/telegram/test` | 텔레그램 알림 테스트 전송 |
 | GET | `/community/profile/{user_id}` | Get user profile |
 | GET | `/community/posts` | List posts (paginated, filterable by post_type) |
 | POST | `/community/posts` | Create post |
@@ -303,7 +337,9 @@ All routes except `/auth/*` and some `/community/*` GETs require `Authorization:
 | DELETE | `/community/comments/{comment_id}` | Soft-delete comment (own or admin) |
 | GET | `/community/chat` | Get chat messages (supports `after_id` polling) |
 | POST | `/community/chat` | Send chat message (max 500 chars) |
-| GET | `/community/strategies/{strategy_name}/reviews` | Get strategy reviews |
+| GET | `/community/leaderboard` | 봇별 수익률 리더보드 (공개, period: all/monthly/weekly, 최소 5건 이상) |
+| GET | `/community/strategy-rankings` | 전략별 평균 성과 요약 (공개) |
+| GET | `/community/strategies/{strategy_name}/reviews` | Get strategy reviews (filterable by timeframe) |
 | GET | `/community/strategies/{strategy_name}/rating` | Get average strategy rating |
 
 ---
@@ -337,9 +373,12 @@ Key features:
 ### 4. Rate Limiting
 `backend/main.py` uses `slowapi` for rate limiting. Auth endpoints are limited to 10 requests/minute per IP.
 
-### 5. Fernet Encryption for API Keys
+### 5. Fernet Encryption for API Keys & Tokens
 `backend/crypto_utils.py` — provides `encrypt_key()` / `decrypt_key()` using Fernet symmetric encryption.
 Requires `FERNET_KEY` environment variable. All exchange API key storage uses this module.
+- **Token encryption**: `encrypt_token()` / `decrypt_token()` for Kakao OAuth tokens (idempotent, skips already-encrypted values)
+- **Exchange factory**: `create_exchange(exchange_name, api_key, api_secret)` creates ccxt instances for upbit/bithumb
+- **Encryption detection**: `is_fernet_encrypted()` checks for Fernet prefix to prevent double-encryption
 
 ### 6. Backtest Task Registry with DB Persistence
 `backend/routers/backtest.py` — backtest tasks run in threads, tracked in-memory by UUID.
@@ -383,9 +422,10 @@ All API calls must go through this client, never fetch directly.
 - **Row-level locking**: `with_for_update()` on credit balance to prevent concurrent PnL race conditions
 
 ### 13. Frontend Constants
-`frontend/src/lib/constants.ts` — centralized strategy lists, symbol lists, timeframes, and poll intervals.
+`frontend/src/lib/constants.ts` — centralized strategy lists, symbol lists, timeframes, exchanges, and poll intervals.
 Separate `STRATEGIES` (for backtest) and `BOT_STRATEGIES` (for bot creation) lists.
-Derived constants: `TIMEFRAME_LABEL_MAP`, `BACKTEST_TIMEFRAMES`, `CHART_COLORS`, `LIVE_BOTS_POLL_INTERVAL_MS`.
+`EXCHANGES` array for exchange selection (upbit, bithumb).
+Derived constants: `TIMEFRAME_LABEL_MAP`, `BACKTEST_TIMEFRAMES`, `CHART_COLORS`, `LIVE_BOTS_POLL_INTERVAL_MS`, `BOT_TO_BACKTEST_STRATEGY`.
 Components import label maps directly from constants instead of receiving them as props.
 
 ### 14. Backend Constants
@@ -397,6 +437,40 @@ Includes `STRATEGY_LABELS` (Korean display names), data fetcher tuning (`FETCH_C
 - `safe_json_loads()` — safe JSON parsing with fallback default
 - `parse_symbols()` — comma-separated symbol string to list
 - `mask_nickname()` — anonymize user nicknames (첫 글자 + **)
+
+### 16. Exchange Factory Pattern
+`backend/crypto_utils.py` — `create_exchange(exchange_name, api_key, api_secret)` returns a configured ccxt exchange instance.
+Supports `upbit` and `bithumb`. All exchange instantiation must go through this factory (never create ccxt instances directly).
+Bot start validation uses the factory to fetch balances from the user's selected exchange.
+
+### 17. Error Monitoring (TelegramErrorHandler)
+`backend/error_monitor.py` — custom `logging.Handler` that sends ERROR+ level logs to Telegram admin chat.
+- **Rate limiting**: Same error key (module + message prefix) suppressed for 60 seconds
+- **Non-blocking**: Uses `asyncio.create_task()` or background thread for sending
+- **Infinite loop prevention**: Ignores errors from `notifications` module and `httpx`
+- **Memory safety**: Auto-cleans `_last_sent` dict when entries exceed 1000
+
+### 18. Category-Based Notification System
+`backend/notifications.py` — per-user notification preferences with category filtering.
+- `send_trade_notification(user_id, message)` — checks `notification_trade` setting
+- `send_bot_status_notification(user_id, message)` — checks `notification_bot_status` setting
+- `send_system_notification(message)` — always sends to admin chat (no user setting check)
+- Each function checks user's DB preference before sending via Telegram
+
+### 19. PWA Support
+Frontend implements Progressive Web App capabilities:
+- `frontend/public/manifest.json` — app manifest (name, icons, theme color, display mode)
+- `frontend/public/sw.js` — service worker for offline caching
+- `frontend/public/icons/` — PWA icons (192/512, maskable, apple-touch)
+- `frontend/src/components/ServiceWorkerRegistration.tsx` — SW registration component
+
+### 20. Onboarding Guide
+`frontend/src/components/OnboardingGuide.tsx` — step-by-step onboarding for first-time users.
+Guides through: API key registration -> backtest -> bot creation.
+
+### 21. Auth Context
+`frontend/src/contexts/AuthContext.tsx` — React context providing `useAuth()` hook.
+Centralizes auth state (user, login, logout) with localStorage JWT management.
 
 ---
 
@@ -461,12 +535,13 @@ Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stor
 1. **~~Hardcoded DB credentials~~** — **FIXED.** `backend/database.py` now reads from `settings.py` (pydantic-settings from `.env`).
 2. **~~Fake encryption~~** — **FIXED.** `backend/crypto_utils.py` uses Fernet symmetric encryption. String reversal replaced.
 3. **~~Hardcoded JWT secret~~** — **FIXED.** `backend/auth.py` reads `SECRET_KEY` from `settings.py`.
-4. **No test suite** — The project has no automated tests. Add tests before adding new critical features.
-5. **Kakao tokens stored in DB** — `kakao_access_token` and `kakao_refresh_token` stored in plain text in `User` table. Consider encrypting.
+4. **~~No test suite~~** — **FIXED.** `backend/tests/` contains core logic unit tests (credit, bot, position). Uses pytest with DB fixtures.
+5. **~~Kakao tokens stored in DB~~** — **FIXED.** `crypto_utils.encrypt_token()` / `decrypt_token()` now encrypts kakao tokens with Fernet. Migration: `migrate_kakao_encrypt.py`.
 6. **~~TOCTOU race conditions~~** — **FIXED.** `bot_manager.py` and `routers/bots.py` now use `.get()` pattern for all `active_bots` dict access.
 7. **~~Bot stop race condition~~** — **FIXED.** `stop_bot` no longer pops from `active_bots`; lets task's `finally` block handle cleanup.
 8. **~~Non-atomic position persistence~~** — **FIXED.** `position_manager.py` uses `begin_nested()` savepoint for crash-safe saves.
 9. **~~Credit concurrent update~~** — **FIXED.** `credit_service.py` uses `with_for_update()` row-level lock.
+10. **Error monitoring** — `backend/error_monitor.py` `TelegramErrorHandler` sends ERROR+ logs to admin Telegram with rate limiting.
 
 ---
 
@@ -506,7 +581,9 @@ Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stor
 - **랜딩 페이지 푸터**: 사업자 정보 + 투자 위험 고지 + 약관/방침 링크
 
 ### Notifications
-- **Telegram**: Bot start/stop 알림, per-user Telegram 연동 (`User.telegram_chat_id`)
+- **Telegram**: 카테고리별 알림 시스템 (매매 체결/봇 상태/시스템), per-user Telegram 연동 (`User.telegram_chat_id`)
+- **알림 설정**: 사용자별 on/off 제어 (`notification_trade`, `notification_bot_status`, `notification_system`)
+- **에러 모니터링**: ERROR 이상 로그 자동 텔레그램 전송 (`TelegramErrorHandler`)
 - Kakao Talk notifications 제거됨 (talk_message scope 삭제)
 
 ---
@@ -606,6 +683,7 @@ curl -X POST https://backtested.bot/api/backtest/ \
 | `next` | React framework (App Router) |
 | `axios` | HTTP client |
 | `lucide-react` | Icon library |
+| `recharts` | 차트 라이브러리 (수익률/PnL 시각화) |
 | `tailwindcss` | CSS utility framework |
 | `@tosspayments/payment-sdk` | Toss Payments v1 PG SDK (API 개별 연동 키 사용) |
 
@@ -614,19 +692,19 @@ curl -X POST https://backtested.bot/api/backtest/ \
 ## Improvement Roadmap (전략 개발 제외)
 
 ### P0 — 안정성/보안
-- [ ] **자동화 테스트**: 핵심 로직 단위 테스트 (크레딧 차감, 봇 시작/정지, 포지션 저장)
-- [ ] **카카오 토큰 암호화**: `kakao_access_token`, `kakao_refresh_token` Fernet 암호화 (현재 평문)
-- [ ] **에러 모니터링**: Sentry 연동 또는 텔레그램으로 서버 에러 알림
-- [ ] **DB 백업 검증**: AWS RDS 백업 정책 확인, point-in-time recovery 테스트
+- [x] **자동화 테스트**: 핵심 로직 단위 테스트 (`backend/tests/test_core_logic.py` — 크레딧 차감, 봇 시작/정지, 포지션 저장)
+- [x] **카카오 토큰 암호화**: `encrypt_token()` / `decrypt_token()` Fernet 암호화 적용 (`migrate_kakao_encrypt.py`)
+- [x] **에러 모니터링**: `TelegramErrorHandler` — ERROR 이상 로그를 텔레그램으로 관리자 전송 (`backend/error_monitor.py`)
+- [x] **DB 백업 검증**: AWS RDS 백업 정책 검증 스크립트 (`backend/scripts/check_rds_backup.py`)
 
 ### P1 — 사용자 경험
-- [ ] **온보딩 가이드**: 첫 방문 시 단계별 안내 (API 키 등록 → 백테스트 → 봇 생성)
-- [ ] **봇 성과 대시보드**: 수익률 차트, 일별/주별 PnL, 최대 드로다운 시각화
-- [ ] **알림 세분화**: 매매 체결/봇 상태/시스템 알림 구분, 알림 on/off 설정
-- [ ] **모바일 최적화**: PWA 지원 (홈화면 추가, 오프라인 캐시)
+- [x] **온보딩 가이드**: `OnboardingGuide.tsx` — 첫 방문 시 단계별 안내 (API 키 등록 → 백테스트 → 봇 생성)
+- [x] **봇 성과 대시보드**: `GET /bot/performance/{bot_id}` + `dashboard/performance/page.tsx` — 수익률 차트(recharts), 일별/주별 PnL, 최대 드로다운
+- [x] **알림 세분화**: `notification_trade/bot_status/system` 필드 + `GET/PUT /auth/notifications` — 카테고리별 on/off 설정
+- [x] **모바일 최적화**: PWA 지원 (`manifest.json`, `sw.js`, `ServiceWorkerRegistration.tsx`, 홈화면 추가, 오프라인 캐시)
 
 ### P2 — 확장성/편의
-- [ ] **관리자 대시보드 강화**: 전체 봇 현황, 매출 통계, 시스템 헬스 모니터링
-- [ ] **커뮤니티 활성화**: 전략 랭킹, 실시간 수익률 리더보드
+- [x] **관리자 대시보드 강화**: `GET /admin/dashboard` — 전체 봇 현황, 매출 통계, 시스템 헬스 모니터링
+- [x] **커뮤니티 활성화**: `GET /community/leaderboard` + `GET /community/strategy-rankings` — 전략 랭킹, 수익률 리더보드
 - [ ] **다국어 지원**: 영어 UI (해외 사용자 대비)
-- [ ] **거래소 확장**: 빗썸/바이낸스 추가 (CCXT 기반 구조 준비됨)
+- [x] **거래소 확장**: 빗썸 추가 (`create_exchange()` factory, `EXCHANGES` 상수, `exchange_name` 필드)

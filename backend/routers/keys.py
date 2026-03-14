@@ -1,12 +1,11 @@
 import logging
 
-import ccxt
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 import models, schemas
 from dependencies import get_db, get_current_user
-from crypto_utils import encrypt_key, decrypt_key, mask_api_key, create_exchange
+from crypto_utils import encrypt_key, decrypt_key, mask_api_key, fetch_exchange_balance
 
 logger = logging.getLogger(__name__)
 
@@ -83,62 +82,10 @@ async def get_exchange_balance(
 ):
     """Fetch the current user's exchange account balances via ccxt."""
 
-    exchange_label = exchange_name.upper()
+    # 공통 함수로 잔고 조회 (ExchangeKey 조회, 복호화, ccxt 호출, 에러 처리 포함)
+    raw_balance = fetch_exchange_balance(current_user.id, exchange_name, db)
 
-    # 1. Look up the user's stored exchange key
-    exchange_key = (
-        db.query(models.ExchangeKey)
-        .filter(
-            models.ExchangeKey.user_id == current_user.id,
-            models.ExchangeKey.exchange_name == exchange_name,
-        )
-        .first()
-    )
-    if not exchange_key:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"등록된 {exchange_label} API 키가 없습니다. 먼저 API 키를 등록해주세요.",
-        )
-
-    # 2. Decrypt credentials
-    try:
-        api_key = decrypt_key(exchange_key.api_key_encrypted)
-        api_secret = decrypt_key(exchange_key.api_secret_encrypted)
-    except Exception:
-        logger.exception("Failed to decrypt exchange key for user %s", current_user.id)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="API 키 복호화에 실패했습니다. 키를 다시 등록해주세요.",
-        )
-
-    # 3. Create ccxt exchange instance and fetch balance
-    try:
-        exchange = create_exchange(exchange_name, api_key, api_secret)
-        raw_balance = exchange.fetch_balance()
-    except ccxt.AuthenticationError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"{exchange_label} API 인증에 실패했습니다. API 키와 시크릿을 확인해주세요.",
-        )
-    except ccxt.NetworkError as exc:
-        logger.warning("Network error fetching %s balance for user %s: %s", exchange_label, current_user.id, exc)
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"{exchange_label} 서버와의 통신에 실패했습니다. 잠시 후 다시 시도해주세요.",
-        )
-    except ccxt.ExchangeError as exc:
-        logger.warning("Exchange error fetching %s balance for user %s: %s", exchange_label, current_user.id, exc)
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"{exchange_label} 거래소 오류: {exc}",
-        )
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        )
-
-    # 4. Filter to non-zero balances and build response
+    # Filter to non-zero balances and build response
     balances = []
     for currency, details in raw_balance.items():
         # Skip meta keys that ccxt adds (info, free, used, total, timestamp, datetime)

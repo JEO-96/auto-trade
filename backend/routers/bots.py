@@ -3,7 +3,6 @@ import logging
 from collections import defaultdict
 from datetime import datetime
 
-import ccxt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
@@ -17,7 +16,7 @@ from constants import (
     SYMBOL_PATTERN,
     VALID_TIMEFRAMES,
 )
-from crypto_utils import decrypt_key, create_exchange
+from crypto_utils import fetch_exchange_balance
 from dependencies import get_db, get_current_user
 from utils import parse_symbols, mask_nickname
 
@@ -262,27 +261,8 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
         exchange_label = bot_exchange.upper()
 
         # 거래소 KRW 잔고 조회 → allocated_capital 초과 불가
-        exchange_key = db.query(models.ExchangeKey).filter(
-            models.ExchangeKey.user_id == current_user.id,
-            models.ExchangeKey.exchange_name == bot_exchange,
-        ).first()
-        if not exchange_key:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"등록된 {exchange_label} API 키가 없습니다. 먼저 API 키를 등록해주세요.",
-            )
-        try:
-            api_key = decrypt_key(exchange_key.api_key_encrypted)
-            api_secret = decrypt_key(exchange_key.api_secret_encrypted)
-            exchange = create_exchange(bot_exchange, api_key, api_secret)
-            balance = exchange.fetch_balance()
-            krw_free = float(balance.get("KRW", {}).get("free", 0))
-        except Exception as e:
-            logger.error("Failed to fetch %s balance for user %d: %s", exchange_label, current_user.id, e)
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"{exchange_label} 잔고 조회에 실패했습니다. 잠시 후 다시 시도해주세요.",
-            )
+        balance = fetch_exchange_balance(current_user.id, bot_exchange, db)
+        krw_free = float(balance.get("KRW", {}).get("free", 0))
 
         if bot.allocated_capital > krw_free:
             raise HTTPException(
