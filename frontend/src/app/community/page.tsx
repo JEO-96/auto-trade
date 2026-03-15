@@ -88,7 +88,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
 
             {post.post_type === 'backtest_share' && post.backtest_data && (
                 <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] space-y-2">
-                    <div className="flex items-center gap-4 flex-wrap">
+                    <div className="grid grid-cols-3 gap-3">
                         <MetricItem
                             label="수익률"
                             value={`${(((Number(post.backtest_data.final_capital) - Number(post.backtest_data.initial_capital)) / Number(post.backtest_data.initial_capital)) * 100).toFixed(1)}%`}
@@ -114,7 +114,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
             )}
 
             {post.post_type === 'performance_share' && post.performance_data && (
-                <div className="flex items-center gap-4 flex-wrap p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                <div className="grid grid-cols-3 gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
                     <MetricItem
                         label="총 PnL"
                         value={`₩${Number(post.performance_data.total_pnl).toLocaleString()}`}
@@ -159,9 +159,9 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
 
 function MetricItem({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
     return (
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0">
             <p className="text-[10px] text-gray-500 mb-0.5">{label}</p>
-            <p className={`text-xs font-semibold truncate ${positive === true ? 'text-secondary' : positive === false ? 'text-red-400' : 'text-white'}`}>
+            <p className={`text-xs font-semibold ${positive === true ? 'text-secondary' : positive === false ? 'text-red-400' : 'text-white'}`}>
                 {value}
             </p>
         </div>

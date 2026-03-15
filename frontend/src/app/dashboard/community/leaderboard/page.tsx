@@ -89,7 +89,7 @@ export default function LeaderboardPage() {
     }, [fetchStrategyRankings]);
 
     return (
-        <div className="p-6 pr-16 lg:p-8 lg:pr-8 max-w-6xl mx-auto space-y-8">
+        <div className="p-4 pt-6 pr-5 lg:p-8 max-w-6xl mx-auto space-y-8">
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold text-white flex items-center gap-2.5">

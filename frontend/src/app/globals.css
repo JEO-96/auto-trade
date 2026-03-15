@@ -13,6 +13,8 @@
 body {
   color: rgb(var(--foreground-rgb));
   background: #020617;
+  word-break: keep-all;
+  overflow-wrap: break-word;
   background-image:
     radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0, transparent 50%),
     radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.08) 0, transparent 50%);

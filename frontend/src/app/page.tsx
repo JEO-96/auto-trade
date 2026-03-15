@@ -37,12 +37,12 @@ export default function Home() {
                         Algorithmic Trading Platform
                     </div>
 
-                    <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-[1.1]">
+                    <h1 className="text-[2rem] md:text-6xl font-extrabold tracking-tight mb-6 leading-[1.1]">
                         <span className="text-white">백테스트로 검증된 전략,</span><br />
                         <span className="text-gradient-primary">수익으로 증명합니다</span>
                     </h1>
 
-                    <p className="text-base md:text-lg text-gray-400 max-w-xl mx-auto mb-10 leading-relaxed">
+                    <p className="text-base md:text-lg text-gray-400 max-w-xl mx-auto mb-10 leading-relaxed [text-wrap:pretty]">
                         직접 백테스트하고, 신뢰할 수 있는 전략으로 자동매매하세요.<br className="hidden sm:block" />
                         수익이 날 때만 수수료를 내는 공정한 플랫폼입니다.
                     </p>
@@ -88,7 +88,7 @@ export default function Home() {
                                 <span className={feature.textClass}>{feature.icon}</span>
                             </div>
                             <h3 className="text-lg font-bold mb-3 text-white">{feature.title}</h3>
-                            <p className="text-sm text-gray-400 leading-relaxed">{feature.desc}</p>
+                            <p className="text-sm text-gray-400 leading-relaxed [text-wrap:pretty]">{feature.desc}</p>
                         </div>
                     ))}
                 </div>
@@ -97,7 +97,7 @@ export default function Home() {
                 <footer className="w-full border-t border-white/[0.04] pt-8 pb-4">
                     <div className="flex flex-col items-center gap-6 text-xs text-gray-500">
                         {/* 투자 위험 고지 */}
-                        <div className="text-center leading-relaxed max-w-lg">
+                        <div className="text-center leading-relaxed max-w-lg [text-wrap:pretty]">
                             <p className="text-amber-500/80 font-medium mb-1">⚠ 투자 위험 고지</p>
                             <p>
                                 본 서비스는 투자 자문이 아니며, 가상자산 투자는 원금 손실 위험이 있습니다.
@@ -106,7 +106,7 @@ export default function Home() {
                         </div>
 
                         {/* 사업자 정보 */}
-                        <div className="text-center leading-relaxed text-gray-600 space-y-1">
+                        <div className="text-center leading-relaxed text-gray-600 space-y-1 [text-wrap:pretty]">
                             <p>
                                 <span className="text-gray-500">플레이위드</span> | 대표 주은오 | 사업자등록번호 880-58-00862
                             </p>

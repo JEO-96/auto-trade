@@ -10,7 +10,7 @@ export default function PageContainer({
     maxWidth = 'max-w-7xl',
 }: PageContainerProps) {
     return (
-        <div className={`p-6 pr-16 lg:p-8 lg:pr-8 ${maxWidth} mx-auto animate-fade-in-up`}>
+        <div className={`px-5 pt-6 pb-6 lg:p-8 ${maxWidth} mx-auto animate-fade-in-up`}>
             {children}
         </div>
     );

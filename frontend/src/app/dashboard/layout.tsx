@@ -121,7 +121,7 @@ export default function DashboardLayout({
                 )}
 
                 {/* Main Content */}
-                <main className="flex-1 flex flex-col h-screen relative">
+                <main className="flex-1 min-w-0 flex flex-col h-screen relative">
                     <div className="flex-1 overflow-y-auto relative">
                         {children}
                     </div>
