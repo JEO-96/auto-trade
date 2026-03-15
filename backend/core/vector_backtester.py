@@ -173,9 +173,9 @@ class VectorBacktester:
         )
 
         # 3. Execute Vectorized Portfolio (per-strategy SL/TP)
-        # 실매매 봇도 동일한 backtest_sl_pct/backtest_tp_pct 사용
         sl_pct = getattr(self.strategy, 'backtest_sl_pct', 0.015)
         tp_pct = getattr(self.strategy, 'backtest_tp_pct', 0.03)
+        use_trailing = getattr(self.strategy, 'backtest_trailing', False)
 
         pf_kwargs = dict(
             close=close_df,
@@ -187,10 +187,16 @@ class VectorBacktester:
             cash_sharing=True,
             group_by=True,
         )
-        if sl_pct is not None:
+        if use_trailing:
+            # 트레일링 스탑: 고점 대비 sl_pct 하락 시 청산, TP 없음
             pf_kwargs['sl_stop'] = sl_pct
-        if tp_pct is not None:
-            pf_kwargs['tp_stop'] = tp_pct
+            pf_kwargs['sl_trail'] = True
+            # tp_stop은 설정하지 않음 (수익 제한 없이 추세 추종)
+        else:
+            if sl_pct is not None:
+                pf_kwargs['sl_stop'] = sl_pct
+            if tp_pct is not None:
+                pf_kwargs['tp_stop'] = tp_pct
 
         portfolio = vbt.Portfolio.from_signals(**pf_kwargs)
 

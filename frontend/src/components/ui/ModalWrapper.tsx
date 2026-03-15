@@ -1,6 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 interface ModalHeaderProps {
     icon: React.ReactNode;
@@ -33,7 +34,7 @@ interface ModalWrapperProps {
 export default function ModalWrapper({ isOpen, maxWidth = 'max-w-md', children, ariaLabelledBy }: ModalWrapperProps) {
     if (!isOpen) return null;
 
-    return (
+    const modal = (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
             role="dialog"
@@ -45,4 +46,11 @@ export default function ModalWrapper({ isOpen, maxWidth = 'max-w-md', children, 
             </div>
         </div>
     );
+
+    // createPortal로 body에 렌더링 — 부모의 transform/overflow가 fixed 모달을 깨뜨리는 것 방지
+    if (typeof document !== 'undefined') {
+        return createPortal(modal, document.body);
+    }
+
+    return modal;
 }

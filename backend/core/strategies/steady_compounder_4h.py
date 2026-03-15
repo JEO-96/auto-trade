@@ -28,9 +28,10 @@ class SteadyCompounder4hStrategy(BaseStrategy):
         self.atr_tp_multiplier = 3.5      # 익절: 리스크의 3.5배 (기존 3.0 -> 3.5)
         self.trailing_stop_multiplier = 2.0  # 트레일링: ATR 2.0배 (유지)
 
-        # 백테스트 SL/TP (그리드 서치 최적화: 91.1% PnL, 20.7% MaxDD)
-        self.backtest_sl_pct = 0.02   # 2% SL
-        self.backtest_tp_pct = 0.20   # 20% TP
+        # 트레일링 스탑 모드: 고점 대비 5% 하락 시 청산, TP 없음 (추세 추종)
+        self.backtest_sl_pct = 0.05   # 고점 대비 5% 트레일링 스탑
+        self.backtest_tp_pct = None   # TP 없음
+        self.backtest_trailing = True  # 트레일링 모드 활성화
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 50:
