@@ -15,14 +15,13 @@ import type { BotFormData } from '@/components/modals/BotFormModal';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import SummaryStats from '@/components/sections/SummaryStats';
 import AssetDetailModal from '@/components/modals/AssetDetailModal';
-import { BOT_POLL_INTERVAL_MS, BOT_STATUS } from '@/lib/constants';
+import { BOT_POLL_INTERVAL_MS, BOT_STATUS, getStrategyTimeframe } from '@/lib/constants';
 import {
     getBotList, getBotStatus, getBotLogs, startBot, stopBot,
     createBot, updateBot, deleteBot,
 } from '@/lib/api/bot';
 import { getKeys, getUpbitBalance, type BalanceItem } from '@/lib/api/keys';
 import { getBacktestHistory } from '@/lib/api/backtest';
-import { getBacktestSettings } from '@/lib/api/settings';
 import { useStrategies } from '@/lib/useStrategies';
 import { getErrorMessage } from '@/lib/utils';
 import type { BotConfig, TradeLog } from '@/types/bot';
@@ -30,11 +29,12 @@ import type { BotConfig, TradeLog } from '@/types/bot';
 type ModalMode = 'create' | 'edit';
 
 
+const DEFAULT_STRATEGY = 'momentum_stable_1h';
 const defaultFormState: BotFormData = {
     symbols: ['BTC/KRW'],
-    timeframe: '1h',
+    timeframe: getStrategyTimeframe(DEFAULT_STRATEGY),
     exchange_name: 'upbit',
-    strategy_name: 'momentum_breakout_pro_stable',
+    strategy_name: DEFAULT_STRATEGY,
     paper_trading_mode: true,
     allocated_capital: 1000000,
 };
@@ -76,9 +76,6 @@ export default function DashboardPage() {
 
     // Asset detail modal
     const [showAssetDetail, setShowAssetDetail] = useState(false);
-
-    // 전략별 허용 타임프레임 설정
-    const [strategyTimeframeMap, setStrategyTimeframeMap] = useState<Record<string, string[]>>({});
 
     // Onboarding state
     const [hasKeys, setHasKeys] = useState(false);
@@ -139,9 +136,6 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchBots();
         fetchBalance();
-        getBacktestSettings()
-            .then(s => setStrategyTimeframeMap(s.strategy_timeframes))
-            .catch(() => {});
         // Onboarding: check keys & backtest history
         getKeys()
             .then(keys => setHasKeys(keys.length > 0))
@@ -217,7 +211,7 @@ export default function DashboardPage() {
         setEditingBotId(bot.id);
         setFormData({
             symbols: bot.symbol.split(',').map(s => s.trim()).filter(Boolean),
-            timeframe: bot.timeframe,
+            timeframe: getStrategyTimeframe(bot.strategy_name),
             exchange_name: bot.exchange_name || 'upbit',
             strategy_name: bot.strategy_name,
             paper_trading_mode: bot.paper_trading_mode,
@@ -335,7 +329,6 @@ export default function DashboardPage() {
                 formLoading={formLoading}
                 liveBotLimitReached={liveBotLimitReached}
                 availableKrw={availableKrw}
-                strategyTimeframeMap={strategyTimeframeMap}
                 strategies={botStrategies}
                 onSubmit={handleFormSubmit}
                 onClose={() => setShowBotModal(false)}

@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import React from 'react';
 import { Plus, Edit3, AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { SelectInput } from '@/components/ui/Input';
 import ModalWrapper, { ModalHeader } from '@/components/ui/ModalWrapper';
-import { SYMBOLS, BOT_STRATEGIES, BOT_TIMEFRAMES, BOT_TO_BACKTEST_STRATEGY, EXCHANGES } from '@/lib/constants';
+import { SYMBOLS, BOT_STRATEGIES, EXCHANGES, getStrategyTimeframe, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
 import type { StrategyItem } from '@/lib/api/settings';
 
 export interface BotFormData {
@@ -26,8 +26,6 @@ export interface BotFormModalProps {
     liveBotLimitReached: boolean;
     /** 업비트 보유 KRW 현금 잔고 (실매매 자본 상한) */
     availableKrw?: number;
-    /** 전략별 허용 타임프레임 매핑 (backtest 전략 키 기준) */
-    strategyTimeframeMap?: Record<string, string[]>;
     /** API에서 가져온 전략 목록 (없으면 하드코딩 상수 사용) */
     strategies?: StrategyItem[];
     onSubmit: (e: React.FormEvent) => void;
@@ -43,21 +41,12 @@ export default function BotFormModal({
     formLoading,
     liveBotLimitReached,
     availableKrw,
-    strategyTimeframeMap,
     strategies,
     onSubmit,
     onClose,
     onFormChange,
 }: BotFormModalProps) {
     const displayStrategies = strategies ?? BOT_STRATEGIES.map(s => ({ value: s.value, label: s.label }));
-    // 현재 선택된 봇 전략에 허용된 타임프레임 필터링
-    const filteredTimeframes = useMemo(() => {
-        if (!strategyTimeframeMap) return [...BOT_TIMEFRAMES];
-        const backtestKey = BOT_TO_BACKTEST_STRATEGY[formData.strategy_name] ?? formData.strategy_name;
-        const allowed = strategyTimeframeMap[backtestKey];
-        if (!allowed || allowed.length === 0) return [...BOT_TIMEFRAMES];
-        return BOT_TIMEFRAMES.filter(tf => allowed.includes(tf.value));
-    }, [strategyTimeframeMap, formData.strategy_name]);
 
     return (
         <ModalWrapper isOpen={isOpen}>
@@ -123,15 +112,7 @@ export default function BotFormModal({
                         value={formData.strategy_name}
                         onChange={(e) => {
                             const newStrategy = e.target.value;
-                            // 전략 변경 시 타임프레임이 허용 범위 밖이면 자동 조정
-                            let newTimeframe = formData.timeframe;
-                            if (strategyTimeframeMap) {
-                                const bKey = BOT_TO_BACKTEST_STRATEGY[newStrategy] ?? newStrategy;
-                                const allowed = strategyTimeframeMap[bKey];
-                                if (allowed && allowed.length > 0 && !allowed.includes(newTimeframe)) {
-                                    newTimeframe = allowed[0];
-                                }
-                            }
+                            const newTimeframe = getStrategyTimeframe(newStrategy);
                             onFormChange({ ...formData, strategy_name: newStrategy, timeframe: newTimeframe });
                         }}
                     >
@@ -140,16 +121,14 @@ export default function BotFormModal({
                         ))}
                     </SelectInput>
 
-                    <SelectInput
-                        type="select"
-                        label="캔들 주기 (Timeframe)"
-                        value={formData.timeframe}
-                        onChange={(e) => onFormChange({ ...formData, timeframe: e.target.value })}
-                    >
-                        {filteredTimeframes.map((tf) => (
-                            <option key={tf.value} value={tf.value}>{tf.label}</option>
-                        ))}
-                    </SelectInput>
+                    {/* 캔들 주기 (전략에 의해 자동 설정) */}
+                    <div>
+                        <label className="text-xs text-gray-500 font-medium mb-2 block">캔들 주기 (Timeframe)</label>
+                        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-2">
+                            <span className="text-sm font-semibold text-primary">{TIMEFRAME_LABEL_MAP[formData.timeframe] || formData.timeframe}</span>
+                            <span className="text-[10px] text-gray-500">(전략에 의해 자동 설정)</span>
+                        </div>
+                    </div>
 
                     {/* Trading mode toggle */}
                     <div>

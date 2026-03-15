@@ -90,6 +90,31 @@ export function getStrategyLabel(strategyName: string): string {
     return STRATEGY_LABEL_MAP[strategyName] ?? strategyName;
 }
 
+/** 전략 이름 → 고정 타임프레임 매핑 */
+const STRATEGY_TIMEFRAME_MAP: Record<string, string> = {
+    'momentum_basic_1d': '1d',
+    'momentum_stable_1h': '1h',
+    'momentum_stable_1d': '1d',
+    'momentum_aggressive_1h': '1h',
+    'momentum_aggressive_4h': '4h',
+    'momentum_aggressive_1d': '1d',
+    'momentum_elite_1d': '1d',
+    'steady_compounder_4h': '4h',
+};
+
+/**
+ * 전략 이름에서 고정 타임프레임을 추출합니다.
+ * 매핑에 없으면 이름 끝의 타임프레임 패턴(_1h, _4h, _1d 등)을 파싱합니다.
+ * 파싱도 실패하면 '1d'를 기본값으로 반환합니다.
+ */
+export function getStrategyTimeframe(strategyName: string): string {
+    if (STRATEGY_TIMEFRAME_MAP[strategyName]) {
+        return STRATEGY_TIMEFRAME_MAP[strategyName];
+    }
+    const match = strategyName.match(/_(\d+[mhd])$/);
+    return match ? match[1] : '1d';
+}
+
 /**
  * 거래소 내부 이름에서 사용자 친화적 레이블을 반환합니다.
  * 매핑이 없으면 원래 이름을 그대로 반환합니다.

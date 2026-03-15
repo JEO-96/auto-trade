@@ -8,7 +8,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
-import { SYMBOLS, BACKTEST_TIMEFRAMES, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel } from '@/lib/constants';
+import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel, getStrategyTimeframe, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
 import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle } from '@/lib/api/backtest';
 import { getBacktestSettings } from '@/lib/api/settings';
 import { useStrategies } from '@/lib/useStrategies';
@@ -44,11 +44,11 @@ export default function BacktestPage() {
     const [deletingHistoryId, setDeletingHistoryId] = useState<number | null>(null);
     const [deleteLoading, setDeleteLoading] = useState(false);
 
-    // 설정에서 허용된 전략별 타임프레임 매핑
+    // 설정에서 허용된 전략별 타임프레임 매핑 (전략 공개 여부 판단용)
     const [strategyTimeframeMap, setStrategyTimeframeMap] = useState<Record<string, string[]>>(() => {
         const fallback: Record<string, string[]> = {};
         for (const s of backtestStrategies) {
-            fallback[s.value] = BACKTEST_TIMEFRAMES.map(t => t.value);
+            fallback[s.value] = [getStrategyTimeframe(s.value)];
         }
         return fallback;
     });
@@ -134,13 +134,13 @@ export default function BacktestPage() {
                 // 설정 로드 실패 시 전체 표시 (하위 호환)
                 const fallback: Record<string, string[]> = {};
                 for (const s of backtestStrategies) {
-                    fallback[s.value] = BACKTEST_TIMEFRAMES.map(t => t.value);
+                    fallback[s.value] = [getStrategyTimeframe(s.value)];
                 }
                 setStrategyTimeframeMap(fallback);
             }
         }
         loadSettings();
-    }, []);
+    }, [backtestStrategies]);
 
     const handleSaveTitle = async (id: number) => {
         try {
@@ -169,14 +169,15 @@ export default function BacktestPage() {
         if (activeTab === 'history') fetchHistory();
     }, [activeTab, fetchHistory]);
 
+    const defaultStrategy = 'momentum_elite_1d';
     const [form, setForm] = useState(() => {
         const end = new Date();
         const start = new Date();
         start.setMonth(start.getMonth() - 3);
         return {
             symbols: ['BTC/KRW'],
-            timeframe: '1h',
-            strategy_name: 'james_pro_elite',
+            timeframe: getStrategyTimeframe(defaultStrategy),
+            strategy_name: defaultStrategy,
             initial_capital: 1000000,
             start_date: start.toISOString().split('T')[0],
             end_date: end.toISOString().split('T')[0],
@@ -190,17 +191,15 @@ export default function BacktestPage() {
         () => backtestStrategies.filter(s => s.value in strategyTimeframeMap),
         [strategyTimeframeMap, backtestStrategies],
     );
-    const allowedTimeframes = useMemo(
-        () => BACKTEST_TIMEFRAMES.filter(t => (strategyTimeframeMap[form.strategy_name] ?? []).includes(t.value)),
-        [strategyTimeframeMap, form.strategy_name],
-    );
-
-    // 전략 변경 시 현재 타임프레임이 허용되지 않으면 첫 번째로 자동 변경
+    // 전략 변경 시 타임프레임 자동 설정
+    const prevStrategyRef = useRef(form.strategy_name);
     useEffect(() => {
-        if (allowedTimeframes.length > 0 && !allowedTimeframes.some(t => t.value === form.timeframe)) {
-            setForm(prev => ({ ...prev, timeframe: allowedTimeframes[0].value }));
+        if (prevStrategyRef.current !== form.strategy_name) {
+            prevStrategyRef.current = form.strategy_name;
+            const tf = getStrategyTimeframe(form.strategy_name);
+            setForm(prev => prev.timeframe === tf ? prev : { ...prev, timeframe: tf });
         }
-    }, [allowedTimeframes, form.timeframe]);
+    }, [form.strategy_name]);
 
     const toggleSymbol = (symbol: string) => {
         setForm(prev => {
@@ -789,23 +788,12 @@ export default function BacktestPage() {
                                 </select>
                             </div>
 
-                            {/* Timeframe */}
+                            {/* Timeframe (자동 설정) */}
                             <div>
                                 <label className="text-xs text-gray-500 font-medium mb-2 block">캔들 주기</label>
-                                <div className={`grid gap-1.5 bg-white/[0.02] p-1 rounded-xl border border-white/[0.04]`} style={{ gridTemplateColumns: `repeat(${Math.min(allowedTimeframes.length, 4)}, 1fr)` }}>
-                                    {allowedTimeframes.map(tf => (
-                                        <button
-                                            key={tf.value}
-                                            type="button"
-                                            onClick={() => setForm({ ...form, timeframe: tf.value })}
-                                            className={`py-2 text-xs font-semibold rounded-lg transition-all ${form.timeframe === tf.value
-                                                ? 'bg-primary text-white'
-                                                : 'text-gray-500 hover:text-gray-300'
-                                                }`}
-                                        >
-                                            {tf.label}
-                                        </button>
-                                    ))}
+                                <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 flex items-center gap-2">
+                                    <span className="text-sm font-semibold text-primary">{TIMEFRAME_LABEL_MAP[form.timeframe] || form.timeframe}</span>
+                                    <span className="text-[10px] text-gray-500">(전략에 의해 자동 설정)</span>
                                 </div>
                             </div>
 

@@ -153,15 +153,16 @@ export default function BacktestComparisonChart({ equityCurve, priceChanges, btc
                             fontSize: '12px',
                             padding: '10px 14px',
                         }}
-                        labelFormatter={(label: string) => new Date(label).toLocaleString('ko-KR')}
-                        formatter={(value: number, name: string) => {
+                        labelFormatter={(label) => new Date(String(label)).toLocaleString('ko-KR')}
+                        formatter={(value, name) => {
                             if (!name || name === '_zero') return [null, null];
+                            const num = Number(value);
                             const label = name === 'equity'
                                 ? '전략 수익률'
                                 : name === 'BTC_BENCH'
                                     ? 'BTC (벤치마크)'
-                                    : name.split('/')[0];
-                            return [`${value > 0 ? '+' : ''}${value.toFixed(2)}%`, label];
+                                    : String(name).split('/')[0];
+                            return [`${num > 0 ? '+' : ''}${num.toFixed(2)}%`, label];
                         }}
                     />
 
