@@ -85,9 +85,9 @@ EXCHANGE_LABELS: dict[str, str] = {
 # 전략 라벨 (Strategy Labels) — 알림용
 # ──────────────────────────────────────────────
 STRATEGY_LABELS: dict[str, str] = {
-    # Original
-    'steady_compounder': '스테디 복리',
-    'steady_compounder_v1': '스테디 복리 V1',
+    # Legacy aliases (하위 호환)
+    'steady_compounder': '스테디 복리 (4시간)',
+    'steady_compounder_v1': '스테디 복리 (4시간)',
     'momentum_breakout_pro_stable': '모멘텀 안정형',
     'james_pro_stable': '모멘텀 안정형',
     'momentum_stable': '모멘텀 안정형',
