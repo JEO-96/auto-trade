@@ -20,6 +20,15 @@ DEFAULT_STRATEGY_TIMEFRAMES: dict[str, list[str]] = {
     "james_pro_aggressive": ["1h", "4h"],
     "james_pro_elite": ["4h", "1d"],
     "steady_compounder": ["4h"],
+    # Timeframe-optimized (각 전략의 최적 타임프레임 고정)
+    "momentum_basic_1d": ["1d"],
+    "momentum_stable_1h": ["1h"],
+    "momentum_stable_1d": ["1d"],
+    "momentum_aggressive_1h": ["1h"],
+    "momentum_aggressive_4h": ["4h"],
+    "momentum_aggressive_1d": ["1d"],
+    "momentum_elite_1d": ["1d"],
+    "steady_compounder_4h": ["4h"],
 }
 
 SETTINGS_KEY = "backtest_strategy_timeframes"
@@ -118,11 +127,15 @@ def get_backtest_settings(
         models.SystemSettings.key == SETTINGS_KEY
     ).first()
 
-    strategy_timeframes = (
-        json.loads(setting.value)
-        if setting
-        else DEFAULT_STRATEGY_TIMEFRAMES
-    )
+    # DB 설정이 있으면 로드, 없으면 기본값 사용
+    # DB에 없는 새 전략은 기본값에서 병합
+    if setting:
+        strategy_timeframes = json.loads(setting.value)
+        for key, val in DEFAULT_STRATEGY_TIMEFRAMES.items():
+            if key not in strategy_timeframes:
+                strategy_timeframes[key] = val
+    else:
+        strategy_timeframes = DEFAULT_STRATEGY_TIMEFRAMES
 
     return schemas.BacktestSettingsResponse(
         strategy_timeframes=strategy_timeframes,

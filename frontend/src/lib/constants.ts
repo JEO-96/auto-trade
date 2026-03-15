@@ -12,6 +12,15 @@ export const BOT_STRATEGIES = [
     { value: 'momentum_breakout_elite', label: '모멘텀 돌파 Elite' },
     { value: 'steady_compounder', label: '스테디 복리 (주간 안정형)' },
     { value: 'steady_compounder_v1', label: '스테디 복리 V1 (백업)' },
+    // Timeframe-optimized (성능 검증 통과 8개)
+    { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)' },
+    { value: 'momentum_stable_1h', label: '모멘텀 안정형 (1시간)' },
+    { value: 'momentum_stable_1d', label: '모멘텀 안정형 (1일)' },
+    { value: 'momentum_aggressive_1h', label: '모멘텀 공격형 (1시간)' },
+    { value: 'momentum_aggressive_4h', label: '모멘텀 공격형 (4시간)' },
+    { value: 'momentum_aggressive_1d', label: '모멘텀 공격형 (1일)' },
+    { value: 'momentum_elite_1d', label: '모멘텀 엘리트 (1일)' },
+    { value: 'steady_compounder_4h', label: '스테디 복리 (4시간)' },
 ] as const;
 
 /** 백테스트 전용 전략 (james_* 시리즈 등 BOT_STRATEGIES와 다른 이름 체계) */
@@ -22,6 +31,15 @@ export const STRATEGIES = [
     { value: 'james_pro_elite', label: '모멘텀 돌파 PRO (초고수익형)' },
     { value: 'steady_compounder', label: '스테디 복리 (주간 안정형)' },
     { value: 'steady_compounder_v1', label: '스테디 복리 V1 (백업)' },
+    // Timeframe-optimized (성능 검증 통과 8개)
+    { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)' },
+    { value: 'momentum_stable_1h', label: '모멘텀 안정형 (1시간)' },
+    { value: 'momentum_stable_1d', label: '모멘텀 안정형 (1일)' },
+    { value: 'momentum_aggressive_1h', label: '모멘텀 공격형 (1시간)' },
+    { value: 'momentum_aggressive_4h', label: '모멘텀 공격형 (4시간)' },
+    { value: 'momentum_aggressive_1d', label: '모멘텀 공격형 (1일)' },
+    { value: 'momentum_elite_1d', label: '모멘텀 엘리트 (1일)' },
+    { value: 'steady_compounder_4h', label: '스테디 복리 (4시간)' },
 ] as const;
 
 export const BOT_TIMEFRAMES = [
@@ -54,6 +72,15 @@ export const BOT_TO_BACKTEST_STRATEGY: Record<string, string> = {
     'momentum_breakout_pro_aggressive': 'james_pro_aggressive',
     'momentum_breakout_elite': 'james_pro_elite',
     'steady_compounder': 'steady_compounder',
+    // Timeframe-optimized (성능 검증 통과 8개)
+    'momentum_basic_1d': 'momentum_basic_1d',
+    'momentum_stable_1h': 'momentum_stable_1h',
+    'momentum_stable_1d': 'momentum_stable_1d',
+    'momentum_aggressive_1h': 'momentum_aggressive_1h',
+    'momentum_aggressive_4h': 'momentum_aggressive_4h',
+    'momentum_aggressive_1d': 'momentum_aggressive_1d',
+    'momentum_elite_1d': 'momentum_elite_1d',
+    'steady_compounder_4h': 'steady_compounder_4h',
 };
 
 /** 전략 value → 사용자 친화적 label 맵 (BOT_STRATEGIES + STRATEGIES 통합) */

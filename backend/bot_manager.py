@@ -9,6 +9,7 @@ import pandas as pd
 import database
 import models
 from constants import (
+    EXCHANGE_LABELS,
     MAX_CONCURRENT_POSITIONS,
     MAX_CONSECUTIVE_ERRORS,
     STOP_LOSS_COOLDOWN_SECONDS,
@@ -111,9 +112,11 @@ def _process_symbol_exit(
     cost_basis: float = pos['entry_price'] * pos['position_amount']
     pnl_pct: float = (pnl / cost_basis * 100) if cost_basis > 0 else 0.0
     pnl_emoji = "🟢" if pnl >= 0 else "🔴"
-    reason_kr = {"Stop Loss": "손절", "Take Profit": "익절"}.get(reason, reason)
+    reason_kr = {"Stop Loss": "🛑 손절", "Take Profit": "🎯 익절"}.get(reason, reason)
+    trade_mode = "모의" if paper_trading else "실매매"
     msg = (
-        f"📉 [매도]\n"
+        f"📉 매도 체결 [{trade_mode}]\n"
+        f"{'─' * 24}\n"
         f"종목: {symbol}\n"
         f"체결가: {actual_price:,.0f} KRW\n"
         f"{pnl_emoji} 손익: {pnl_pct:+.2f}% ({pnl:+,.0f} KRW)\n"
@@ -179,12 +182,16 @@ def _process_symbol_entry(
     }
     save_trade_log(bot_config_id, symbol, "BUY", entry_price, qty, "Portfolio Entry")
 
+    sl_pct = abs((sl - entry_price) / entry_price * 100) if entry_price > 0 else 0
+    tp_pct = abs((tp - entry_price) / entry_price * 100) if entry_price > 0 else 0
     msg = (
-        f"📈 [매수]\n"
+        f"📈 매수 체결\n"
+        f"{'─' * 24}\n"
         f"종목: {symbol}\n"
         f"체결가: {entry_price:,.0f} KRW\n"
         f"수량: {qty:.4f}\n"
-        f"상태: 진입 완료"
+        f"🛑 손절: {sl:,.0f} (-{sl_pct:.1f}%)\n"
+        f"🎯 익절: {tp:,.0f} (+{tp_pct:.1f}%)"
     )
     _send_trade_notification(user_id, msg)
 
@@ -248,21 +255,22 @@ def _build_tick_feedback(
     timeframe: str,
     total_equity: float,
     real_balance_krw: float | None = None,
+    exchange_name: str = "upbit",
 ) -> str:
-    """매 tick 카카오 피드백 메시지 생성."""
-    mode_label = "모의투자" if paper_trading else "실매매"
+    """매 tick 텔레그램 정기 피드백 메시지 생성."""
+    mode_label = "🧪 모의투자" if paper_trading else "💵 실매매"
     now_str = datetime.now().strftime("%m/%d %H:%M")
     strategy_label = STRATEGY_LABELS.get(strategy_name, strategy_name)
+    exchange_label = EXCHANGE_LABELS.get(exchange_name, exchange_name)
 
-    # 실매매: 실제 업비트 잔고 표시 / 모의투자: 봇 내부 추적 자산 표시
     if not paper_trading and real_balance_krw is not None:
-        asset_line = f"💰 업비트 자산: {real_balance_krw:,.0f} KRW"
+        asset_line = f"💰 {exchange_label} 잔고: {real_balance_krw:,.0f} KRW"
     else:
-        asset_line = f"💰 자산: {total_equity:,.0f} KRW"
+        asset_line = f"💰 봇 자산: {total_equity:,.0f} KRW"
 
     return (
-        f"📈 [{mode_label}] {strategy_label}\n"
-        f"⏰ {now_str} | {timeframe}봉 분석\n"
+        f"{mode_label} · {strategy_label}\n"
+        f"⏰ {now_str} | {timeframe}봉 분석 완료\n"
         f"{asset_line}\n"
         f"{'─' * 24}\n"
         + f"\n{'─' * 24}\n".join(signal_details)
@@ -367,16 +375,17 @@ async def run_bot_loop(bot_config_id: int) -> None:
     last_feedback_candle_close: int = -1  # 마지막으로 피드백을 보낸 캔들 마감 시각(분)
 
     # 봇 시작 알림
-    mode_label = "모의투자" if paper_trading else "실매매"
+    mode_label = "🧪 모의투자" if paper_trading else "💵 실매매"
     strategy_label = STRATEGY_LABELS.get(strategy_name, strategy_name)
+    exchange_name: str = init.get("exchange_name", "upbit") or "upbit"
+    exchange_label = EXCHANGE_LABELS.get(exchange_name, exchange_name)
     symbols_str = ", ".join(symbols)
 
-    # 실매매: 업비트 실제 잔고 표시
     if not paper_trading:
         real_balance = execution.fetch_total_balance_krw()
-        capital_line = f"💰 업비트 자산: {real_balance:,.0f} KRW" if real_balance is not None else f"자본: {liquid_capital:,.0f} KRW"
+        capital_line = f"💰 {exchange_label} 잔고: {real_balance:,.0f} KRW" if real_balance is not None else f"💰 배정 자본: {liquid_capital:,.0f} KRW"
     else:
-        capital_line = f"자본: {liquid_capital:,.0f} KRW"
+        capital_line = f"💰 배정 자본: {liquid_capital:,.0f} KRW"
 
     # 종목별 현재가 조회
     symbol_price_lines: list[str] = []
@@ -389,10 +398,12 @@ async def run_bot_loop(bot_config_id: int) -> None:
             symbol_price_lines.append(f"  {sym}: 조회 실패")
 
     _send_bot_status_notification(user_id, (
-        f"🟢 봇 시작\n"
+        f"🟢 봇 가동 시작\n"
+        f"{'─' * 24}\n"
         f"모드: {mode_label}\n"
         f"전략: {strategy_label}\n"
-        f"타임프레임: {timeframe}\n"
+        f"타임프레임: {timeframe}봉\n"
+        f"거래소: {exchange_label}\n"
         f"{capital_line}\n"
         f"{'─' * 24}\n"
         f"📊 종목 현재가\n"
@@ -542,7 +553,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
                         and nearest_close != last_feedback_candle_close):
                     last_feedback_candle_close = nearest_close
 
-                    # 실매매 모드: 업비트 실제 잔고 조회
+                    # 실매매 모드: 거래소 실제 잔고 조회
                     real_balance_krw: float | None = None
                     if not paper_trading:
                         real_balance_krw = execution.fetch_total_balance_krw()
@@ -550,6 +561,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     feedback_msg = _build_tick_feedback(
                         signal_details, paper_trading, strategy_name, timeframe, total_equity,
                         real_balance_krw=real_balance_krw,
+                        exchange_name=exchange_name,
                     )
                     _send_trade_notification(user_id, feedback_msg)
 
@@ -563,7 +575,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     logger.error("[Bot %d] Too many consecutive errors. Stopping bot.", bot_config_id)
                     # 에러로 중단해도 포지션은 DB에 저장
                     save_positions_to_db(bot_config_id, active_positions)
-                    _send_bot_status_notification(user_id, f"🔴 봇 자동 종료\n전략: {strategy_label}\n사유: 연속 오류 {MAX_CONSECUTIVE_ERRORS}회")
+                    _send_bot_status_notification(user_id, f"🔴 봇 자동 종료\n{'─' * 24}\n전략: {strategy_label} · {timeframe}봉\n사유: 연속 오류 {MAX_CONSECUTIVE_ERRORS}회 발생\n포지션은 DB에 보존됩니다.")
                     break
             finally:
                 current_db.close()
@@ -575,12 +587,12 @@ async def run_bot_loop(bot_config_id: int) -> None:
         logger.info("--- [Bot %d] Engine Stopped (graceful) ---", bot_config_id)
         # 포지션은 DB에 유지 (재시작 시 복구 가능)
         save_positions_to_db(bot_config_id, active_positions)
-        _send_bot_status_notification(user_id, f"🔴 봇 종료\n전략: {strategy_label}\n종목: {symbols_str}")
+        _send_bot_status_notification(user_id, f"🔴 봇 정상 종료\n{'─' * 24}\n전략: {strategy_label} · {timeframe}봉\n종목: {symbols_str}")
         raise
     except Exception as e:
         logger.error("[Bot %d] Fatal error in bot loop: %s", bot_config_id, e)
         logger.debug(traceback.format_exc())
-        _send_bot_status_notification(user_id, f"🔴 봇 비정상 종료\n전략: {strategy_label}\n오류: {str(e)[:100]}")
+        _send_bot_status_notification(user_id, f"🔴 봇 비정상 종료\n{'─' * 24}\n전략: {strategy_label} · {timeframe}봉\n오류: {str(e)[:100]}\n포지션은 DB에 보존됩니다.")
     finally:
         # Clean up from active_bots so status correctly reports Stopped
         active_bots.pop(bot_config_id, None)

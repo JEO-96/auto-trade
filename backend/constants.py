@@ -85,6 +85,7 @@ EXCHANGE_LABELS: dict[str, str] = {
 # 전략 라벨 (Strategy Labels) — 알림용
 # ──────────────────────────────────────────────
 STRATEGY_LABELS: dict[str, str] = {
+    # Original
     'steady_compounder': '스테디 복리',
     'steady_compounder_v1': '스테디 복리 V1',
     'momentum_breakout_pro_stable': '모멘텀 안정형',
@@ -97,6 +98,15 @@ STRATEGY_LABELS: dict[str, str] = {
     'james_pro_elite': '모멘텀 엘리트',
     'momentum_elite': '모멘텀 엘리트',
     'momentum_breakout_basic': '모멘텀 기본',
+    # Timeframe-optimized (성능 검증 통과 8개)
+    'momentum_basic_1d': '모멘텀 기본 (1일)',
+    'momentum_stable_1h': '모멘텀 안정형 (1시간)',
+    'momentum_stable_1d': '모멘텀 안정형 (1일)',
+    'momentum_aggressive_1h': '모멘텀 공격형 (1시간)',
+    'momentum_aggressive_4h': '모멘텀 공격형 (4시간)',
+    'momentum_aggressive_1d': '모멘텀 공격형 (1일)',
+    'momentum_elite_1d': '모멘텀 엘리트 (1일)',
+    'steady_compounder_4h': '스테디 복리 (4시간)',
 }
 
 # ──────────────────────────────────────────────
@@ -111,6 +121,15 @@ STRATEGY_DEFINITIONS: list[dict] = [
     {"value": "momentum_breakout_elite", "label": "모멘텀 돌파 Elite", "is_public": True},
     {"value": "steady_compounder", "label": "스테디 복리 (주간 안정형)", "is_public": True},
     {"value": "steady_compounder_v1", "label": "스테디 복리 V1 (백업)", "is_public": False},
+    # Timeframe-optimized (성능 검증 통과 8개)
+    {"value": "momentum_basic_1d", "label": "모멘텀 기본 (1일)", "is_public": True},
+    {"value": "momentum_stable_1h", "label": "모멘텀 안정형 (1시간)", "is_public": True},
+    {"value": "momentum_stable_1d", "label": "모멘텀 안정형 (1일)", "is_public": True},
+    {"value": "momentum_aggressive_1h", "label": "모멘텀 공격형 (1시간)", "is_public": True},
+    {"value": "momentum_aggressive_4h", "label": "모멘텀 공격형 (4시간)", "is_public": True},
+    {"value": "momentum_aggressive_1d", "label": "모멘텀 공격형 (1일)", "is_public": True},
+    {"value": "momentum_elite_1d", "label": "모멘텀 엘리트 (1일)", "is_public": True},
+    {"value": "steady_compounder_4h", "label": "스테디 복리 (4시간)", "is_public": True},
 ]
 
 # 백테스트 전용 별칭 (james_* 시리즈)
