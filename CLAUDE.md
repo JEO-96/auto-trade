@@ -483,15 +483,18 @@ Centralizes auth state (user, login, logout) with localStorage JWT management.
 
 ### Strategy Architecture
 - **진입**: `check_buy_signal()` — RSI, MACD, Volume MA, EMA (20/50/100/200), ADX, DI+/DI- 조합
-- **청산**: 고정 비율 SL/TP (`backtest_sl_pct` / `backtest_tp_pct`) — **백테스트와 실매매 동일**
-- **트레일링 스탑 없음** — 백테스트(vectorbt)에서 지원하지 않으므로 실매매에서도 미사용
+- **청산 (2가지 모드)**:
+  - **고정 SL/TP 모드**: `backtest_sl_pct` / `backtest_tp_pct` — 진입가 대비 고정 비율 청산
+  - **트레일링 스탑 모드**: `backtest_trailing=True` + `backtest_sl_pct` — 고점 대비 하락 시 청산, TP 없음 (추세 추종)
+- **백테스트 = 실매매**: 동일한 SL/TP/트레일링 로직 사용
 
 ### SL/TP 통일 원칙
 백테스트와 실매매는 반드시 동일한 로직을 사용해야 함:
-- `backtest_sl_pct`: 진입가 대비 손절 비율 (예: 0.015 = 1.5%)
-- `backtest_tp_pct`: 진입가 대비 익절 비율 (예: 0.20 = 20%)
-- 백테스트: vectorbt `sl_stop`/`tp_stop` 파라미터로 전달
-- 실매매: `bot_manager.py`에서 `curr_price * (1 - sl_pct)` / `curr_price * (1 + tp_pct)` 계산
+- `backtest_sl_pct`: 손절 비율 (고정 모드: 진입가 대비, 트레일링 모드: 고점 대비)
+- `backtest_tp_pct`: 익절 비율 (트레일링 모드에서는 `None` — 수익 제한 없음)
+- `backtest_trailing`: `True`이면 트레일링 스탑 모드 (기본값: `False`)
+- 백테스트: vectorbt `sl_stop`/`tp_stop`/`sl_trail` 파라미터로 전달
+- 실매매: `bot_manager.py`에서 동일한 비율 계산
 
 ### 15 Strategies
 
@@ -510,7 +513,7 @@ Centralizes auth state (user, login, logout) with localStorage JWT management.
 | `momentum_elite_4h` | 4h | 1.5% | 10% | 엘리트 |
 | `momentum_elite_1d` | 1d | 3% | 5% | 엘리트 |
 | `steady_compounder_1h` | 1h | 1.5% | 10% | 복리 스윙 |
-| `steady_compounder_4h` | 4h | 2% | 20% | 복리 스윙 |
+| `steady_compounder_4h` | 4h | 5% (트레일링) | 없음 | 복리 스윙 (추세 추종) |
 | `steady_compounder_1d` | 1d | 4% | 20% | 복리 스윙 |
 
 Default strategy: `momentum_stable_1h`
@@ -525,7 +528,8 @@ Default strategy: `momentum_stable_1h`
 
 ### Important Notes
 - **전략 로직 수정 금지**: 기존 전략의 신호 로직은 검증 완료됨. 파라미터/인프라 변경만 허용.
-- **백테스트 = 실매매**: SL/TP는 `backtest_sl_pct`/`backtest_tp_pct` 값을 양쪽 모두 사용. 한쪽만 변경하면 불일치 발생.
+- **백테스트 = 실매매**: SL/TP/트레일링은 `backtest_sl_pct`/`backtest_tp_pct`/`backtest_trailing` 값을 양쪽 모두 사용. 한쪽만 변경하면 불일치 발생.
+- **트레일링 스탑 지원**: vectorbt `sl_trail=True` 사용. `backtest_trailing=True` 설정 시 고점 대비 sl_pct 하락으로 청산, TP 없이 추세 추종.
 - **bot_manager.py limit=300**: 전략은 `current_idx >= 200` 필요. limit이 작으면 신호 미발생.
 - **새 전략 추가 시**: `backend/core/strategies/`에 클래스 생성 → `strategy.py` STRATEGY_MAP 등록 → `backend/constants.py` STRATEGY_DEFINITIONS 추가 → `backend/routers/settings.py` DEFAULT_STRATEGY_TIMEFRAMES 추가 → `frontend/src/lib/constants.ts` 추가
 
