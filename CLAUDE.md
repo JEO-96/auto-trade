@@ -479,33 +479,55 @@ Centralizes auth state (user, login, logout) with localStorage JWT management.
 
 ## Trading Strategies
 
-All strategies are in `backend/core/strategies/` and follow a common interface.
+5가지 기본 전략 × 3개 타임프레임(1h/4h/1d) = **15개 전략**. 모든 전략은 `backend/core/strategies/`에 위치.
 
-| Strategy | Aliases | Profile | Volume Threshold | RR Ratio | Description |
-|----------|---------|---------|-----------------|----------|-------------|
-| `momentum_breakout_basic` | — | Baseline | — | 1:2 | Simple momentum breakout (fallback for unknown names) |
-| `momentum_breakout_pro_stable` | `james_pro_stable`, `momentum_stable` | Conservative | 2.1x | 1:2 | Tight stops, lower drawdown |
-| `momentum_breakout_pro_aggressive` | `james_pro_aggressive`, `momentum_aggressive` | Aggressive | 1.8x | 1:2 | Loose stops, higher upside |
-| `momentum_breakout_elite` | `james_pro_elite`, `momentum_elite` | Elite | 1.3x | 1:5 | 3 entry signals (breakout/trend rider/pullback), hyper-growth |
-| `steady_compounder` | — | Swing | ≥ avg | 1:3 | OR-based signals (RSI bounce/MACD cross/EMA bounce), 4h optimized |
+### Strategy Architecture
+- **진입**: `check_buy_signal()` — RSI, MACD, Volume MA, EMA (20/50/100/200), ADX, DI+/DI- 조합
+- **청산**: 고정 비율 SL/TP (`backtest_sl_pct` / `backtest_tp_pct`) — **백테스트와 실매매 동일**
+- **트레일링 스탑 없음** — 백테스트(vectorbt)에서 지원하지 않으므로 실매매에서도 미사용
 
-Default strategy: `momentum_stable`
+### SL/TP 통일 원칙
+백테스트와 실매매는 반드시 동일한 로직을 사용해야 함:
+- `backtest_sl_pct`: 진입가 대비 손절 비율 (예: 0.015 = 1.5%)
+- `backtest_tp_pct`: 진입가 대비 익절 비율 (예: 0.20 = 20%)
+- 백테스트: vectorbt `sl_stop`/`tp_stop` 파라미터로 전달
+- 실매매: `bot_manager.py`에서 `curr_price * (1 - sl_pct)` / `curr_price * (1 + tp_pct)` 계산
 
-Signals use: RSI, MACD, Volume MA, EMA (20/50/100/200), ADX (via `pandas-ta`).
-Parameters (`rsi_period`, `macd_fast`, `macd_slow`, `volume_ma_period`) are stored in `BotConfig`.
+### 15 Strategies
+
+| Strategy | TF | SL% | TP% | Profile |
+|----------|-----|------|------|---------|
+| `momentum_basic_1h` | 1h | 1.5% | 20% | 기본 모멘텀 |
+| `momentum_basic_4h` | 4h | 2% | 25% | 기본 모멘텀 |
+| `momentum_basic_1d` | 1d | 1.5% | 3% | 기본 모멘텀 |
+| `momentum_stable_1h` | 1h | 1.5% | 15% | 안정형 (골든크로스+DI 필터) |
+| `momentum_stable_4h` | 4h | 1.5% | 25% | 안정형 |
+| `momentum_stable_1d` | 1d | 2% | 20% | 안정형 |
+| `momentum_aggressive_1h` | 1h | 1.5% | 15% | 공격형 (넓은 SL) |
+| `momentum_aggressive_4h` | 4h | 1.5% | 8% | 공격형 |
+| `momentum_aggressive_1d` | 1d | 4% | 20% | 공격형 |
+| `momentum_elite_1h` | 1h | 2% | 15% | 엘리트 (3-signal) |
+| `momentum_elite_4h` | 4h | 1.5% | 10% | 엘리트 |
+| `momentum_elite_1d` | 1d | 3% | 5% | 엘리트 |
+| `steady_compounder_1h` | 1h | 1.5% | 10% | 복리 스윙 |
+| `steady_compounder_4h` | 4h | 2% | 20% | 복리 스윙 |
+| `steady_compounder_1d` | 1d | 4% | 20% | 복리 스윙 |
+
+Default strategy: `momentum_stable_1h`
 
 ### Strategy Selection Guide
-| Goal | Recommended Strategy | Timeframe |
-|------|---------------------|-----------|
-| 안정적 스윙 수익 | `steady_compounder` | 4h |
-| 보수적 모멘텀 | `momentum_breakout_pro_stable` | 1h~4h |
-| 공격적 모멘텀 | `momentum_breakout_pro_aggressive` | 1h~4h |
-| 최대 수익 추구 | `momentum_breakout_elite` | 4h~1d |
+| Goal | Recommended Strategy |
+|------|---------------------|
+| 안정적 스윙 수익 | `steady_compounder_4h` |
+| 보수적 모멘텀 | `momentum_stable_1h` / `momentum_stable_4h` |
+| 공격적 모멘텀 | `momentum_aggressive_4h` / `momentum_aggressive_1d` |
+| 최대 수익 추구 | `momentum_elite_1d` |
 
 ### Important Notes
 - **전략 로직 수정 금지**: 기존 전략의 신호 로직은 검증 완료됨. 파라미터/인프라 변경만 허용.
-- **bot_manager.py limit=300**: Pro/Elite 전략은 `current_idx >= 200` 필요. limit이 작으면 신호 미발생.
-- **새 전략 추가 시**: `backend/core/strategies/`에 클래스 생성 → `strategy.py` STRATEGY_MAP 등록 → `frontend/src/lib/constants.ts` 추가
+- **백테스트 = 실매매**: SL/TP는 `backtest_sl_pct`/`backtest_tp_pct` 값을 양쪽 모두 사용. 한쪽만 변경하면 불일치 발생.
+- **bot_manager.py limit=300**: 전략은 `current_idx >= 200` 필요. limit이 작으면 신호 미발생.
+- **새 전략 추가 시**: `backend/core/strategies/`에 클래스 생성 → `strategy.py` STRATEGY_MAP 등록 → `backend/constants.py` STRATEGY_DEFINITIONS 추가 → `backend/routers/settings.py` DEFAULT_STRATEGY_TIMEFRAMES 추가 → `frontend/src/lib/constants.ts` 추가
 
 ---
 
