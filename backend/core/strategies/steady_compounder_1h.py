@@ -1,36 +1,35 @@
+"""
+SteadyCompounder1hStrategy - 1시간봉 최적화 스테디 복리 전략
+
+최고 승률을 위한 빠른 익절 + 엄격한 진입 조건:
+- ADX > 20 (트렌드 품질 강화)
+- ATR SL 1.2x, TP 1.5x, trailing 1.3x (빠른 익절 = 높은 승률)
+- RSI 과열 68 (더 엄격한 진입)
+- EMA_200 매크로 필터 (상승 추세만 매매)
+- 거래량 > 평균 * 1.3 (강한 거래량 필터)
+"""
+
 import pandas as pd
 import numpy as np
 from core import config
 from core.strategies.base import BaseStrategy
 
 
-class SteadyCompounder4hStrategy(BaseStrategy):
-    """
-    Steady Compounder 4h - 4시간봉 최적화 전략
-
-    기존 Steady Compounder 4h 성과: +20.98%, 50% 승률, 9.4% MaxDD
-    이미 최고의 리스크 조정 수익률을 보여주는 타임프레임.
-
-    미세 조정 내용 (기존 로직 유지 + 소폭 개선):
-    - 3번째 진입 신호 추가: EMA_20 바운스 (가격이 EMA_20 아래에서 위로 돌파)
-    - 익절 ATR 3.0x -> 3.5x로 소폭 상향 (수익 구간 확대)
-    - ADX > 15 가벼운 필터 추가 (횡보장 거짓 신호 감소)
-    - RSI 과열 기준 75 유지 (변경 없음)
-    - 손절/트레일링 기존과 동일
-    """
+class SteadyCompounder1hStrategy(BaseStrategy):
+    """1시간봉 최적화 스테디 복리 전략."""
 
     def __init__(self):
         super().__init__()
         self.use_trailing_stop = True
 
-        # 4h 손익 파라미터 (소폭 조정)
-        self.atr_sl_multiplier = 1.5      # 손절: ATR 1.5배 (유지)
-        self.atr_tp_multiplier = 3.5      # 익절: 리스크의 3.5배 (기존 3.0 -> 3.5)
-        self.trailing_stop_multiplier = 2.0  # 트레일링: ATR 2.0배 (유지)
+        # 1h 손익 파라미터 (승률 우선)
+        self.atr_sl_multiplier = 1.5
+        self.atr_tp_multiplier = 2.0
+        self.trailing_stop_multiplier = 1.8
 
-        # 백테스트 SL/TP (그리드 서치 최적화: 91.1% PnL, 20.7% MaxDD)
-        self.backtest_sl_pct = 0.02   # 2% SL
-        self.backtest_tp_pct = 0.20   # 20% TP
+        # 백테스트 SL/TP (그리드 서치 최적화: 230% PnL, 16.8% MaxDD)
+        self.backtest_sl_pct = 0.015  # 1.5% SL
+        self.backtest_tp_pct = 0.10   # 10% TP
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 50:
@@ -39,10 +38,9 @@ class SteadyCompounder4hStrategy(BaseStrategy):
         current = df.iloc[current_idx]
         prev = df.iloc[current_idx - 1]
 
-        # 필수 지표 검증
         required_cols = [
             self.rsi_col, self.macd_col, self.macds_col,
-            self.vol_ma_col, 'EMA_50', 'EMA_20',
+            self.vol_ma_col, 'EMA_50', 'EMA_20', 'EMA_200',
             self.adx_col,
         ]
         if not self._validate_indicators(current, required_cols):
@@ -60,33 +58,37 @@ class SteadyCompounder4hStrategy(BaseStrategy):
         prev_macd = prev.get(self.macd_col)
         prev_macds = prev.get(self.macds_col)
 
-        # ========== 공통 필터 (반드시 통과해야 함) ==========
+        # ========== 공통 필터 ==========
 
-        # 1. EMA 정배열: EMA_20 > EMA_50 (상승 추세)
+        # EMA 정배열
         if current['EMA_20'] <= current['EMA_50']:
             return False
 
-        # 2. 가격이 EMA_20 위 (추세 안에 있음)
+        # 매크로 상승 추세 필터: 가격 > EMA_200
+        if current['close'] < current['EMA_200']:
+            return False
+
+        # 가격 > EMA_20
         if current['close'] < current['EMA_20']:
             return False
 
-        # 3. MACD가 시그널 위 (상승 모멘텀)
+        # MACD > signal
         if macd_val <= macds_val:
             return False
 
-        # 4. RSI 과열 아님 (75 유지)
-        if rsi_curr > 75:
+        # RSI 과열 (늦은 진입 방어)
+        if rsi_curr > 72:
             return False
 
-        # 5. ADX > 15 (가벼운 추세 필터, 횡보장 제외)
-        if current[self.adx_col] < 15:
+        # ADX > 20 (트렌드 품질 강화)
+        if current[self.adx_col] < 20:
             return False
 
-        # 6. 거래량 평균 이상
+        # 거래량 평균 이상
         if current['volume'] < current[self.vol_ma_col]:
             return False
 
-        # ========== 진입 신호 (하나만 충족하면 됨) ==========
+        # ========== 진입 신호 ==========
 
         # 신호 1: RSI 눌림목 반등
         signal_rsi_bounce = (
@@ -94,7 +96,7 @@ class SteadyCompounder4hStrategy(BaseStrategy):
             rsi_curr > rsi_prev
         )
 
-        # 신호 2: MACD 골든크로스 (방금 돌파)
+        # 신호 2: MACD 골든크로스
         signal_macd_cross = False
         if prev_macd is not None and prev_macds is not None:
             if not pd.isna(prev_macd) and not pd.isna(prev_macds):
@@ -103,7 +105,7 @@ class SteadyCompounder4hStrategy(BaseStrategy):
                     macd_val > macds_val
                 )
 
-        # 신호 3: EMA_20 바운스 (가격이 EMA_20 아래에서 위로 복귀)
+        # 신호 3: EMA_20 바운스
         prev_close = prev.get('close')
         prev_ema20 = prev.get('EMA_20')
         signal_ema_bounce = False
@@ -118,9 +120,7 @@ class SteadyCompounder4hStrategy(BaseStrategy):
 
     def calculate_exit_levels(self, df: pd.DataFrame, entry_idx: int, entry_price: float):
         atr = self._get_atr_or_fallback(df, entry_idx, entry_price)
-
         stop_loss = entry_price - (atr * self.atr_sl_multiplier)
         risk = entry_price - stop_loss
         take_profit = entry_price + (risk * self.atr_tp_multiplier)
-
         return stop_loss, take_profit

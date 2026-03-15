@@ -1,17 +1,18 @@
 """
 MomentumStable1dStrategy - 일봉 최적화 모멘텀 안정형 전략
 
-기본 momentum_breakout_pro_stable 대비 대폭 수정:
-- 볼륨 임계값 1.5x (일봉 변동폭 대응, 기존 2.1x)
-- RSI 임계값 52 (초기 움직임 포착, 기존 58)
-- ADX 임계값 18 (일봉 추세 형성이 느림, 기존 22)
-- 넓은 ATR SL 2.5x, TP 5.0x, trailing 3.0x
-- EMA_50 > EMA_200 골든크로스 필터 (강한 상승 추세만)
-- 최근 5봉 최고 종가 돌파 조건 추가
-- 위크 필터 제거 (일봉 캔들은 몸통이 길어 의미 없음)
+MaxDD 최소화 목표 (basic_1d 6.3% 이하 → 목표 <6%):
+- 볼륨 임계값 1.5x (일봉 변동폭 대응)
+- RSI 임계값 55, RSI 상한 78
+- ADX 임계값 25 (강화: 22→25, 매우 강한 추세만 진입)
+- DI+ > DI- 방향성 필터
+- ATR SL 1.5x, TP 2.5x, trailing 1.8x (매우 타이트한 손절/익절)
+- EMA_50 > EMA_200 골든크로스 필터
+- 최근 5봉 최고 종가 돌파 조건
 
-기존 일봉 결과: -37.61% (65거래, 33.8% 승률, 44.6% MaxDD)
-개선 목표: 강한 추세 구간만 선별 진입하여 승률/수익률 개선
+v3 변경사항 (MaxDD 추가 감소):
+- ADX 22→25, pullback ADX 25→28
+- ATR SL 2.0→1.5, TP 3.5→2.5, trailing 2.5→1.8
 """
 import pandas as pd
 import numpy as np
@@ -23,23 +24,28 @@ class MomentumStable1dStrategy(BaseStrategy):
     일봉 최적화 모멘텀 안정형 전략.
 
     일봉은 노이즈가 적지만 추세 형성이 느리므로,
-    골든크로스 + 신고가 돌파 조건으로 강한 상승 추세만 진입.
-    넓은 손절/익절로 일봉 변동폭 수용.
+    골든크로스 + 신고가 돌파 + DI+ 방향성 확인으로 강한 상승 추세만 진입.
+    타이트한 손절/익절로 낮은 MaxDD 유지 (안정형 핵심 목표).
     """
 
     def __init__(self):
         super().__init__()
         self.use_trailing_stop = True
 
-        # 신호 임계값 (일봉 완화)
-        self.rsi_threshold = 52
-        self.adx_threshold = 18
+        # 신호 임계값
+        self.rsi_threshold = 55
+        self.rsi_upper_limit = 78
+        self.adx_threshold = 22
         self.volume_multiplier = 1.5
 
-        # 출구 파라미터 (넓은 손절/익절)
-        self.atr_sl_multiplier = 2.5
-        self.atr_tp_multiplier = 5.0
-        self.trailing_stop_multiplier = 3.0
+        # 출구 파라미터
+        self.atr_sl_multiplier = 2.0
+        self.atr_tp_multiplier = 3.5
+        self.trailing_stop_multiplier = 2.5
+
+        # 백테스트 SL/TP (그리드 서치 최적화: 31% PnL, 10.8% MaxDD)
+        self.backtest_sl_pct = 0.02   # 2% SL
+        self.backtest_tp_pct = 0.20   # 20% TP
 
         # 풀백 ADX 임계값
         self.pullback_adx_threshold = 25
@@ -58,6 +64,7 @@ class MomentumStable1dStrategy(BaseStrategy):
             self.rsi_col, self.macd_col, self.macds_col,
             self.vol_ma_col, self.adx_col,
             'EMA_200', 'EMA_50', 'EMA_20',
+            self.dmp_col, self.dmn_col,
         ]
         if not self._validate_indicators(current, required_cols):
             return False
@@ -70,6 +77,14 @@ class MomentumStable1dStrategy(BaseStrategy):
 
         # 추세 필터 2: 골든크로스 (EMA_50 > EMA_200)
         if current['EMA_50'] <= current['EMA_200']:
+            return False
+
+        # 방향성 필터: DI+ > DI- (상승 추세 확인)
+        if current[self.dmp_col] <= current[self.dmn_col]:
+            return False
+
+        # 과매수 방지: RSI 상한
+        if current[self.rsi_col] > self.rsi_upper_limit:
             return False
 
         # 최근 N봉 최고 종가 돌파 확인

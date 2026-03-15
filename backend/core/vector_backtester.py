@@ -172,19 +172,27 @@ class VectorBacktester:
             f"Executing vectorbt simulation for {len(ohlcv_data)} assets...",
         )
 
-        # 3. Execute Vectorized Portfolio
-        portfolio = vbt.Portfolio.from_signals(
+        # 3. Execute Vectorized Portfolio (per-strategy SL/TP)
+        # 실매매 봇도 동일한 backtest_sl_pct/backtest_tp_pct 사용
+        sl_pct = getattr(self.strategy, 'backtest_sl_pct', 0.015)
+        tp_pct = getattr(self.strategy, 'backtest_tp_pct', 0.03)
+
+        pf_kwargs = dict(
             close=close_df,
             entries=entries_df,
             exits=None,
-            sl_stop=0.015,
-            tp_stop=0.03,
             init_cash=initial_capital,
             fees=fees,
             freq=timeframe,
             cash_sharing=True,
             group_by=True,
         )
+        if sl_pct is not None:
+            pf_kwargs['sl_stop'] = sl_pct
+        if tp_pct is not None:
+            pf_kwargs['tp_stop'] = tp_pct
+
+        portfolio = vbt.Portfolio.from_signals(**pf_kwargs)
 
         self._update_progress(task_id, 90.0, "Formatting results...")
 

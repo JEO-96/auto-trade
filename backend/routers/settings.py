@@ -15,14 +15,21 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 
 # 기본값: 전략별 허용 타임프레임 (설정이 없을 때 폴백)
 DEFAULT_STRATEGY_TIMEFRAMES: dict[str, list[str]] = {
+    "momentum_basic_1h": ["1h"],
+    "momentum_basic_4h": ["4h"],
     "momentum_basic_1d": ["1d"],
     "momentum_stable_1h": ["1h"],
+    "momentum_stable_4h": ["4h"],
     "momentum_stable_1d": ["1d"],
     "momentum_aggressive_1h": ["1h"],
     "momentum_aggressive_4h": ["4h"],
     "momentum_aggressive_1d": ["1d"],
+    "momentum_elite_1h": ["1h"],
+    "momentum_elite_4h": ["4h"],
     "momentum_elite_1d": ["1d"],
+    "steady_compounder_1h": ["1h"],
     "steady_compounder_4h": ["4h"],
+    "steady_compounder_1d": ["1d"],
 }
 
 SETTINGS_KEY = "backtest_strategy_timeframes"

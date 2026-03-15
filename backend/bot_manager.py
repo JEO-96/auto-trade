@@ -148,7 +148,11 @@ def _process_symbol_entry(
 
     logger.info("[Bot %d] *** BUY SIGNAL for %s! ***", bot_config_id, symbol)
 
-    sl, tp = strategy.calculate_exit_levels(df, current_idx, curr_price)
+    # 백테스트와 동일: 고정 비율 SL/TP 사용 (backtest_sl_pct / backtest_tp_pct)
+    sl_pct = getattr(strategy, 'backtest_sl_pct', 0.015)
+    tp_pct = getattr(strategy, 'backtest_tp_pct', 0.03)
+    sl = curr_price * (1 - sl_pct) if sl_pct is not None else curr_price * 0.9
+    tp = curr_price * (1 + tp_pct) if tp_pct is not None else curr_price * 1.5
 
     # Validate that exit levels are sensible (not NaN, SL < price < TP)
     if pd.isna(sl) or pd.isna(tp) or sl >= curr_price or tp <= curr_price:
@@ -254,7 +258,6 @@ def _build_tick_feedback(
     strategy_name: str,
     timeframe: str,
     total_equity: float,
-    real_balance_krw: float | None = None,
     exchange_name: str = "upbit",
 ) -> str:
     """매 tick 텔레그램 정기 피드백 메시지 생성."""
@@ -263,10 +266,7 @@ def _build_tick_feedback(
     strategy_label = STRATEGY_LABELS.get(strategy_name, strategy_name)
     exchange_label = EXCHANGE_LABELS.get(exchange_name, exchange_name)
 
-    if not paper_trading and real_balance_krw is not None:
-        asset_line = f"💰 {exchange_label} 잔고: {real_balance_krw:,.0f} KRW"
-    else:
-        asset_line = f"💰 봇 자산: {total_equity:,.0f} KRW"
+    asset_line = f"💰 봇 자산: {total_equity:,.0f} KRW"
 
     return (
         f"{mode_label} · {strategy_label}\n"
@@ -381,11 +381,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
     exchange_label = EXCHANGE_LABELS.get(exchange_name, exchange_name)
     symbols_str = ", ".join(symbols)
 
-    if not paper_trading:
-        real_balance = execution.fetch_total_balance_krw()
-        capital_line = f"💰 {exchange_label} 잔고: {real_balance:,.0f} KRW" if real_balance is not None else f"💰 배정 자본: {liquid_capital:,.0f} KRW"
-    else:
-        capital_line = f"💰 배정 자본: {liquid_capital:,.0f} KRW"
+    capital_line = f"💰 투입 자본: {liquid_capital:,.0f} KRW"
 
     # 종목별 현재가 조회
     symbol_price_lines: list[str] = []
@@ -463,9 +459,17 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     macds_val = current_data.get(macds_col, None)
                     atr_col = getattr(strategy, 'atr_col', 'ATR_14')
                     atr_val = current_data.get(atr_col, None)
+                    adx_col = getattr(strategy, 'adx_col', 'ADX_14')
+                    adx_val = current_data.get(adx_col, None)
+                    dmp_col = getattr(strategy, 'dmp_col', 'DMP_14')
+                    dmn_col = getattr(strategy, 'dmn_col', 'DMN_14')
+                    dmp_val = current_data.get(dmp_col, None)
+                    dmn_val = current_data.get(dmn_col, None)
                     vol_ma_col = getattr(strategy, 'vol_ma_col', 'VOL_SMA_20')
                     vol_ma_val = current_data.get(vol_ma_col, 0)
                     vol_ratio = (current_data['volume'] / vol_ma_val) if vol_ma_val and not pd.isna(vol_ma_val) and vol_ma_val > 0 else 0
+                    ema_200 = current_data.get('EMA_200', None)
+                    ema_50 = current_data.get('EMA_50', None)
 
                     if symbol in active_positions:
                         pos = active_positions[symbol]
@@ -484,12 +488,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
                                 logger.info("[Bot %d] %s cooldown until %s after stop loss", bot_config_id, symbol, cooldown_until[symbol])
                             del active_positions[symbol]
                         else:
-                            # B. Trailing Stop Update
-                            if hasattr(strategy, 'update_trailing_stop'):
-                                if atr_val is not None and not pd.isna(atr_val) and atr_val > 0:
-                                    new_sl = strategy.update_trailing_stop(curr_price, atr_val, pos['stop_loss'])
-                                    if new_sl > pos['stop_loss']:
-                                        pos['stop_loss'] = new_sl
+                            # 백테스트와 동일: 트레일링 스탑 미사용 (고정 SL/TP)
 
                             # 보유 중 상태 피드백
                             pnl_pct = ((curr_price - pos['entry_price']) / pos['entry_price'] * 100) if pos['entry_price'] > 0 else 0
@@ -522,17 +521,51 @@ async def run_bot_loop(bot_config_id: int) -> None:
                                 active_positions[symbol] = new_position
                                 cooldown_until.pop(symbol, None)
 
-                        # 미보유 상태 피드백
+                        # 미보유 상태 피드백 (진입 조건 상세 포함)
                         status_str = "⚡매수 신호!" if has_buy_signal else "대기중"
                         if entry_skipped_reason and has_buy_signal:
                             status_str = f"⚡신호 있으나 {entry_skipped_reason}"
                         rsi_str = f"{rsi_val:.1f}" if rsi_val is not None and not pd.isna(rsi_val) else "N/A"
                         macd_str = "상승" if (macd_val is not None and macds_val is not None and not pd.isna(macd_val) and not pd.isna(macds_val) and macd_val > macds_val) else "하락"
                         vol_str = f"{vol_ratio:.1f}x" if vol_ratio and not pd.isna(vol_ratio) else "N/A"
+                        adx_str = f"{adx_val:.1f}" if adx_val is not None and not pd.isna(adx_val) else "N/A"
+
+                        # 진입 조건 충족 여부 체크리스트
+                        conditions: list[str] = []
+                        # 추세 필터
+                        if ema_200 is not None and not pd.isna(ema_200):
+                            above_ema200 = curr_price > ema_200
+                            conditions.append(f"  {'✅' if above_ema200 else '❌'} 가격>EMA200")
+                        if ema_50 is not None and ema_200 is not None and not pd.isna(ema_50) and not pd.isna(ema_200):
+                            golden_cross = ema_50 > ema_200
+                            conditions.append(f"  {'✅' if golden_cross else '❌'} 골든크로스(EMA50>200)")
+                        # 방향성
+                        if dmp_val is not None and dmn_val is not None and not pd.isna(dmp_val) and not pd.isna(dmn_val):
+                            di_positive = dmp_val > dmn_val
+                            conditions.append(f"  {'✅' if di_positive else '❌'} DI+>DI- ({dmp_val:.1f}/{dmn_val:.1f})")
+                        # RSI
+                        rsi_threshold = getattr(strategy, 'rsi_threshold', 60)
+                        if rsi_val is not None and not pd.isna(rsi_val):
+                            rsi_ok = rsi_val > rsi_threshold
+                            conditions.append(f"  {'✅' if rsi_ok else '❌'} RSI>{rsi_threshold} (현재 {rsi_val:.1f})")
+                        # ADX
+                        adx_threshold = getattr(strategy, 'adx_threshold', getattr(strategy, 'breakout_adx_min', 20))
+                        if adx_val is not None and not pd.isna(adx_val):
+                            adx_ok = adx_val > adx_threshold
+                            conditions.append(f"  {'✅' if adx_ok else '❌'} ADX>{adx_threshold} (현재 {adx_val:.1f})")
+                        # MACD
+                        macd_ok = macd_val is not None and macds_val is not None and not pd.isna(macd_val) and not pd.isna(macds_val) and macd_val > macds_val
+                        conditions.append(f"  {'✅' if macd_ok else '❌'} MACD>시그널 ({macd_str})")
+                        # 거래량
+                        vol_multiplier = getattr(strategy, 'volume_multiplier', 1.0)
+                        vol_ok = vol_ratio >= vol_multiplier if vol_ratio else False
+                        conditions.append(f"  {'✅' if vol_ok else '❌'} 거래량>{vol_multiplier}x (현재 {vol_str})")
+
+                        conditions_str = "\n".join(conditions)
                         signal_details.append(
                             f"{'🟢' if has_buy_signal else '⚪'} {symbol}\n"
                             f"  {status_str} | 현재가: {curr_price:,.0f}\n"
-                            f"  RSI: {rsi_str} | MACD: {macd_str} | 거래량: {vol_str}"
+                            f"{conditions_str}"
                         )
 
                 # 매 tick마다 포지션 상태를 DB에 저장
@@ -553,14 +586,8 @@ async def run_bot_loop(bot_config_id: int) -> None:
                         and nearest_close != last_feedback_candle_close):
                     last_feedback_candle_close = nearest_close
 
-                    # 실매매 모드: 거래소 실제 잔고 조회
-                    real_balance_krw: float | None = None
-                    if not paper_trading:
-                        real_balance_krw = execution.fetch_total_balance_krw()
-
                     feedback_msg = _build_tick_feedback(
                         signal_details, paper_trading, strategy_name, timeframe, total_equity,
-                        real_balance_krw=real_balance_krw,
                         exchange_name=exchange_name,
                     )
                     _send_trade_notification(user_id, feedback_msg)

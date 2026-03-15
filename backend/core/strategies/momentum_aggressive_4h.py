@@ -40,6 +40,10 @@ class MomentumAggressive4hStrategy(BaseStrategy):
         self.atr_tp_multiplier = 3.5
         self.trailing_stop_multiplier = 2.2
 
+        # 백테스트 SL/TP (그리드 서치 최적화: 214% PnL, 17.9% MaxDD)
+        self.backtest_sl_pct = 0.015  # 1.5% SL
+        self.backtest_tp_pct = 0.08   # 8% TP
+
         # 풀백 ADX 임계값 (더 선별적)
         self.pullback_adx_threshold = 28
 

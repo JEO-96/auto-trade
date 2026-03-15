@@ -6,26 +6,40 @@ export const EXCHANGES = [
 ] as const;
 
 export const BOT_STRATEGIES = [
+    { value: 'momentum_basic_1h', label: '모멘텀 기본 (1시간)' },
+    { value: 'momentum_basic_4h', label: '모멘텀 기본 (4시간)' },
     { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)' },
     { value: 'momentum_stable_1h', label: '모멘텀 안정형 (1시간)' },
+    { value: 'momentum_stable_4h', label: '모멘텀 안정형 (4시간)' },
     { value: 'momentum_stable_1d', label: '모멘텀 안정형 (1일)' },
     { value: 'momentum_aggressive_1h', label: '모멘텀 공격형 (1시간)' },
     { value: 'momentum_aggressive_4h', label: '모멘텀 공격형 (4시간)' },
     { value: 'momentum_aggressive_1d', label: '모멘텀 공격형 (1일)' },
+    { value: 'momentum_elite_1h', label: '모멘텀 엘리트 (1시간)' },
+    { value: 'momentum_elite_4h', label: '모멘텀 엘리트 (4시간)' },
     { value: 'momentum_elite_1d', label: '모멘텀 엘리트 (1일)' },
+    { value: 'steady_compounder_1h', label: '스테디 복리 (1시간)' },
     { value: 'steady_compounder_4h', label: '스테디 복리 (4시간)' },
+    { value: 'steady_compounder_1d', label: '스테디 복리 (1일)' },
 ] as const;
 
 /** 백테스트 전용 전략 */
 export const STRATEGIES = [
+    { value: 'momentum_basic_1h', label: '모멘텀 기본 (1시간)' },
+    { value: 'momentum_basic_4h', label: '모멘텀 기본 (4시간)' },
     { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)' },
     { value: 'momentum_stable_1h', label: '모멘텀 안정형 (1시간)' },
+    { value: 'momentum_stable_4h', label: '모멘텀 안정형 (4시간)' },
     { value: 'momentum_stable_1d', label: '모멘텀 안정형 (1일)' },
     { value: 'momentum_aggressive_1h', label: '모멘텀 공격형 (1시간)' },
     { value: 'momentum_aggressive_4h', label: '모멘텀 공격형 (4시간)' },
     { value: 'momentum_aggressive_1d', label: '모멘텀 공격형 (1일)' },
+    { value: 'momentum_elite_1h', label: '모멘텀 엘리트 (1시간)' },
+    { value: 'momentum_elite_4h', label: '모멘텀 엘리트 (4시간)' },
     { value: 'momentum_elite_1d', label: '모멘텀 엘리트 (1일)' },
+    { value: 'steady_compounder_1h', label: '스테디 복리 (1시간)' },
     { value: 'steady_compounder_4h', label: '스테디 복리 (4시간)' },
+    { value: 'steady_compounder_1d', label: '스테디 복리 (1일)' },
 ] as const;
 
 export const BOT_TIMEFRAMES = [
@@ -52,16 +66,9 @@ export const BOT_POLL_INTERVAL_MS = 10000;
 export const BACKTEST_POLL_INTERVAL_MS = 1000;
 
 /** 봇 전략 → 백테스트 전략 매핑 (동일 이름 체계) */
-export const BOT_TO_BACKTEST_STRATEGY: Record<string, string> = {
-    'momentum_basic_1d': 'momentum_basic_1d',
-    'momentum_stable_1h': 'momentum_stable_1h',
-    'momentum_stable_1d': 'momentum_stable_1d',
-    'momentum_aggressive_1h': 'momentum_aggressive_1h',
-    'momentum_aggressive_4h': 'momentum_aggressive_4h',
-    'momentum_aggressive_1d': 'momentum_aggressive_1d',
-    'momentum_elite_1d': 'momentum_elite_1d',
-    'steady_compounder_4h': 'steady_compounder_4h',
-};
+export const BOT_TO_BACKTEST_STRATEGY: Record<string, string> = Object.fromEntries(
+    BOT_STRATEGIES.map(s => [s.value, s.value]),
+);
 
 /** 전략 value → 사용자 친화적 label 맵 (BOT_STRATEGIES + STRATEGIES 통합) */
 const STRATEGY_LABEL_MAP: Record<string, string> = {
@@ -90,17 +97,13 @@ export function getStrategyLabel(strategyName: string): string {
     return STRATEGY_LABEL_MAP[strategyName] ?? strategyName;
 }
 
-/** 전략 이름 → 고정 타임프레임 매핑 */
-const STRATEGY_TIMEFRAME_MAP: Record<string, string> = {
-    'momentum_basic_1d': '1d',
-    'momentum_stable_1h': '1h',
-    'momentum_stable_1d': '1d',
-    'momentum_aggressive_1h': '1h',
-    'momentum_aggressive_4h': '4h',
-    'momentum_aggressive_1d': '1d',
-    'momentum_elite_1d': '1d',
-    'steady_compounder_4h': '4h',
-};
+/** 전략 이름 → 고정 타임프레임 매핑 (자동 생성) */
+const STRATEGY_TIMEFRAME_MAP: Record<string, string> = Object.fromEntries(
+    BOT_STRATEGIES.map(s => {
+        const match = s.value.match(/_(\d+[mhd])$/);
+        return [s.value, match ? match[1] : '1d'];
+    }),
+);
 
 /**
  * 전략 이름에서 고정 타임프레임을 추출합니다.

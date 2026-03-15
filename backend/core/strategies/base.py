@@ -43,6 +43,11 @@ class BaseStrategy(ABC):
         self.trailing_stop_multiplier: float = 1.5
         self.atr_fallback_pct: float = 0.02
 
+        # Backtest SL/TP percentages for vectorbt (per-strategy override)
+        # None = no SL/TP applied in backtest for that side
+        self.backtest_sl_pct: float | None = 0.015   # 1.5% default
+        self.backtest_tp_pct: float | None = 0.03    # 3.0% default
+
     # ------------------------------------------------------------------
     # Column name helpers
     # ------------------------------------------------------------------

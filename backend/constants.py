@@ -98,15 +98,22 @@ STRATEGY_LABELS: dict[str, str] = {
     'james_pro_elite': '모멘텀 엘리트',
     'momentum_elite': '모멘텀 엘리트',
     'momentum_breakout_basic': '모멘텀 기본',
-    # Timeframe-optimized (성능 검증 통과 8개)
+    # Timeframe-optimized (15개 = 5 base × 3 TF)
+    'momentum_basic_1h': '모멘텀 기본 (1시간)',
+    'momentum_basic_4h': '모멘텀 기본 (4시간)',
     'momentum_basic_1d': '모멘텀 기본 (1일)',
     'momentum_stable_1h': '모멘텀 안정형 (1시간)',
+    'momentum_stable_4h': '모멘텀 안정형 (4시간)',
     'momentum_stable_1d': '모멘텀 안정형 (1일)',
     'momentum_aggressive_1h': '모멘텀 공격형 (1시간)',
     'momentum_aggressive_4h': '모멘텀 공격형 (4시간)',
     'momentum_aggressive_1d': '모멘텀 공격형 (1일)',
+    'momentum_elite_1h': '모멘텀 엘리트 (1시간)',
+    'momentum_elite_4h': '모멘텀 엘리트 (4시간)',
     'momentum_elite_1d': '모멘텀 엘리트 (1일)',
+    'steady_compounder_1h': '스테디 복리 (1시간)',
     'steady_compounder_4h': '스테디 복리 (4시간)',
+    'steady_compounder_1d': '스테디 복리 (1일)',
 }
 
 # ──────────────────────────────────────────────
@@ -115,14 +122,21 @@ STRATEGY_LABELS: dict[str, str] = {
 # is_public: 일반 사용자에게 공개 여부 (관리자는 항상 전체 표시)
 # DB 설정(strategy_visibility)으로 오버라이드 가능
 STRATEGY_DEFINITIONS: list[dict] = [
+    {"value": "momentum_basic_1h", "label": "모멘텀 기본 (1시간)", "is_public": True},
+    {"value": "momentum_basic_4h", "label": "모멘텀 기본 (4시간)", "is_public": True},
     {"value": "momentum_basic_1d", "label": "모멘텀 기본 (1일)", "is_public": True},
     {"value": "momentum_stable_1h", "label": "모멘텀 안정형 (1시간)", "is_public": True},
+    {"value": "momentum_stable_4h", "label": "모멘텀 안정형 (4시간)", "is_public": True},
     {"value": "momentum_stable_1d", "label": "모멘텀 안정형 (1일)", "is_public": True},
     {"value": "momentum_aggressive_1h", "label": "모멘텀 공격형 (1시간)", "is_public": True},
     {"value": "momentum_aggressive_4h", "label": "모멘텀 공격형 (4시간)", "is_public": True},
     {"value": "momentum_aggressive_1d", "label": "모멘텀 공격형 (1일)", "is_public": True},
+    {"value": "momentum_elite_1h", "label": "모멘텀 엘리트 (1시간)", "is_public": True},
+    {"value": "momentum_elite_4h", "label": "모멘텀 엘리트 (4시간)", "is_public": True},
     {"value": "momentum_elite_1d", "label": "모멘텀 엘리트 (1일)", "is_public": True},
+    {"value": "steady_compounder_1h", "label": "스테디 복리 (1시간)", "is_public": True},
     {"value": "steady_compounder_4h", "label": "스테디 복리 (4시간)", "is_public": True},
+    {"value": "steady_compounder_1d", "label": "스테디 복리 (1일)", "is_public": True},
 ]
 
 # 백테스트 전용 별칭 (더 이상 사용하지 않지만 하위 호환용)
