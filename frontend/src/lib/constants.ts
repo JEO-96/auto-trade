@@ -6,13 +6,6 @@ export const EXCHANGES = [
 ] as const;
 
 export const BOT_STRATEGIES = [
-    { value: 'momentum_breakout_basic', label: '모멘텀 돌파 (기본)' },
-    { value: 'momentum_breakout_pro_stable', label: '모멘텀 돌파 Pro (안정형)' },
-    { value: 'momentum_breakout_pro_aggressive', label: '모멘텀 돌파 Pro (공격형)' },
-    { value: 'momentum_breakout_elite', label: '모멘텀 돌파 Elite' },
-    { value: 'steady_compounder', label: '스테디 복리 (주간 안정형)' },
-    { value: 'steady_compounder_v1', label: '스테디 복리 V1 (백업)' },
-    // Timeframe-optimized (성능 검증 통과 8개)
     { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)' },
     { value: 'momentum_stable_1h', label: '모멘텀 안정형 (1시간)' },
     { value: 'momentum_stable_1d', label: '모멘텀 안정형 (1일)' },
@@ -23,15 +16,8 @@ export const BOT_STRATEGIES = [
     { value: 'steady_compounder_4h', label: '스테디 복리 (4시간)' },
 ] as const;
 
-/** 백테스트 전용 전략 (james_* 시리즈 등 BOT_STRATEGIES와 다른 이름 체계) */
+/** 백테스트 전용 전략 */
 export const STRATEGIES = [
-    { value: 'james_basic', label: '모멘텀 돌파 (기본)' },
-    { value: 'james_pro_stable', label: '모멘텀 돌파 Pro (안정형)' },
-    { value: 'james_pro_aggressive', label: '모멘텀 돌파 Pro (공격형)' },
-    { value: 'james_pro_elite', label: '모멘텀 돌파 PRO (초고수익형)' },
-    { value: 'steady_compounder', label: '스테디 복리 (주간 안정형)' },
-    { value: 'steady_compounder_v1', label: '스테디 복리 V1 (백업)' },
-    // Timeframe-optimized (성능 검증 통과 8개)
     { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)' },
     { value: 'momentum_stable_1h', label: '모멘텀 안정형 (1시간)' },
     { value: 'momentum_stable_1d', label: '모멘텀 안정형 (1일)' },
@@ -65,14 +51,8 @@ export const BOT_POLL_INTERVAL_MS = 10000;
 
 export const BACKTEST_POLL_INTERVAL_MS = 1000;
 
-/** 봇 전략(momentum_*) → 백테스트 전략(james_*) 매핑 (타임프레임 설정 공유용) */
+/** 봇 전략 → 백테스트 전략 매핑 (동일 이름 체계) */
 export const BOT_TO_BACKTEST_STRATEGY: Record<string, string> = {
-    'momentum_breakout_basic': 'james_basic',
-    'momentum_breakout_pro_stable': 'james_pro_stable',
-    'momentum_breakout_pro_aggressive': 'james_pro_aggressive',
-    'momentum_breakout_elite': 'james_pro_elite',
-    'steady_compounder': 'steady_compounder',
-    // Timeframe-optimized (성능 검증 통과 8개)
     'momentum_basic_1d': 'momentum_basic_1d',
     'momentum_stable_1h': 'momentum_stable_1h',
     'momentum_stable_1d': 'momentum_stable_1d',
@@ -84,10 +64,23 @@ export const BOT_TO_BACKTEST_STRATEGY: Record<string, string> = {
 };
 
 /** 전략 value → 사용자 친화적 label 맵 (BOT_STRATEGIES + STRATEGIES 통합) */
-const STRATEGY_LABEL_MAP: Record<string, string> = Object.fromEntries([
-    ...BOT_STRATEGIES.map(s => [s.value, s.label]),
-    ...STRATEGIES.map(s => [s.value, s.label]),
-]);
+const STRATEGY_LABEL_MAP: Record<string, string> = {
+    ...Object.fromEntries([
+        ...BOT_STRATEGIES.map(s => [s.value, s.label]),
+        ...STRATEGIES.map(s => [s.value, s.label]),
+    ]),
+    // Legacy aliases (기존 DB 데이터 표시용)
+    'momentum_breakout_basic': '모멘텀 돌파 (기본)',
+    'momentum_breakout_pro_stable': '모멘텀 돌파 Pro (안정형)',
+    'momentum_breakout_pro_aggressive': '모멘텀 돌파 Pro (공격형)',
+    'momentum_breakout_elite': '모멘텀 돌파 Elite',
+    'james_basic': '모멘텀 돌파 (기본)',
+    'james_pro_stable': '모멘텀 돌파 Pro (안정형)',
+    'james_pro_aggressive': '모멘텀 돌파 Pro (공격형)',
+    'james_pro_elite': '모멘텀 돌파 PRO (초고수익형)',
+    'steady_compounder': '스테디 복리 (주간 안정형)',
+    'steady_compounder_v1': '스테디 복리 V1 (백업)',
+};
 
 /**
  * 전략 내부 이름에서 사용자 친화적 레이블을 반환합니다.

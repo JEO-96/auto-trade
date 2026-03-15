@@ -15,12 +15,6 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 
 # 기본값: 전략별 허용 타임프레임 (설정이 없을 때 폴백)
 DEFAULT_STRATEGY_TIMEFRAMES: dict[str, list[str]] = {
-    "james_basic": ["1h", "4h", "1d"],
-    "james_pro_stable": ["1h", "4h"],
-    "james_pro_aggressive": ["1h", "4h"],
-    "james_pro_elite": ["4h", "1d"],
-    "steady_compounder": ["4h"],
-    # Timeframe-optimized (각 전략의 최적 타임프레임 고정)
     "momentum_basic_1d": ["1d"],
     "momentum_stable_1h": ["1h"],
     "momentum_stable_1d": ["1d"],

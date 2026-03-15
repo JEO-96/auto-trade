@@ -115,13 +115,6 @@ STRATEGY_LABELS: dict[str, str] = {
 # is_public: 일반 사용자에게 공개 여부 (관리자는 항상 전체 표시)
 # DB 설정(strategy_visibility)으로 오버라이드 가능
 STRATEGY_DEFINITIONS: list[dict] = [
-    {"value": "momentum_breakout_basic", "label": "모멘텀 돌파 (기본)", "is_public": True},
-    {"value": "momentum_breakout_pro_stable", "label": "모멘텀 돌파 Pro (안정형)", "is_public": True},
-    {"value": "momentum_breakout_pro_aggressive", "label": "모멘텀 돌파 Pro (공격형)", "is_public": True},
-    {"value": "momentum_breakout_elite", "label": "모멘텀 돌파 Elite", "is_public": True},
-    {"value": "steady_compounder", "label": "스테디 복리 (주간 안정형)", "is_public": True},
-    {"value": "steady_compounder_v1", "label": "스테디 복리 V1 (백업)", "is_public": False},
-    # Timeframe-optimized (성능 검증 통과 8개)
     {"value": "momentum_basic_1d", "label": "모멘텀 기본 (1일)", "is_public": True},
     {"value": "momentum_stable_1h", "label": "모멘텀 안정형 (1시간)", "is_public": True},
     {"value": "momentum_stable_1d", "label": "모멘텀 안정형 (1일)", "is_public": True},
@@ -132,10 +125,5 @@ STRATEGY_DEFINITIONS: list[dict] = [
     {"value": "steady_compounder_4h", "label": "스테디 복리 (4시간)", "is_public": True},
 ]
 
-# 백테스트 전용 별칭 (james_* 시리즈)
-BACKTEST_STRATEGY_ALIASES: list[dict] = [
-    {"value": "james_basic", "label": "모멘텀 돌파 (기본)", "maps_to": "momentum_breakout_basic"},
-    {"value": "james_pro_stable", "label": "모멘텀 돌파 Pro (안정형)", "maps_to": "momentum_breakout_pro_stable"},
-    {"value": "james_pro_aggressive", "label": "모멘텀 돌파 Pro (공격형)", "maps_to": "momentum_breakout_pro_aggressive"},
-    {"value": "james_pro_elite", "label": "모멘텀 돌파 PRO (초고수익형)", "maps_to": "momentum_breakout_elite"},
-]
+# 백테스트 전용 별칭 (더 이상 사용하지 않지만 하위 호환용)
+BACKTEST_STRATEGY_ALIASES: list[dict] = []

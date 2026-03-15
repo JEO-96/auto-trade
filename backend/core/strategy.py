@@ -1,9 +1,4 @@
 from core.strategies.momentum_breakout_basic import MomentumBreakoutBasicStrategy
-from core.strategies.momentum_breakout_pro_stable import MomentumBreakoutProStableStrategy
-from core.strategies.momentum_breakout_pro_aggressive import MomentumBreakoutProAggressiveStrategy
-from core.strategies.momentum_breakout_elite import MomentumBreakoutEliteStrategy
-from core.strategies.steady_compounder import SteadyCompounderStrategy
-from core.strategies.steady_compounder_v1 import SteadyCompounderV1Strategy
 
 # Timeframe-optimized strategies (성능 검증 완료)
 from core.strategies.momentum_basic_1d import MomentumBasic1DStrategy
@@ -17,17 +12,22 @@ from core.strategies.steady_compounder_4h import SteadyCompounder4hStrategy
 
 # Strategy name -> class mapping
 STRATEGY_MAP = {
-    # Original strategies
-    "james_pro_elite": MomentumBreakoutEliteStrategy,
-    "momentum_elite": MomentumBreakoutEliteStrategy,
-    "james_pro_stable": MomentumBreakoutProStableStrategy,
-    "momentum_stable": MomentumBreakoutProStableStrategy,
-    "james_pro_aggressive": MomentumBreakoutProAggressiveStrategy,
-    "momentum_aggressive": MomentumBreakoutProAggressiveStrategy,
-    "steady_compounder": SteadyCompounderStrategy,
-    "steady_compounder_v1": SteadyCompounderV1Strategy,
+    # Legacy aliases (DB 하위 호환 — 기존 봇/백테스트 데이터 유지)
+    "momentum_breakout_basic": MomentumBasic1DStrategy,
+    "james_basic": MomentumBasic1DStrategy,
+    "momentum_breakout_pro_stable": MomentumStable1hStrategy,
+    "james_pro_stable": MomentumStable1hStrategy,
+    "momentum_stable": MomentumStable1hStrategy,
+    "momentum_breakout_pro_aggressive": MomentumAggressive1dStrategy,
+    "james_pro_aggressive": MomentumAggressive1dStrategy,
+    "momentum_aggressive": MomentumAggressive1dStrategy,
+    "momentum_breakout_elite": MomentumElite1dStrategy,
+    "james_pro_elite": MomentumElite1dStrategy,
+    "momentum_elite": MomentumElite1dStrategy,
+    "steady_compounder": SteadyCompounder4hStrategy,
+    "steady_compounder_v1": SteadyCompounder4hStrategy,
 
-    # Timeframe-optimized (8개 — 성능 검증 통과)
+    # Timeframe-optimized (8개 — 현재 활성 전략)
     "momentum_basic_1d": MomentumBasic1DStrategy,
     "momentum_stable_1h": MomentumStable1hStrategy,
     "momentum_stable_1d": MomentumStable1dStrategy,
@@ -38,7 +38,7 @@ STRATEGY_MAP = {
     "steady_compounder_4h": SteadyCompounder4hStrategy,
 }
 
-DEFAULT_STRATEGY = "momentum_stable"
+DEFAULT_STRATEGY = "momentum_stable_1h"
 
 
 def get_strategy(name: str = DEFAULT_STRATEGY):
