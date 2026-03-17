@@ -5,7 +5,6 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import Union
 import models, schemas, auth
-import credit_service
 from crypto_utils import encrypt_token
 from dependencies import get_db, get_current_user
 from kakao_service import exchange_code_for_tokens, get_user_info, verify_token, KakaoAuthError
@@ -88,9 +87,6 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
     db.commit()
     db.refresh(user)
 
-    if is_new_user:
-        credit_service.initialize_credits(db, user.id)
-
     access_token = auth.create_access_token(
         data={"sub": user.email},
         expires_delta=auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES),
@@ -129,9 +125,6 @@ async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteR
     db.commit()
     db.refresh(user)
 
-    if is_new_user:
-        credit_service.initialize_credits(db, user.id)
-
     access_token = auth.create_access_token(
         data={"sub": user.email},
         expires_delta=auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -140,14 +133,12 @@ async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteR
 
 @router.get("/me", response_model=schemas.UserResponse)
 def get_me(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    credit = credit_service.get_balance(db, current_user.id)
     return schemas.UserResponse(
         id=current_user.id,
         email=current_user.email,
         nickname=current_user.nickname,
         is_active=current_user.is_active,
         is_admin=current_user.is_admin,
-        credit_balance=credit.balance,
         telegram_chat_id=current_user.telegram_chat_id,
         notification_trade=current_user.notification_trade if current_user.notification_trade is not None else True,
         notification_bot_status=current_user.notification_bot_status if current_user.notification_bot_status is not None else True,
@@ -219,8 +210,6 @@ if _IS_DEV:
             db.add(user)
             db.commit()
             db.refresh(user)
-            credit_service.initialize_credits(db, user.id)
-
         access_token = auth.create_access_token(
             data={"sub": user.email},
             expires_delta=auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES),

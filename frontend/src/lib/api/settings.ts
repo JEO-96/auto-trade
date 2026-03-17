@@ -8,6 +8,7 @@ export interface StrategyItem {
     value: string;
     label: string;
     is_public?: boolean;
+    status?: 'confirmed' | 'testing';
 }
 
 export interface StrategiesResponse {

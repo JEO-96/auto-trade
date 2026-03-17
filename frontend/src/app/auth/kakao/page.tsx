@@ -73,7 +73,7 @@ export default function KakaoCallbackPage() {
                 ) : (
                     <div className="space-y-4">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                        <p className="text-white text-xl">카카오 로그인 처리 중...</p>
+                        <p className="text-th-text text-xl">카카오 로그인 처리 중...</p>
                     </div>
                 )}
             </div>

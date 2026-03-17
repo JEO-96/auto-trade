@@ -60,9 +60,9 @@ export default function SettingsPage() {
         return (
             <PageContainer>
                 <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <ShieldAlert className="w-16 h-16 text-gray-600 mb-4" />
-                    <h2 className="text-xl font-bold text-white mb-2">접근 권한이 없습니다</h2>
-                    <p className="text-sm text-gray-500">이 페이지는 관리자만 접근할 수 있습니다.</p>
+                    <ShieldAlert className="w-16 h-16 text-th-text-muted mb-4" />
+                    <h2 className="text-xl font-bold text-th-text mb-2">접근 권한이 없습니다</h2>
+                    <p className="text-sm text-th-text-muted">이 페이지는 관리자만 접근할 수 있습니다.</p>
                 </div>
             </PageContainer>
         );
@@ -81,11 +81,11 @@ export default function SettingsPage() {
     return (
         <PageContainer>
             <header className="mb-6">
-                <h1 className="text-2xl font-bold mb-1 text-white flex items-center gap-2">
+                <h1 className="text-2xl font-bold mb-1 text-th-text flex items-center gap-2">
                     <Settings className="w-6 h-6 text-primary" />
                     시스템 설정
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-th-text-muted">
                     전략 공개 여부를 관리합니다.
                 </p>
             </header>
@@ -98,11 +98,11 @@ export default function SettingsPage() {
 
             {/* 전략 공개 설정 */}
             <section className="mb-8">
-                <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-th-text mb-3 flex items-center gap-2">
                     <Eye className="w-5 h-5 text-primary" />
                     전략 공개 설정
                 </h2>
-                <p className="text-xs text-gray-500 mb-4">
+                <p className="text-xs text-th-text-muted mb-4">
                     비공개 전략은 관리자만 사용할 수 있습니다. 공개로 전환하면 모든 사용자에게 노출됩니다.
                 </p>
                 <div className="grid gap-3">
@@ -122,8 +122,8 @@ export default function SettingsPage() {
                                         <EyeOff className="w-4 h-4 text-yellow-500" />
                                     )}
                                     <div>
-                                        <p className="text-sm font-bold text-white">{s.label}</p>
-                                        <p className="text-[10px] text-gray-500 font-mono">{s.value}</p>
+                                        <p className="text-sm font-bold text-th-text">{s.label}</p>
+                                        <p className="text-[10px] text-th-text-muted font-mono">{s.value}</p>
                                     </div>
                                 </div>
                                 <button

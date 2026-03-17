@@ -55,7 +55,7 @@ def db_session():
 def fake_get_db_session_factory(session):
     """database.get_db_session()을 대체할 컨텍스트 매니저 팩토리.
 
-    position_manager, credit_service 등이 내부적으로 사용하는
+    position_manager 등이 내부적으로 사용하는
     `with database.get_db_session() as db:` 패턴을 테스트 세션으로 교체.
     """
     yield session

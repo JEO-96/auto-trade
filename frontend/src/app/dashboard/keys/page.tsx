@@ -104,7 +104,7 @@ export default function ApiKeysPage() {
                     <KeyRound className="w-6 h-6 text-secondary" />
                     거래소 연동 설정
                 </h1>
-                <p className="text-sm text-gray-500">자동매매에 필요한 거래소 API 키를 관리합니다.</p>
+                <p className="text-sm text-th-text-muted">자동매매에 필요한 거래소 API 키를 관리합니다.</p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -143,19 +143,19 @@ export default function ApiKeysPage() {
                         )}
 
                         <div>
-                            <label className="text-xs text-gray-500 font-medium mb-1.5 block">API Key (Access Key)</label>
+                            <label className="text-xs text-th-text-muted font-medium mb-1.5 block">API Key (Access Key)</label>
                             <input
                                 type="text"
                                 value={apiKey}
                                 onChange={(e) => setApiKey(e.target.value)}
                                 required
                                 placeholder="API 키를 입력하세요"
-                                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 text-sm focus:border-primary/30 transition-colors"
+                                className="w-full bg-th-card border border-th-border rounded-xl p-3 text-sm focus:border-primary/30 transition-colors"
                             />
                         </div>
 
                         <div>
-                            <label className="text-xs text-gray-500 font-medium mb-1.5 block">Secret Key</label>
+                            <label className="text-xs text-th-text-muted font-medium mb-1.5 block">Secret Key</label>
                             <div className="relative">
                                 <input
                                     type={showSecret ? "text" : "password"}
@@ -163,13 +163,13 @@ export default function ApiKeysPage() {
                                     onChange={(e) => setApiSecret(e.target.value)}
                                     required
                                     placeholder="시크릿 키를 입력하세요"
-                                    className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 pr-10 text-sm focus:border-primary/30 transition-colors"
+                                    className="w-full bg-th-card border border-th-border rounded-xl p-3 pr-10 text-sm focus:border-primary/30 transition-colors"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowSecret(!showSecret)}
                                     aria-label={showSecret ? '비밀번호 숨기기' : '비밀번호 보기'}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-th-text-muted hover:text-th-text transition-colors"
                                 >
                                     {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
@@ -214,7 +214,7 @@ export default function ApiKeysPage() {
                             <LoadingSpinner size="sm" message="불러오는 중..." />
                         </div>
                     ) : keys.length === 0 ? (
-                        <div className="text-center py-10 bg-white/[0.02] rounded-xl border border-dashed border-white/[0.06]">
+                        <div className="text-center py-10 bg-th-card rounded-xl border border-dashed border-th-border">
                             <EmptyState
                                 icon={<KeyRound className="w-10 h-10" />}
                                 title="등록된 API 키가 없습니다."
@@ -223,12 +223,12 @@ export default function ApiKeysPage() {
                     ) : (
                         <div className="space-y-3">
                             {keys.map((key) => (
-                                <div key={key.id} className="bg-white/[0.03] border border-white/[0.06] p-4 rounded-xl flex justify-between items-center group hover:border-primary/20 transition-colors">
+                                <div key={key.id} className="bg-th-card border border-th-border p-4 rounded-xl flex justify-between items-center group hover:border-primary/20 transition-colors">
                                     <div>
                                         <span className="uppercase text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-md">
                                             {key.exchange_name}
                                         </span>
-                                        <p className="font-mono text-sm tracking-wider text-gray-400 mt-1.5">
+                                        <p className="font-mono text-sm tracking-wider text-th-text-secondary mt-1.5">
                                             {key.api_key_preview}
                                         </p>
                                     </div>
@@ -236,7 +236,7 @@ export default function ApiKeysPage() {
                                         onClick={() => handleDeleteKey(key.id, key.exchange_name)}
                                         disabled={deleting === key.id}
                                         aria-label="API 키 삭제"
-                                        className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-red-500/[0.08] rounded-lg disabled:opacity-50"
+                                        className="text-th-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-red-500/[0.08] rounded-lg disabled:opacity-50"
                                     >
                                         {deleting === key.id ? (
                                             <div className="w-4 h-4 border border-gray-500/20 border-t-gray-400 rounded-full animate-spin" />
@@ -258,7 +258,7 @@ export default function ApiKeysPage() {
                         </div>
                         <div className="flex-1">
                             <h3 className="text-base font-bold mb-2">API 키 발급 가이드</h3>
-                            <p className="text-sm text-gray-400 mb-4 leading-relaxed">
+                            <p className="text-sm text-th-text-secondary mb-4 leading-relaxed">
                                 자동 매매를 위해 거래소에서 API 키를 발급받아야 합니다.
                             </p>
                             <div className="flex flex-wrap gap-3 mb-4">
@@ -266,7 +266,7 @@ export default function ApiKeysPage() {
                                     href="https://upbit.com/service_center/guide"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="bg-white/[0.04] hover:bg-white/[0.08] text-white px-4 py-2 rounded-lg border border-white/[0.06] flex items-center gap-2 transition-colors text-xs font-medium"
+                                    className="bg-th-card hover:bg-th-hover text-th-text px-4 py-2 rounded-lg border border-th-border flex items-center gap-2 transition-colors text-xs font-medium"
                                 >
                                     <ExternalLink className="w-3.5 h-3.5 text-primary" />
                                     업비트 고객센터
@@ -283,20 +283,20 @@ export default function ApiKeysPage() {
                                     href="https://www.bithumb.com/api_support/management_api"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="bg-white/[0.04] hover:bg-white/[0.08] text-white px-4 py-2 rounded-lg border border-white/[0.06] flex items-center gap-2 transition-colors text-xs font-medium"
+                                    className="bg-th-card hover:bg-th-hover text-th-text px-4 py-2 rounded-lg border border-th-border flex items-center gap-2 transition-colors text-xs font-medium"
                                 >
                                     <ExternalLink className="w-3.5 h-3.5 text-primary" />
                                     빗썸 API 관리
                                 </a>
                             </div>
-                            <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                                <h4 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5">
+                            <div className="p-4 bg-th-card rounded-xl border border-th-border-light">
+                                <h4 className="text-xs font-semibold text-th-text mb-2 flex items-center gap-1.5">
                                     <ShieldCheck className="w-3.5 h-3.5 text-primary" />
                                     보안 체크리스트
                                 </h4>
-                                <ul className="text-xs text-gray-400 space-y-1.5 list-disc pl-4">
-                                    <li><strong className="text-white">IP 주소 제한</strong> 설정 필수 (서버 IP: <code className="text-primary bg-white/[0.04] px-1 rounded text-[10px]">13.124.235.43</code>)</li>
-                                    <li><strong className="text-white">주문, 조회</strong> 권한만 허용. <strong className="text-red-400">출금 권한은 절대 체크하지 마세요.</strong></li>
+                                <ul className="text-xs text-th-text-secondary space-y-1.5 list-disc pl-4">
+                                    <li><strong className="text-th-text">IP 주소 제한</strong> 설정 필수 (서버 IP: <code className="text-primary bg-th-card px-1 rounded text-[10px]">13.124.235.43</code>)</li>
+                                    <li><strong className="text-th-text">주문, 조회</strong> 권한만 허용. <strong className="text-red-400">출금 권한은 절대 체크하지 마세요.</strong></li>
                                     <li>Secret Key는 발급 시 한 번만 표시되므로 반드시 별도 보관하세요.</li>
                                 </ul>
                             </div>

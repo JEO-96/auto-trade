@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 import bot_manager
-import credit_service
 import models
 import schemas
 from constants import (
@@ -249,14 +248,8 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
     if _is_bot_running(bot_id):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bot already running.")
 
-    # 실매매 봇 검증: 크레딧 + 운용자본 vs 거래소 KRW 잔고
+    # 실매매 봇 검증: 운용자본 vs 거래소 KRW 잔고
     if not bot.paper_trading_mode:
-        if not credit_service.check_sufficient_credits(db, current_user.id):
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail="크레딧이 부족합니다. 크레딧을 충전한 후 다시 시도해주세요.",
-            )
-
         bot_exchange = getattr(bot, 'exchange_name', 'upbit') or 'upbit'
         exchange_label = bot_exchange.upper()
 

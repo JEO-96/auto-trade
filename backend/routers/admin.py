@@ -4,7 +4,6 @@ from sqlalchemy import func, text
 from typing import List
 from datetime import date, datetime
 import models, schemas
-import credit_service
 import bot_manager
 from dependencies import get_db, get_admin_user, get_user_or_404
 
@@ -50,18 +49,6 @@ def get_admin_dashboard(
         models.TradeLog.timestamp >= today_str
     ).scalar() or 0.0
 
-    # --- Revenue ---
-    def sum_by_tx_type(tx_type: str) -> float:
-        result = db.query(func.coalesce(func.sum(models.CreditTransaction.amount), 0.0)).filter(
-            models.CreditTransaction.tx_type == tx_type
-        ).scalar()
-        return float(result or 0.0)
-
-    total_credit_purchased = sum_by_tx_type("purchase")
-    total_profit_fees = abs(sum_by_tx_type("profit_fee"))  # profit_fee is negative (deduction)
-    total_loss_refunds = sum_by_tx_type("loss_refund")
-    net_revenue = total_profit_fees - total_loss_refunds
-
     # --- System ---
     db_ok = False
     try:
@@ -88,12 +75,6 @@ def get_admin_dashboard(
             today_trades=today_trades,
             total_pnl=float(total_pnl),
             today_pnl=float(today_pnl),
-        ),
-        revenue=schemas.AdminDashboardRevenue(
-            total_credit_purchased=float(total_credit_purchased),
-            total_profit_fees=float(total_profit_fees),
-            total_loss_refunds=float(total_loss_refunds),
-            net_revenue=float(net_revenue),
         ),
         system=schemas.AdminDashboardSystem(
             active_bot_count=running_now,
@@ -139,8 +120,6 @@ def approve_user(
     user.is_active = True
     db.commit()
     db.refresh(user)
-    # 승인 시 크레딧 초기화 (이미 있으면 무시)
-    credit_service.ensure_user_credit(db, user.id)
     return user
 
 

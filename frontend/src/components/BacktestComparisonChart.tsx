@@ -116,9 +116,9 @@ export default function BacktestComparisonChart({ equityCurve, priceChanges, btc
                         onClick={() => toggle(item.key)}
                         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                             visible[item.key]
-                                ? 'bg-white/[0.08] text-white'
-                                : 'bg-white/[0.02] text-gray-600 line-through'
-                        } ${item.key === 'equity' ? 'cursor-default' : 'cursor-pointer hover:bg-white/[0.12]'}`}
+                                ? 'bg-th-border text-th-text'
+                                : 'bg-th-card text-th-text-muted line-through'
+                        } ${item.key === 'equity' ? 'cursor-default' : 'cursor-pointer hover:bg-th-hover'}`}
                     >
                         <span
                             className="w-3 h-0.5 rounded-full inline-block"

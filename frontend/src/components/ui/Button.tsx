@@ -1,67 +1,79 @@
 import React, { forwardRef } from 'react';
+import { Slot } from '@radix-ui/react-slot';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
 
-type ButtonVariant = 'primary' | 'danger' | 'ghost';
-type ButtonSize = 'sm' | 'md' | 'lg';
+const buttonVariants = cva(
+    'inline-flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none',
+    {
+        variants: {
+            variant: {
+                primary:
+                    'bg-primary hover:bg-primary-dark text-white shadow-glow-primary hover:shadow-[0_4px_16px_rgba(59,130,246,0.35)] active:scale-[0.98]',
+                danger:
+                    'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 active:scale-[0.98]',
+                ghost:
+                    'text-th-text-secondary hover:text-th-text hover:bg-th-hover active:bg-th-border',
+                outline:
+                    'border border-th-border text-th-text-secondary hover:text-th-text hover:bg-th-hover hover:border-th-border active:scale-[0.98]',
+                secondary:
+                    'bg-secondary/10 text-secondary hover:bg-secondary/20 border border-secondary/20 active:scale-[0.98]',
+            },
+            size: {
+                sm: 'px-3 py-1.5 text-xs',
+                md: 'px-4 py-2.5 text-sm',
+                lg: 'px-6 py-3.5 text-sm',
+                icon: 'h-9 w-9',
+            },
+        },
+        defaultVariants: {
+            variant: 'primary',
+            size: 'md',
+        },
+    }
+);
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: ButtonVariant;
-    size?: ButtonSize;
+export interface ButtonProps
+    extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+        VariantProps<typeof buttonVariants> {
+    asChild?: boolean;
     fullWidth?: boolean;
     loading?: boolean;
-    children: React.ReactNode;
 }
-
-const variantStyles: Record<ButtonVariant, string> = {
-    primary:
-        'bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl transition-colors shadow-glow-primary',
-    danger:
-        'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 font-semibold rounded-xl transition-colors',
-    ghost:
-        'text-gray-400 hover:text-white hover:bg-white/[0.03] font-semibold rounded-xl transition-colors',
-};
-
-const sizeStyles: Record<ButtonSize, string> = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2.5 text-sm',
-    lg: 'px-6 py-3.5 text-sm',
-};
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     (
         {
-            variant = 'primary',
-            size = 'md',
+            className,
+            variant,
+            size,
+            asChild = false,
             fullWidth = false,
             loading = false,
             disabled,
             children,
-            className = '',
-            ...rest
+            ...props
         },
         ref
     ) => {
+        const Comp = asChild ? Slot : 'button';
         const isDisabled = disabled || loading;
 
         return (
-            <button
+            <Comp
                 ref={ref}
                 disabled={isDisabled}
-                className={[
-                    'inline-flex items-center justify-center gap-2',
-                    variantStyles[variant],
-                    sizeStyles[size],
-                    fullWidth ? 'w-full' : '',
-                    isDisabled ? 'opacity-40 cursor-not-allowed' : '',
-                    className,
-                ]
-                    .filter(Boolean)
-                    .join(' ')}
-                {...rest}
+                className={cn(
+                    buttonVariants({ variant, size }),
+                    fullWidth && 'w-full',
+                    className
+                )}
+                {...props}
             >
                 {loading ? (
                     <>
                         <span
-                            className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"
+                            className="w-4 h-4 border-2 border-current/20 border-t-current rounded-full animate-spin"
                             aria-hidden="true"
                         />
                         <span className="sr-only">로딩 중</span>
@@ -70,11 +82,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 ) : (
                     children
                 )}
-            </button>
+            </Comp>
         );
     }
 );
 
 Button.displayName = 'Button';
 
+export { buttonVariants };
 export default Button;

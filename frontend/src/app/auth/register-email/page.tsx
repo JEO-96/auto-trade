@@ -46,23 +46,23 @@ export default function RegisterEmailPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#0B0F19]">
-            <div className="w-full max-w-md p-8 rounded-2xl border border-white/10 bg-white/[0.03]">
+            <div className="w-full max-w-md p-8 rounded-2xl border border-th-border bg-th-card">
                 <div className="mb-8 text-center">
-                    <h1 className="text-2xl font-bold text-white mb-2">이메일 등록</h1>
-                    <p className="text-sm text-gray-400">
+                    <h1 className="text-2xl font-bold text-th-text mb-2">이메일 등록</h1>
+                    <p className="text-sm text-th-text-secondary">
                         카카오 계정에 이메일 정보가 없습니다.<br />
                         서비스 이용을 위해 이메일을 입력해 주세요.
                     </p>
                     {nickname && (
-                        <p className="mt-3 text-sm text-gray-300">
-                            안녕하세요, <span className="text-white font-medium">{nickname}</span>님
+                        <p className="mt-3 text-sm text-th-text-secondary">
+                            안녕하세요, <span className="text-th-text font-medium">{nickname}</span>님
                         </p>
                     )}
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label htmlFor="email-input" className="block text-sm text-gray-400 mb-1">이메일 주소</label>
+                        <label htmlFor="email-input" className="block text-sm text-th-text-secondary mb-1">이메일 주소</label>
                         <input
                             id="email-input"
                             type="email"
@@ -70,7 +70,7 @@ export default function RegisterEmailPage() {
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="example@email.com"
                             required
-                            className="w-full px-4 py-3 rounded-lg bg-white/[0.05] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-primary"
+                            className="w-full px-4 py-3 rounded-lg bg-th-card border border-th-border text-th-text placeholder-th-text-muted focus:outline-none focus:border-primary"
                         />
                     </div>
 
@@ -89,7 +89,7 @@ export default function RegisterEmailPage() {
 
                 <button
                     onClick={() => router.push('/login')}
-                    className="mt-4 w-full text-center text-sm text-gray-500 hover:text-gray-300 transition-colors"
+                    className="mt-4 w-full text-center text-sm text-th-text-muted hover:text-th-text-secondary transition-colors"
                 >
                     로그인으로 돌아가기
                 </button>

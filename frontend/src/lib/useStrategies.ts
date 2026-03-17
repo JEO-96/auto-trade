@@ -16,10 +16,10 @@ interface UseStrategiesResult {
  */
 export function useStrategies(): UseStrategiesResult {
     const [botStrategies, setBotStrategies] = useState<StrategyItem[]>(
-        BOT_STRATEGIES.map(s => ({ value: s.value, label: s.label }))
+        BOT_STRATEGIES.map(s => ({ value: s.value, label: s.label, status: s.status }))
     );
     const [backtestStrategies, setBacktestStrategies] = useState<StrategyItem[]>(
-        STRATEGIES.map(s => ({ value: s.value, label: s.label }))
+        STRATEGIES.map(s => ({ value: s.value, label: s.label, status: s.status }))
     );
     const [loading, setLoading] = useState(true);
 

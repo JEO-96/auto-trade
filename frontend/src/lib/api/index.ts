@@ -10,5 +10,4 @@ export * from './backtest';
 export * from './keys';
 export * from './admin';
 export * from './community';
-export * from './credits';
 export * from './settings';

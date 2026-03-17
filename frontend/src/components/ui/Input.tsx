@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react';
+import { cn } from '@/lib/utils';
 
 interface InputBaseProps {
     label?: string;
@@ -17,11 +18,11 @@ interface SelectInputProps extends InputBaseProps {
     className?: string;
 }
 
-const baseInputStyles =
-    'w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-primary/30 transition-colors';
+const inputStyles =
+    'w-full bg-th-input border border-th-border rounded-xl px-4 py-3 text-sm text-th-text placeholder-th-text-muted transition-all duration-200 focus:border-primary/40 focus:ring-2 focus:ring-primary/10 focus:outline-none';
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-    ({ label, error, className = '', id, ...rest }, ref) => {
+    ({ label, error, className, id, ...rest }, ref) => {
         const inputId = id || (label ? `input-${label.replace(/\s/g, '-')}` : undefined);
 
         return (
@@ -29,7 +30,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 {label && (
                     <label
                         htmlFor={inputId}
-                        className="text-xs text-gray-500 font-medium mb-1.5 block"
+                        className="text-xs text-th-text-muted font-medium mb-1.5 block"
                     >
                         {label}
                     </label>
@@ -37,7 +38,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 <input
                     ref={ref}
                     id={inputId}
-                    className={`${baseInputStyles} ${error ? 'border-red-500/40' : ''} ${className}`}
+                    className={cn(
+                        inputStyles,
+                        error && 'border-red-500/40 focus:border-red-500/60 focus:ring-red-500/10',
+                        className
+                    )}
                     {...rest}
                 />
                 {error && (
@@ -67,14 +72,19 @@ export function SelectInput({
             {label && (
                 <label
                     htmlFor={selectId}
-                    className="text-xs text-gray-500 font-medium mb-1.5 block"
+                    className="text-xs text-th-text-muted font-medium mb-1.5 block"
                 >
                     {label}
                 </label>
             )}
             <select
                 id={selectId}
-                className={`${baseInputStyles} appearance-none cursor-pointer font-medium [&>option]:bg-[#1e293b] [&>option]:text-white ${error ? 'border-red-500/40' : ''} ${className}`}
+                className={cn(
+                    inputStyles,
+                    'appearance-none cursor-pointer font-medium [&>option]:bg-[--select-bg] [&>option]:text-th-text',
+                    error && 'border-red-500/40',
+                    className
+                )}
                 {...selectProps}
             >
                 {children}

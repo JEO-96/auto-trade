@@ -104,11 +104,6 @@ def _process_symbol_exit(
     liquid_capital += (actual_amount * actual_price)
     save_trade_log(bot_config_id, symbol, "SELL", actual_price, actual_amount, f"{reason} (Portfolio)", pnl)
 
-    # 실매매인 경우 크레딧 처리
-    if not paper_trading and pnl != 0:
-        import credit_service
-        credit_service.process_trade_pnl(user_id, pnl)
-
     cost_basis: float = pos['entry_price'] * pos['position_amount']
     pnl_pct: float = (pnl / cost_basis * 100) if cost_basis > 0 else 0.0
     pnl_emoji = "🟢" if pnl >= 0 else "🔴"
@@ -392,7 +387,7 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
     }
 
 
-async def run_bot_loop(bot_config_id: int) -> None:
+async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None:
     logger.info("--- [Bot %d] Engine Started (Portfolio Mode) ---", bot_config_id)
 
     init = _initialize_bot_engine(bot_config_id)
@@ -436,18 +431,19 @@ async def run_bot_loop(bot_config_id: int) -> None:
         except Exception:
             symbol_price_lines.append(f"  {sym}: 조회 실패")
 
-    _send_bot_status_notification(user_id, (
-        f"🟢 봇 가동 시작\n"
-        f"{'─' * 24}\n"
-        f"모드: {mode_label}\n"
-        f"전략: {strategy_label}\n"
-        f"타임프레임: {timeframe}봉\n"
-        f"거래소: {exchange_label}\n"
-        f"{capital_line}\n"
-        f"{'─' * 24}\n"
-        f"📊 종목 현재가\n"
-        + "\n".join(symbol_price_lines)
-    ))
+    if not is_recovery:
+        _send_bot_status_notification(user_id, (
+            f"🟢 봇 가동 시작\n"
+            f"{'─' * 24}\n"
+            f"모드: {mode_label}\n"
+            f"전략: {strategy_label}\n"
+            f"타임프레임: {timeframe}봉\n"
+            f"거래소: {exchange_label}\n"
+            f"{capital_line}\n"
+            f"{'─' * 24}\n"
+            f"📊 종목 현재가\n"
+            + "\n".join(symbol_price_lines)
+        ))
 
     try:
         while True:
@@ -659,7 +655,8 @@ async def run_bot_loop(bot_config_id: int) -> None:
         logger.info("--- [Bot %d] Engine Stopped (graceful) ---", bot_config_id)
         # 포지션은 DB에 유지 (재시작 시 복구 가능)
         save_positions_to_db(bot_config_id, active_positions)
-        _send_bot_status_notification(user_id, f"🔴 봇 정상 종료\n{'─' * 24}\n전략: {strategy_label} · {timeframe}봉\n종목: {symbols_str}")
+        if not _shutting_down:
+            _send_bot_status_notification(user_id, f"🔴 봇 정상 종료\n{'─' * 24}\n전략: {strategy_label} · {timeframe}봉\n종목: {symbols_str}")
         raise
     except Exception as e:
         logger.error("[Bot %d] Fatal error in bot loop: %s", bot_config_id, e)
@@ -703,7 +700,7 @@ async def recover_active_bots() -> None:
                     "[Recovery] Restarting bot %d (%s, %s, %s)",
                     bot_id, bot_cfg.symbol, bot_cfg.strategy_name, paper_label,
                 )
-                task = asyncio.create_task(run_bot_loop(bot_id))
+                task = asyncio.create_task(run_bot_loop(bot_id, is_recovery=True))
                 active_bots[bot_id] = task
 
             logger.info("[Recovery] Recovered %d bot(s).", len(active_bot_configs))

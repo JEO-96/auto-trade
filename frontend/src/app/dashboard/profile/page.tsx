@@ -192,23 +192,23 @@ export default function ProfilePage() {
 
     return (
         <PageContainer maxWidth="max-w-3xl">
-            <h1 className="text-2xl font-bold text-white mb-6">내 프로필</h1>
+            <h1 className="text-2xl font-bold text-th-text mb-6">내 프로필</h1>
 
             {/* Profile Card */}
             <div className="glass-panel rounded-2xl p-6 mb-6">
                 <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-white/[0.06]">
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-th-border">
                         <UserIcon className="w-8 h-8 text-white/60" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-bold text-white truncate">{user?.nickname || user?.email || '사용자'}</h2>
+                        <h2 className="text-lg font-bold text-th-text truncate">{user?.nickname || user?.email || '사용자'}</h2>
                         <div className="flex items-center gap-3 mt-1 flex-wrap min-w-0">
-                            <span className="flex items-center gap-1 text-xs text-gray-500 min-w-0">
+                            <span className="flex items-center gap-1 text-xs text-th-text-muted min-w-0">
                                 <Mail className="w-3 h-3 shrink-0" />
                                 <span className="truncate">{user?.email}</span>
                             </span>
                             {user?.created_at && (
-                                <span className="flex items-center gap-1 text-xs text-gray-500 shrink-0">
+                                <span className="flex items-center gap-1 text-xs text-th-text-muted shrink-0">
                                     <Calendar className="w-3 h-3 shrink-0" />
                                     {formatDate(user.created_at)}
                                 </span>
@@ -216,14 +216,14 @@ export default function ProfilePage() {
                         </div>
                     </div>
                     <div className="text-center">
-                        <p className="text-2xl font-bold text-white">{postCount}</p>
-                        <p className="text-[10px] text-gray-500">게시글</p>
+                        <p className="text-2xl font-bold text-th-text">{postCount}</p>
+                        <p className="text-[10px] text-th-text-muted">게시글</p>
                     </div>
                 </div>
 
                 {/* Nickname Form */}
-                <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                    <h3 className="text-sm font-semibold text-white mb-3">닉네임 변경</h3>
+                <div className="p-4 bg-th-card rounded-xl border border-th-border-light">
+                    <h3 className="text-sm font-semibold text-th-text mb-3">닉네임 변경</h3>
                     <form onSubmit={handleSaveNickname} className="flex items-end gap-3">
                         <div className="flex-1">
                             <Input
@@ -248,7 +248,7 @@ export default function ProfilePage() {
             <div className="glass-panel rounded-2xl p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Bell className="w-4 h-4 text-blue-400" />
-                    <h3 className="text-sm font-semibold text-white">텔레그램 알림 설정</h3>
+                    <h3 className="text-sm font-semibold text-th-text">텔레그램 알림 설정</h3>
                     {user?.telegram_chat_id && (
                         <Badge variant="success">연동됨</Badge>
                     )}
@@ -256,11 +256,11 @@ export default function ProfilePage() {
 
                 {user?.telegram_chat_id ? (
                     <div className="space-y-3">
-                        <div className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                        <div className="flex items-center gap-3 p-3 bg-th-card rounded-xl border border-th-border-light">
                             <Send className="w-4 h-4 text-blue-400 shrink-0" />
                             <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-400">Chat ID</p>
-                                <p className="text-sm text-white font-mono">{user.telegram_chat_id}</p>
+                                <p className="text-xs text-th-text-secondary">Chat ID</p>
+                                <p className="text-sm text-th-text font-mono">{user.telegram_chat_id}</p>
                             </div>
                             <div className="flex gap-2 shrink-0">
                                 <Button
@@ -284,9 +284,9 @@ export default function ProfilePage() {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-xs text-gray-400 space-y-2.5">
-                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">1</span>텔레그램에서 <a href="https://t.me/backtested_alert_bot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-medium">@backtested_alert_bot</a>을 검색하고 <span className="text-white font-medium">/start</span>를 보내세요.</p>
-                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">2</span>봇이 응답하면, <span className="text-white font-medium">/chatid</span>를 입력하세요. 봇이 Chat ID를 알려줍니다.</p>
+                        <div className="p-3 bg-th-card rounded-xl border border-th-border-light text-xs text-th-text-secondary space-y-2.5">
+                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">1</span>텔레그램에서 <a href="https://t.me/backtested_alert_bot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-medium">@backtested_alert_bot</a>을 검색하고 <span className="text-th-text font-medium">/start</span>를 보내세요.</p>
+                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">2</span>봇이 응답하면, <span className="text-th-text font-medium">/chatid</span>를 입력하세요. 봇이 Chat ID를 알려줍니다.</p>
                             <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">3</span>받은 숫자를 아래에 입력하면 연동 완료!</p>
                         </div>
                         <form onSubmit={handleSaveTelegram} className="flex items-end gap-3">
@@ -313,9 +313,9 @@ export default function ProfilePage() {
             <div className="glass-panel rounded-2xl p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Bell className="w-4 h-4 text-yellow-400" />
-                    <h3 className="text-sm font-semibold text-white">알림 카테고리 설정</h3>
+                    <h3 className="text-sm font-semibold text-th-text">알림 카테고리 설정</h3>
                     {!user?.telegram_chat_id && (
-                        <span className="text-[10px] text-gray-500 ml-auto">텔레그램 연동 후 사용 가능</span>
+                        <span className="text-[10px] text-th-text-muted ml-auto">텔레그램 연동 후 사용 가능</span>
                     )}
                 </div>
 
@@ -342,12 +342,12 @@ export default function ProfilePage() {
                     ]).map(({ key, label, description, icon }) => (
                         <div
                             key={key}
-                            className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]"
+                            className="flex items-center gap-3 p-3 bg-th-card rounded-xl border border-th-border-light"
                         >
                             <div className="shrink-0">{icon}</div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm text-white font-medium">{label}</p>
-                                <p className="text-[11px] text-gray-500">{description}</p>
+                                <p className="text-sm text-th-text font-medium">{label}</p>
+                                <p className="text-[11px] text-th-text-muted">{description}</p>
                             </div>
                             <button
                                 type="button"
@@ -356,7 +356,7 @@ export default function ProfilePage() {
                                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed ${
                                     notifSettings[key]
                                         ? 'bg-primary'
-                                        : 'bg-white/10'
+                                        : 'bg-th-hover'
                                 }`}
                             >
                                 <span
@@ -374,12 +374,12 @@ export default function ProfilePage() {
             <div className="glass-panel rounded-2xl p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Clock className="w-4 h-4 text-purple-400" />
-                    <h3 className="text-sm font-semibold text-white">정기 분석 알림 주기</h3>
+                    <h3 className="text-sm font-semibold text-th-text">정기 분석 알림 주기</h3>
                     {!user?.telegram_chat_id && (
-                        <span className="text-[10px] text-gray-500 ml-auto">텔레그램 연동 후 사용 가능</span>
+                        <span className="text-[10px] text-th-text-muted ml-auto">텔레그램 연동 후 사용 가능</span>
                     )}
                 </div>
-                <p className="text-[11px] text-gray-500 mb-3">
+                <p className="text-[11px] text-th-text-muted mb-3">
                     캔들 분석 피드백의 전송 주기를 설정합니다. 매매 체결/봇 상태 알림은 항상 즉시 전송됩니다.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -399,11 +399,11 @@ export default function ProfilePage() {
                                 className={`p-3 rounded-xl border text-center transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                                     isSelected
                                         ? 'border-primary bg-primary/10 text-primary'
-                                        : 'border-white/[0.06] bg-white/[0.02] text-gray-400 hover:bg-white/[0.04]'
+                                        : 'border-th-border bg-th-card text-th-text-secondary hover:bg-th-hover'
                                 }`}
                             >
-                                <p className={`text-sm font-bold ${isSelected ? 'text-primary' : 'text-white'}`}>{label}</p>
-                                <p className="text-[10px] text-gray-500 mt-0.5">{desc}</p>
+                                <p className={`text-sm font-bold ${isSelected ? 'text-primary' : 'text-th-text'}`}>{label}</p>
+                                <p className="text-[10px] text-th-text-muted mt-0.5">{desc}</p>
                             </button>
                         );
                     })}
@@ -412,13 +412,13 @@ export default function ProfilePage() {
 
             {/* My Posts */}
             <div className="glass-panel rounded-2xl p-6">
-                <h2 className="text-base font-bold text-white mb-4">내 커뮤니티 게시글</h2>
+                <h2 className="text-base font-bold text-th-text mb-4">내 커뮤니티 게시글</h2>
 
                 {loadingPosts ? (
                     <LoadingSpinner size="sm" message="불러오는 중..." />
                 ) : myPosts.length === 0 ? (
                     <div className="text-center py-8">
-                        <p className="text-xs text-gray-600 mb-3">작성한 게시글이 없습니다.</p>
+                        <p className="text-xs text-th-text-muted mb-3">작성한 게시글이 없습니다.</p>
                         <Link href="/dashboard/community">
                             <Button variant="ghost" size="sm">커뮤니티 바로가기</Button>
                         </Link>
@@ -431,13 +431,13 @@ export default function ProfilePage() {
                                 <Link
                                     key={post.id}
                                     href={`/dashboard/community/post?id=${post.id}`}
-                                    className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] transition-colors group"
+                                    className="flex items-center gap-3 p-3 rounded-xl bg-th-card border border-th-border-light hover:bg-th-hover transition-colors group"
                                 >
                                     <Badge variant={badge.variant}>{badge.label}</Badge>
-                                    <span className="flex-1 text-sm text-white font-medium truncate group-hover:text-primary transition-colors">
+                                    <span className="flex-1 text-sm text-th-text font-medium truncate group-hover:text-primary transition-colors">
                                         {post.title}
                                     </span>
-                                    <div className="flex items-center gap-3 text-[11px] text-gray-500 shrink-0">
+                                    <div className="flex items-center gap-3 text-[11px] text-th-text-muted shrink-0">
                                         <span className="flex items-center gap-0.5">
                                             <Heart className="w-3 h-3" /> {post.like_count}
                                         </span>

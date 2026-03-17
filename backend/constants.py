@@ -51,20 +51,6 @@ RETRY_DELAY: int = 2  # seconds
 MAX_CONSECUTIVE_ERRORS: int = 10  # 연속 에러 시 봇 중단 임계값
 
 # ──────────────────────────────────────────────
-# 크레딧 시스템 (Credit System)
-# ──────────────────────────────────────────────
-CREDIT_SIGNUP_BONUS: float = 1000.0        # 가입 시 지급 크레딧
-CREDIT_PROFIT_FEE_RATE: float = 0.10       # 수익의 10% 수수료
-CREDIT_LOSS_REFUND_RATE: float = 0.10      # 손실의 10% 환불
-
-# ──────────────────────────────────────────────
-# 결제 (Payment)
-# ──────────────────────────────────────────────
-MIN_CHARGE_AMOUNT: int = 1000              # 최소 충전 금액 (원)
-MAX_CHARGE_AMOUNT: int = 1000000           # 최대 충전 금액 (원)
-TOSS_CONFIRM_URL: str = "https://api.tosspayments.com/v1/payments/confirm"
-
-# ──────────────────────────────────────────────
 # 데이터 페칭 (Data Fetcher)
 # ──────────────────────────────────────────────
 FETCH_CHUNK_SIZE_UPBIT: int = 200          # Upbit API 1회 요청 최대 캔들 수
@@ -132,26 +118,27 @@ STRATEGY_LABELS: dict[str, str] = {
 # ──────────────────────────────────────────────
 # is_public: 일반 사용자에게 공개 여부 (관리자는 항상 전체 표시)
 # DB 설정(strategy_visibility)으로 오버라이드 가능
+# status: "confirmed" = 검증 완료 확정 전략, "testing" = 테스트 중인 전략
 STRATEGY_DEFINITIONS: list[dict] = [
-    {"value": "momentum_basic_1h", "label": "모멘텀 기본 (1시간)", "is_public": True},
-    {"value": "momentum_basic_4h", "label": "모멘텀 기본 (4시간)", "is_public": True},
-    {"value": "momentum_basic_1d", "label": "모멘텀 기본 (1일)", "is_public": True},
-    {"value": "momentum_stable_1h", "label": "모멘텀 안정형 (1시간)", "is_public": True},
-    {"value": "momentum_stable_4h", "label": "모멘텀 안정형 (4시간)", "is_public": True},
-    {"value": "momentum_stable_1d", "label": "모멘텀 안정형 (1일)", "is_public": True},
-    {"value": "momentum_aggressive_1h", "label": "모멘텀 공격형 (1시간)", "is_public": True},
-    {"value": "momentum_aggressive_4h", "label": "모멘텀 공격형 (4시간)", "is_public": True},
-    {"value": "momentum_aggressive_1d", "label": "모멘텀 공격형 (1일)", "is_public": True},
-    {"value": "multi_signal_1h", "label": "멀티시그널 (1시간)", "is_public": True},
-    {"value": "multi_signal_4h", "label": "멀티시그널 (4시간)", "is_public": True},
-    {"value": "multi_signal_1d", "label": "멀티시그널 (1일)", "is_public": True},
-    {"value": "quick_swing_1h", "label": "퀵 스윙 (1시간)", "is_public": True},
-    {"value": "trend_rider_4h", "label": "트렌드 라이더 (4시간)", "is_public": True},
-    {"value": "wide_swing_1d", "label": "와이드 스윙 (1일)", "is_public": True},
-    {"value": "scalper_15m", "label": "스캘퍼 (15분)", "is_public": True},
-    {"value": "quick_swing_15m", "label": "퀵 스윙 (15분)", "is_public": True},
-    {"value": "multi_signal_15m", "label": "멀티시그널 (15분)", "is_public": True},
-    {"value": "trend_follower_15m", "label": "추세추종 (15분)", "is_public": True},
+    {"value": "trend_rider_4h", "label": "트렌드 라이더 (4시간)", "is_public": True, "status": "confirmed"},
+    {"value": "momentum_basic_1h", "label": "모멘텀 기본 (1시간)", "is_public": True, "status": "testing"},
+    {"value": "momentum_basic_4h", "label": "모멘텀 기본 (4시간)", "is_public": True, "status": "testing"},
+    {"value": "momentum_basic_1d", "label": "모멘텀 기본 (1일)", "is_public": True, "status": "testing"},
+    {"value": "momentum_stable_1h", "label": "모멘텀 안정형 (1시간)", "is_public": True, "status": "testing"},
+    {"value": "momentum_stable_4h", "label": "모멘텀 안정형 (4시간)", "is_public": True, "status": "testing"},
+    {"value": "momentum_stable_1d", "label": "모멘텀 안정형 (1일)", "is_public": True, "status": "testing"},
+    {"value": "momentum_aggressive_1h", "label": "모멘텀 공격형 (1시간)", "is_public": True, "status": "testing"},
+    {"value": "momentum_aggressive_4h", "label": "모멘텀 공격형 (4시간)", "is_public": True, "status": "testing"},
+    {"value": "momentum_aggressive_1d", "label": "모멘텀 공격형 (1일)", "is_public": True, "status": "testing"},
+    {"value": "multi_signal_1h", "label": "멀티시그널 (1시간)", "is_public": True, "status": "testing"},
+    {"value": "multi_signal_4h", "label": "멀티시그널 (4시간)", "is_public": True, "status": "testing"},
+    {"value": "multi_signal_1d", "label": "멀티시그널 (1일)", "is_public": True, "status": "testing"},
+    {"value": "quick_swing_1h", "label": "퀵 스윙 (1시간)", "is_public": True, "status": "testing"},
+    {"value": "wide_swing_1d", "label": "와이드 스윙 (1일)", "is_public": True, "status": "testing"},
+    {"value": "scalper_15m", "label": "스캘퍼 (15분)", "is_public": True, "status": "testing"},
+    {"value": "quick_swing_15m", "label": "퀵 스윙 (15분)", "is_public": True, "status": "testing"},
+    {"value": "multi_signal_15m", "label": "멀티시그널 (15분)", "is_public": True, "status": "testing"},
+    {"value": "trend_follower_15m", "label": "추세추종 (15분)", "is_public": True, "status": "testing"},
 ]
 
 # 백테스트 전용 별칭 (더 이상 사용하지 않지만 하위 호환용)

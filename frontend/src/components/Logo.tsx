@@ -46,7 +46,7 @@ export default function Logo({ size = 'md', showText = true, className = '' }: L
         <path d="M24.5 23 L25.5 24 L27.5 22" stroke="white" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
       </svg>
       {showText && (
-        <span className={`${textClass} font-extrabold tracking-tight text-white`}>
+        <span className={`${textClass} font-extrabold tracking-tight text-th-text`}>
           BACKTESTED
         </span>
       )}

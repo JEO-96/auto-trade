@@ -29,10 +29,6 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
 
-    # Toss Payments
-    toss_client_key: str = ""
-    toss_secret_key: str = ""
-
     # CORS
     cors_origins: list[str] = [
         "http://localhost:3000",
@@ -42,6 +38,7 @@ class Settings(BaseSettings):
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
+        "extra": "ignore",
     }
 
 

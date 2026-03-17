@@ -14,7 +14,6 @@ class UserResponse(UserBase):
     nickname: Optional[str] = None
     is_active: bool
     is_admin: bool = False
-    credit_balance: Optional[float] = None
     telegram_chat_id: Optional[str] = None
     notification_trade: bool = True
     notification_bot_status: bool = True
@@ -43,12 +42,6 @@ class AdminDashboardTrades(BaseModel):
     total_pnl: float
     today_pnl: float
 
-class AdminDashboardRevenue(BaseModel):
-    total_credit_purchased: float
-    total_profit_fees: float
-    total_loss_refunds: float
-    net_revenue: float
-
 class AdminDashboardSystem(BaseModel):
     active_bot_count: int
     db_connection_ok: bool
@@ -58,7 +51,6 @@ class AdminDashboardResponse(BaseModel):
     users: AdminDashboardUsers
     bots: AdminDashboardBots
     trades: AdminDashboardTrades
-    revenue: AdminDashboardRevenue
     system: AdminDashboardSystem
 
 class AdminUserResponse(BaseModel):
@@ -363,85 +355,6 @@ class CommentResponse(BaseModel):
     author_nickname: Optional[str] = None
     content: str
     created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-# -------- Credit Schemas --------
-class CreditBalanceResponse(BaseModel):
-    balance: float
-    total_earned: float
-    total_spent: float
-
-    class Config:
-        from_attributes = True
-
-
-class CreditTransactionResponse(BaseModel):
-    id: int
-    amount: float
-    balance_after: float
-    tx_type: str
-    reference_id: Optional[int] = None
-    description: Optional[str] = None
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class CreditTransactionListResponse(BaseModel):
-    transactions: List[CreditTransactionResponse]
-    total: int
-    page: int
-    page_size: int
-
-
-class AdminCreditAdjust(BaseModel):
-    amount: float
-    description: str = ""
-
-
-class AdminCreditOverview(BaseModel):
-    user_id: int
-    email: str
-    nickname: Optional[str] = None
-    balance: float
-    total_earned: float
-    total_spent: float
-
-    class Config:
-        from_attributes = True
-
-
-# -------- Payment Schemas --------
-class PaymentOrderCreate(BaseModel):
-    amount: int  # 결제 금액 (원)
-
-
-class PaymentOrderResponse(BaseModel):
-    order_id: str
-    amount: int
-    credits: int
-    toss_client_key: str
-
-
-class PaymentConfirmRequest(BaseModel):
-    payment_key: str
-    order_id: str
-    amount: int
-
-
-class PaymentHistoryResponse(BaseModel):
-    id: int
-    order_id: str
-    amount: int
-    credits: int
-    status: str
-    method: Optional[str] = None
-    created_at: datetime
-    confirmed_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

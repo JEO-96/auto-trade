@@ -1,7 +1,12 @@
 'use client';
 
-import { X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader } from '@/components/ui/Dialog';
+
+/**
+ * Legacy ModalWrapper — delegates to Radix Dialog.
+ * Keeps the same external API so existing pages don't break.
+ */
 
 interface ModalHeaderProps {
     icon: React.ReactNode;
@@ -10,18 +15,8 @@ interface ModalHeaderProps {
     onClose: () => void;
 }
 
-export function ModalHeader({ icon, title, titleId, onClose }: ModalHeaderProps) {
-    return (
-        <div className="flex items-center justify-between p-6 border-b border-white/[0.06]">
-            <div className="flex items-center gap-3">
-                {icon}
-                <h2 id={titleId} className="text-base font-bold text-white">{title}</h2>
-            </div>
-            <button onClick={onClose} aria-label="닫기" className="text-gray-500 hover:text-gray-300 transition-colors">
-                <X className="w-5 h-5" />
-            </button>
-        </div>
-    );
+export function ModalHeader({ icon, title, onClose }: ModalHeaderProps) {
+    return <DialogHeader icon={icon} title={title} onClose={onClose} />;
 }
 
 interface ModalWrapperProps {
@@ -32,25 +27,11 @@ interface ModalWrapperProps {
 }
 
 export default function ModalWrapper({ isOpen, maxWidth = 'max-w-md', children, ariaLabelledBy }: ModalWrapperProps) {
-    if (!isOpen) return null;
-
-    const modal = (
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={ariaLabelledBy}
-        >
-            <div className={`w-full ${maxWidth} bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl`}>
+    return (
+        <Dialog open={isOpen}>
+            <DialogContent maxWidth={maxWidth} aria-labelledby={ariaLabelledBy}>
                 {children}
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
-
-    // createPortal로 body에 렌더링 — 부모의 transform/overflow가 fixed 모달을 깨뜨리는 것 방지
-    if (typeof document !== 'undefined') {
-        return createPortal(modal, document.body);
-    }
-
-    return modal;
 }

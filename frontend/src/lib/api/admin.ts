@@ -23,13 +23,6 @@ export interface AdminDashboardTrades {
     today_pnl: number;
 }
 
-export interface AdminDashboardRevenue {
-    total_credit_purchased: number;
-    total_profit_fees: number;
-    total_loss_refunds: number;
-    net_revenue: number;
-}
-
 export interface AdminDashboardSystem {
     active_bot_count: number;
     db_connection_ok: boolean;
@@ -40,7 +33,6 @@ export interface AdminDashboard {
     users: AdminDashboardUsers;
     bots: AdminDashboardBots;
     trades: AdminDashboardTrades;
-    revenue: AdminDashboardRevenue;
     system: AdminDashboardSystem;
 }
 

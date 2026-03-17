@@ -62,6 +62,7 @@ def _build_strategy_list(db: Session, is_admin: bool) -> list[dict]:
                 "value": s["value"],
                 "label": s["label"],
                 "is_public": is_public,
+                "status": s.get("status", "testing"),
             })
     return result
 

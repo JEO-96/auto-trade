@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -13,10 +14,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#020617',
+        background: 'var(--bg)',
         surface: {
-          DEFAULT: '#0F172A',
-          lighter: '#1E293B',
+          DEFAULT: 'var(--surface)',
+          lighter: 'var(--surface-lighter)',
         },
         primary: {
           DEFAULT: '#3B82F6',
@@ -34,6 +35,17 @@ module.exports = {
           light: '#A78BFA',
         },
         danger: '#EF4444',
+        /* Theme-aware semantic colors */
+        'th-text': 'var(--text)',
+        'th-text-secondary': 'var(--text-secondary)',
+        'th-text-muted': 'var(--text-muted)',
+        'th-border': 'var(--border)',
+        'th-border-light': 'var(--border-light)',
+        'th-hover': 'var(--hover)',
+        'th-card': 'var(--card)',
+        'th-overlay': 'var(--overlay)',
+        'th-modal': 'var(--modal)',
+        'th-input': 'var(--input)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out forwards',
@@ -66,5 +78,5 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwindcss-animate')],
 }

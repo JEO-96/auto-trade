@@ -94,14 +94,14 @@ export default function CreatePostPage() {
         <PageContainer maxWidth="max-w-3xl">
             <Link
                 href="/dashboard/community"
-                className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-6"
+                className="inline-flex items-center gap-1.5 text-xs text-th-text-muted hover:text-th-text transition-colors mb-6"
             >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 커뮤니티로 돌아가기
             </Link>
 
             <div className="glass-panel rounded-2xl p-6">
-                <h1 className="text-xl font-bold text-white mb-6">새 글 작성</h1>
+                <h1 className="text-xl font-bold text-th-text mb-6">새 글 작성</h1>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* Post Type */}
@@ -128,19 +128,19 @@ export default function CreatePostPage() {
 
                     {/* Content */}
                     <div>
-                        <label className="text-xs text-gray-500 font-medium mb-1.5 block">내용</label>
+                        <label className="text-xs text-th-text-muted font-medium mb-1.5 block">내용</label>
                         <textarea
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             placeholder="내용을 입력하세요..."
                             rows={6}
-                            className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-primary/30 transition-colors resize-none"
+                            className="w-full bg-th-card border border-th-border rounded-xl px-4 py-3 text-sm text-th-text placeholder-th-text-muted focus:border-primary/30 transition-colors resize-none"
                         />
                     </div>
 
                     {/* Strategy Review Fields */}
                     {postType === 'strategy_review' && (
-                        <div className="space-y-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                        <div className="space-y-4 p-4 bg-th-card rounded-xl border border-th-border-light">
                             <SelectInput
                                 type="select"
                                 label="전략"
@@ -164,7 +164,7 @@ export default function CreatePostPage() {
                             </SelectInput>
 
                             <div>
-                                <label className="text-xs text-gray-500 font-medium mb-2 block">평점</label>
+                                <label className="text-xs text-th-text-muted font-medium mb-2 block">평점</label>
                                 <div className="flex items-center gap-1">
                                     {[1, 2, 3, 4, 5].map((i) => (
                                         <button
@@ -179,12 +179,12 @@ export default function CreatePostPage() {
                                                 className={`w-6 h-6 ${
                                                     i <= (hoverRating || rating)
                                                         ? 'text-amber-400 fill-amber-400'
-                                                        : 'text-gray-600'
+                                                        : 'text-th-text-muted'
                                                 }`}
                                             />
                                         </button>
                                     ))}
-                                    <span className="text-sm text-gray-400 ml-2 font-medium">{rating}/5</span>
+                                    <span className="text-sm text-th-text-secondary ml-2 font-medium">{rating}/5</span>
                                 </div>
                             </div>
                         </div>
@@ -192,7 +192,7 @@ export default function CreatePostPage() {
 
                     {/* Performance Share Fields */}
                     {postType === 'performance_share' && (
-                        <div className="space-y-4 p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                        <div className="space-y-4 p-4 bg-th-card rounded-xl border border-th-border-light">
                             <div className="grid grid-cols-2 gap-3">
                                 <Input
                                     label="심볼"
@@ -241,12 +241,12 @@ export default function CreatePostPage() {
                                 ))}
                             </SelectInput>
                             <div className="flex items-center gap-3">
-                                <label className="text-xs text-gray-500 font-medium">투자 유형:</label>
+                                <label className="text-xs text-th-text-muted font-medium">투자 유형:</label>
                                 <button
                                     type="button"
                                     onClick={() => setPerfIsPaper(true)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                                        perfIsPaper ? 'bg-primary/10 text-primary border border-primary/20' : 'text-gray-500 border border-transparent'
+                                        perfIsPaper ? 'bg-primary/10 text-primary border border-primary/20' : 'text-th-text-muted border border-transparent'
                                     }`}
                                 >
                                     모의투자
@@ -255,7 +255,7 @@ export default function CreatePostPage() {
                                     type="button"
                                     onClick={() => setPerfIsPaper(false)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                                        !perfIsPaper ? 'bg-secondary/10 text-secondary border border-secondary/20' : 'text-gray-500 border border-transparent'
+                                        !perfIsPaper ? 'bg-secondary/10 text-secondary border border-secondary/20' : 'text-th-text-muted border border-transparent'
                                     }`}
                                 >
                                     실투자
