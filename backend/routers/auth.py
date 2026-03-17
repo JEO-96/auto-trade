@@ -70,7 +70,16 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
     # 닉네임은 최초 가입 시 또는 아직 없을 때만 카카오 닉네임으로 설정
     # (사용자가 커뮤니티에서 변경한 닉네임이 로그인마다 덮어씌워지는 것 방지)
     if not user.nickname:
+        logger.warning(
+            "[Auth] Nickname empty for user %s (id=%s), setting to kakao nickname: '%s'",
+            email, getattr(user, 'id', 'new'), nickname,
+        )
         user.nickname = nickname
+    else:
+        logger.info(
+            "[Auth] Nickname preserved for user %s (id=%s): db='%s', kakao='%s'",
+            email, user.id, user.nickname, nickname,
+        )
     # 카카오 토큰 Fernet 암호화 후 저장
     user.kakao_access_token = encrypt_token(kakao_token)
     if kakao_refresh:

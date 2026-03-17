@@ -32,6 +32,7 @@ jobs:
 
         # 2. 서버에서 직접 빌드 & 시작
         docker-compose down --remove-orphans || true
+        docker builder prune -f 2>/dev/null || true
         docker-compose up -d --build
 
         # 3. 헬스체크 (최대 120초)
