@@ -26,6 +26,7 @@ from core.strategies.scalper_15m import Scalper15mStrategy
 from core.strategies.quick_swing_15m import QuickSwing15mStrategy
 from core.strategies.multi_signal_15m import MultiSignal15mStrategy
 from core.strategies.trend_follower_15m import TrendFollower15mStrategy
+from core.strategies.signal_test_15m import SignalTest15mStrategy
 
 # Strategy name -> class mapping
 STRATEGY_MAP = {
@@ -77,6 +78,7 @@ STRATEGY_MAP = {
     "quick_swing_15m": QuickSwing15mStrategy,
     "multi_signal_15m": MultiSignal15mStrategy,
     "trend_follower_15m": TrendFollower15mStrategy,
+    "signal_test_15m": SignalTest15mStrategy,
 }
 
 DEFAULT_STRATEGY = "momentum_stable_1h"

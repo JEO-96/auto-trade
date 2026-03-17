@@ -25,6 +25,7 @@ export const BOT_STRATEGIES = [
     { value: 'quick_swing_15m', label: '퀵 스윙 (15분)', status: 'testing' as const },
     { value: 'multi_signal_15m', label: '멀티시그널 (15분)', status: 'testing' as const },
     { value: 'trend_follower_15m', label: '추세추종 (15분)', status: 'testing' as const },
+    { value: 'signal_test_15m', label: '매매 테스트 (15분)', status: 'testing' as const },
 ] as const;
 
 /** 백테스트 전용 전략 */
@@ -48,6 +49,7 @@ export const STRATEGIES = [
     { value: 'quick_swing_15m', label: '퀵 스윙 (15분)', status: 'testing' as const },
     { value: 'multi_signal_15m', label: '멀티시그널 (15분)', status: 'testing' as const },
     { value: 'trend_follower_15m', label: '추세추종 (15분)', status: 'testing' as const },
+    { value: 'signal_test_15m', label: '매매 테스트 (15분)', status: 'testing' as const },
 ] as const;
 
 export const BOT_TIMEFRAMES = [

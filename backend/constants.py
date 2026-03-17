@@ -111,6 +111,7 @@ STRATEGY_LABELS: dict[str, str] = {
     'quick_swing_15m': '퀵 스윙 (15분)',
     'multi_signal_15m': '멀티시그널 (15분)',
     'trend_follower_15m': '추세추종 (15분)',
+    'signal_test_15m': '매매 테스트 (15분)',
 }
 
 # ──────────────────────────────────────────────
@@ -139,6 +140,7 @@ STRATEGY_DEFINITIONS: list[dict] = [
     {"value": "quick_swing_15m", "label": "퀵 스윙 (15분)", "is_public": True, "status": "testing"},
     {"value": "multi_signal_15m", "label": "멀티시그널 (15분)", "is_public": True, "status": "testing"},
     {"value": "trend_follower_15m", "label": "추세추종 (15분)", "is_public": True, "status": "testing"},
+    {"value": "signal_test_15m", "label": "매매 테스트 (15분)", "is_public": True, "status": "testing"},
 ]
 
 # 백테스트 전용 별칭 (더 이상 사용하지 않지만 하위 호환용)

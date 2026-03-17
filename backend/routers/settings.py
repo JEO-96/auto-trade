@@ -34,6 +34,7 @@ DEFAULT_STRATEGY_TIMEFRAMES: dict[str, list[str]] = {
     "quick_swing_15m": ["15m"],
     "multi_signal_15m": ["15m"],
     "trend_follower_15m": ["15m"],
+    "signal_test_15m": ["15m"],
 }
 
 SETTINGS_KEY = "backtest_strategy_timeframes"
