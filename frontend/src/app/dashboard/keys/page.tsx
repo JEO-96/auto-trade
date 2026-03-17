@@ -289,16 +289,43 @@ export default function ApiKeysPage() {
                                     빗썸 API 관리
                                 </a>
                             </div>
-                            <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                                <h4 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5">
-                                    <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                                    보안 체크리스트
-                                </h4>
-                                <ul className="text-xs text-gray-400 space-y-1.5 list-disc pl-4">
-                                    <li><strong className="text-white">IP 주소 제한</strong> 설정 필수 (서버 IP: <code className="text-primary bg-white/[0.02] px-1 rounded text-[10px]">13.124.235.43</code>)</li>
-                                    <li><strong className="text-white">주문, 조회</strong> 권한만 허용. <strong className="text-red-400">출금 권한은 절대 체크하지 마세요.</strong></li>
-                                    <li>Secret Key는 발급 시 한 번만 표시되므로 반드시 별도 보관하세요.</li>
-                                </ul>
+                            <div className="space-y-3">
+                                {/* 업비트 발급 가이드 */}
+                                <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                                    <h4 className="text-xs font-semibold text-white mb-2.5">업비트 (Upbit) API 발급 방법</h4>
+                                    <ol className="text-xs text-gray-400 space-y-1.5 list-decimal pl-4">
+                                        <li><a href="https://upbit.com/mypage/open_api_management" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">업비트 Open API 관리</a> 페이지 접속</li>
+                                        <li><strong className="text-white">Open API Key 발급</strong> 클릭</li>
+                                        <li>권한 설정: <strong className="text-white">자산조회</strong>, <strong className="text-white">주문조회</strong>, <strong className="text-white">주문하기</strong> 체크 <span className="text-red-400">(출금 체크 금지)</span></li>
+                                        <li><strong className="text-white">허용 IP 주소</strong>에 서버 IP 입력: <code className="text-primary bg-white/[0.02] px-1 rounded text-[10px]">13.124.235.43</code></li>
+                                        <li>2단계 인증 후 <strong className="text-white">Access Key</strong>와 <strong className="text-white">Secret Key</strong> 복사</li>
+                                    </ol>
+                                </div>
+
+                                {/* 빗썸 발급 가이드 */}
+                                <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                                    <h4 className="text-xs font-semibold text-white mb-2.5">빗썸 (Bithumb) API 발급 방법</h4>
+                                    <ol className="text-xs text-gray-400 space-y-1.5 list-decimal pl-4">
+                                        <li><a href="https://www.bithumb.com/api_support/management_api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">빗썸 API 관리</a> 페이지 접속</li>
+                                        <li><strong className="text-white">API Key 발급</strong> 클릭</li>
+                                        <li>권한 설정: <strong className="text-white">거래 기능 사용</strong>, <strong className="text-white">조회</strong> 체크 <span className="text-red-400">(출금 체크 금지)</span></li>
+                                        <li><strong className="text-white">허용 IP</strong>에 서버 IP 입력: <code className="text-primary bg-white/[0.02] px-1 rounded text-[10px]">13.124.235.43</code></li>
+                                        <li>본인인증 후 <strong className="text-white">API Key(Connect Key)</strong>와 <strong className="text-white">Secret Key</strong> 복사</li>
+                                    </ol>
+                                </div>
+
+                                {/* 보안 체크리스트 */}
+                                <div className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                                    <h4 className="text-xs font-semibold text-white mb-2 flex items-center gap-1.5">
+                                        <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                                        보안 체크리스트
+                                    </h4>
+                                    <ul className="text-xs text-gray-400 space-y-1.5 list-disc pl-4">
+                                        <li><strong className="text-white">IP 주소 제한</strong> 설정 필수 (서버 IP: <code className="text-primary bg-white/[0.02] px-1 rounded text-[10px]">13.124.235.43</code>)</li>
+                                        <li><strong className="text-white">주문, 조회</strong> 권한만 허용. <strong className="text-red-400">출금 권한은 절대 체크하지 마세요.</strong></li>
+                                        <li>Secret Key는 발급 시 한 번만 표시되므로 반드시 별도 보관하세요.</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
