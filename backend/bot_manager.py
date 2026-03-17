@@ -653,10 +653,49 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
             await asyncio.sleep(sleep_time)
     except asyncio.CancelledError:
         logger.info("--- [Bot %d] Engine Stopped (graceful) ---", bot_config_id)
-        # 포지션은 DB에 유지 (재시작 시 복구 가능)
-        save_positions_to_db(bot_config_id, active_positions)
-        if not _shutting_down:
-            _send_bot_status_notification(user_id, f"🔴 봇 정상 종료\n{'─' * 24}\n전략: {strategy_label} · {timeframe}봉\n종목: {symbols_str}")
+
+        if _shutting_down:
+            # 서버 셧다운: 포지션 DB 보존 (재시작 시 자동 복구)
+            save_positions_to_db(bot_config_id, active_positions)
+        else:
+            # 사용자 수동 종료: 보유 포지션 전량 시장가 매도
+            closed_details: list[str] = []
+            for sym, pos in list(active_positions.items()):
+                try:
+                    curr_price = float(fetcher.exchange.fetch_ticker(sym).get('last', 0))
+                except Exception:
+                    curr_price = pos['entry_price']  # fallback
+
+                sell_result = execution.execute_sell(
+                    sym, curr_price, pos['position_amount'], reason="Bot Stop",
+                )
+                if sell_result and sell_result["status"] == "success":
+                    actual_price = sell_result.get("price", curr_price)
+                    actual_amount = sell_result.get("amount", pos['position_amount'])
+                    pnl = (actual_price - pos['entry_price']) * actual_amount
+                    save_trade_log(bot_config_id, sym, "SELL", actual_price, actual_amount, "Bot Stop (청산)", pnl)
+                    pnl_pct = (pnl / (pos['entry_price'] * pos['position_amount']) * 100) if pos['entry_price'] > 0 else 0
+                    pnl_emoji = "🟢" if pnl >= 0 else "🔴"
+                    closed_details.append(f"  {sym}: {actual_price:,.0f} KRW ({pnl_emoji}{pnl_pct:+.2f}%)")
+                    logger.info("[Bot %d] Stop-close %s: price=%.0f, pnl=%.0f", bot_config_id, sym, actual_price, pnl)
+                else:
+                    closed_details.append(f"  {sym}: ❌ 매도 실패 — 거래소에서 직접 확인 필요")
+                    logger.error("[Bot %d] Failed to close position %s on stop", bot_config_id, sym)
+
+            active_positions.clear()
+            save_positions_to_db(bot_config_id, active_positions)
+
+            # 종료 알림 (청산 내역 포함)
+            close_section = ""
+            if closed_details:
+                close_section = f"\n📉 포지션 청산\n" + "\n".join(closed_details)
+            _send_bot_status_notification(user_id, (
+                f"🔴 봇 정상 종료\n"
+                f"{'─' * 24}\n"
+                f"전략: {strategy_label} · {timeframe}봉\n"
+                f"종목: {symbols_str}"
+                f"{close_section}"
+            ))
         raise
     except Exception as e:
         logger.error("[Bot %d] Fatal error in bot loop: %s", bot_config_id, e)

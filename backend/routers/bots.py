@@ -272,30 +272,21 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
 async def stop_bot(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     bot = _get_user_bot(bot_id, current_user.id, db)
 
-    # 실매매 봇의 보유 포지션 확인 (소유권 확인된 bot_id만 조회)
-    has_positions = db.query(models.ActivePosition).filter(
-        models.ActivePosition.bot_id == bot_id
-    ).count() > 0
-    warning = ""
-    if not bot.paper_trading_mode and has_positions:
-        warning = " 주의: 실매매 포지션이 있습니다. 거래소에서 보유 중인 코인을 직접 확인해주세요."
-
     task = bot_manager.active_bots.get(bot_id)
     if task is not None and not task.done():
         task.cancel()
-        # cancel 후 task의 finally 블록이 완료될 때까지 대기
-        # (finally에서 active_bots.pop + set_bot_active(False) 실행됨)
+        # cancel 후 task의 CancelledError 핸들러에서 포지션 매도 + finally 정리 완료 대기
         try:
             await task
         except asyncio.CancelledError:
             pass
-        # finally 블록이 포지션을 DB에 저장한 후 정리
+        # CancelledError 핸들러가 포지션 매도 후 DB를 정리함
         bot_manager.clear_positions_from_db(bot_id)
-        return {"status": "success", "message": f"Bot {bot_id} stopped.{warning}"}
+        return {"status": "success", "message": f"Bot {bot_id} stopped. 보유 포지션이 자동 청산되었습니다."}
     # 메모리에 없지만 DB에 active로 남아있을 수 있음
     bot_manager.set_bot_active(bot_id, False)
     bot_manager.clear_positions_from_db(bot_id)
-    return {"status": "error", "message": f"Bot was not running.{warning}"}
+    return {"status": "error", "message": f"Bot was not running."}
 
 @router.get("/status/{bot_id}")
 def status_bot(bot_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
