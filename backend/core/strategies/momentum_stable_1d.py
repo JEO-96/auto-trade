@@ -1,18 +1,12 @@
 """
 MomentumStable1dStrategy - 일봉 최적화 모멘텀 안정형 전략
 
-MaxDD 최소화 목표 (basic_1d 6.3% 이하 → 목표 <6%):
-- 볼륨 임계값 1.5x (일봉 변동폭 대응)
-- RSI 임계값 55, RSI 상한 78
-- ADX 임계값 25 (강화: 22→25, 매우 강한 추세만 진입)
+트레일링 스탑 추세 추종 모드:
+- RSI 50, ADX 18, 볼륨 1.0x (일봉 신호 적극 포착)
 - DI+ > DI- 방향성 필터
-- ATR SL 1.5x, TP 2.5x, trailing 1.8x (매우 타이트한 손절/익절)
 - EMA_50 > EMA_200 골든크로스 필터
-- 최근 5봉 최고 종가 돌파 조건
-
-v3 변경사항 (MaxDD 추가 감소):
-- ADX 22→25, pullback ADX 25→28
-- ATR SL 2.0→1.5, TP 3.5→2.5, trailing 2.5→1.8
+- 최근 2봉 최고 종가 돌파 조건
+- 트레일링 스탑 5% (고점 대비 하락 시 청산, TP 없음)
 """
 import pandas as pd
 import numpy as np
@@ -32,26 +26,27 @@ class MomentumStable1dStrategy(BaseStrategy):
         super().__init__()
         self.use_trailing_stop = True
 
-        # 신호 임계값
-        self.rsi_threshold = 55
+        # 신호 임계값 (완화: 일봉 신호 적극 포착)
+        self.rsi_threshold = 50
         self.rsi_upper_limit = 78
-        self.adx_threshold = 22
-        self.volume_multiplier = 1.5
+        self.adx_threshold = 18
+        self.volume_multiplier = 1.0
 
-        # 출구 파라미터
+        # 출구 파라미터 (실매매용 ATR 기반)
         self.atr_sl_multiplier = 2.0
         self.atr_tp_multiplier = 3.5
         self.trailing_stop_multiplier = 2.5
 
-        # 백테스트 SL/TP (그리드 서치 최적화: 31% PnL, 10.8% MaxDD)
-        self.backtest_sl_pct = 0.02   # 2% SL
-        self.backtest_tp_pct = 0.20   # 20% TP
+        # 백테스트/실매매: 트레일링 스탑 모드 (고점 대비 5% 하락 시 청산)
+        self.backtest_sl_pct = 0.05   # 5% trailing stop
+        self.backtest_tp_pct = None   # TP 없음 (추세 추종)
+        self.backtest_trailing = True
 
         # 풀백 ADX 임계값
-        self.pullback_adx_threshold = 25
+        self.pullback_adx_threshold = 15
 
         # 최근 N봉 최고가 돌파 조건
-        self.breakout_lookback = 5
+        self.breakout_lookback = 2
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 200:

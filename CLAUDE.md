@@ -479,7 +479,7 @@ Centralizes auth state (user, login, logout) with localStorage JWT management.
 
 ## Trading Strategies
 
-5가지 기본 전략 × 3개 타임프레임(1h/4h/1d) = **15개 전략**. 모든 전략은 `backend/core/strategies/`에 위치.
+5가지 기본 전략 × 3개 타임프레임(1h/4h/1d) = 15개 전략 + 15분봉 전략 4개 = **19개 전략**. 모든 전략은 `backend/core/strategies/`에 위치.
 
 ### Strategy Architecture
 - **진입**: `check_buy_signal()` — RSI, MACD, Volume MA, EMA (20/50/100/200), ADX, DI+/DI- 조합
@@ -496,16 +496,16 @@ Centralizes auth state (user, login, logout) with localStorage JWT management.
 - 백테스트: vectorbt `sl_stop`/`tp_stop`/`sl_trail` 파라미터로 전달
 - 실매매: `bot_manager.py`에서 동일한 비율 계산
 
-### 15 Strategies
+### 19 Strategies
 
 | Strategy | TF | SL% | TP% | Profile |
 |----------|-----|------|------|---------|
 | `momentum_basic_1h` | 1h | 1.5% | 20% | 기본 모멘텀 |
 | `momentum_basic_4h` | 4h | 2% | 25% | 기본 모멘텀 |
-| `momentum_basic_1d` | 1d | 1.5% | 3% | 기본 모멘텀 |
+| `momentum_basic_1d` | 1d | 3% | 20% | 기본 모멘텀 |
 | `momentum_stable_1h` | 1h | 1.5% | 15% | 안정형 (골든크로스+DI 필터) |
 | `momentum_stable_4h` | 4h | 1.5% | 25% | 안정형 |
-| `momentum_stable_1d` | 1d | 2% | 20% | 안정형 |
+| `momentum_stable_1d` | 1d | 5% (트레일링) | 없음 | 안정형 (추세 추종) |
 | `momentum_aggressive_1h` | 1h | 1.5% | 15% | 공격형 (넓은 SL) |
 | `momentum_aggressive_4h` | 4h | 1.5% | 8% | 공격형 |
 | `momentum_aggressive_1d` | 1d | 4% | 20% | 공격형 |
@@ -515,6 +515,10 @@ Centralizes auth state (user, login, logout) with localStorage JWT management.
 | `steady_compounder_1h` | 1h | 1.5% | 10% | 복리 스윙 |
 | `steady_compounder_4h` | 4h | 5% (트레일링) | 없음 | 복리 스윙 (추세 추종) |
 | `steady_compounder_1d` | 1d | 4% | 20% | 복리 스윙 |
+| `scalper_15m` | 15m | 2.0% (트레일링) | 없음 | 스캘퍼 (고빈도, OR 3신호) |
+| `quick_swing_15m` | 15m | 2.0% (트레일링) | 없음 | 퀵 스윙 (EMA 정배열 + OR 3신호) |
+| `multi_signal_15m` | 15m | 2.5% (트레일링) | 없음 | 멀티시그널 (돌파/추세/풀백 3경로) |
+| `trend_follower_15m` | 15m | 4.0% (트레일링) | 없음 | 추세추종 (3중 EMA 정배열 + DI) |
 
 Default strategy: `momentum_stable_1h`
 
@@ -525,6 +529,8 @@ Default strategy: `momentum_stable_1h`
 | 보수적 모멘텀 | `momentum_stable_1h` / `momentum_stable_4h` |
 | 공격적 모멘텀 | `momentum_aggressive_4h` / `momentum_aggressive_1d` |
 | 최대 수익 추구 | `momentum_elite_1d` |
+| 실매매 봇 테스트 (고빈도) | `scalper_15m` / `quick_swing_15m` |
+| 15분봉 추세추종 | `trend_follower_15m` |
 
 ### Important Notes
 - **전략 로직 수정 금지**: 기존 전략의 신호 로직은 검증 완료됨. 파라미터/인프라 변경만 허용.

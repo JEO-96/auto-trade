@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer,
@@ -23,12 +23,17 @@ export default function BacktestComparisonChart({ equityCurve, priceChanges, btc
     const hasBtcInSymbols = symbols.includes('BTC/KRW');
 
     // Toggle state: equity always on, coins + btc benchmark toggleable
-    const [visible, setVisible] = useState<Record<string, boolean>>(() => {
-        const init: Record<string, boolean> = { equity: true };
-        symbols.forEach(s => { init[s] = true; });
-        if (hasBtcBenchmark) init['BTC_BENCH'] = true;
-        return init;
-    });
+    const [visible, setVisible] = useState<Record<string, boolean>>({ equity: true });
+
+    // Update visible state when symbols or btcBenchmark change
+    useEffect(() => {
+        setVisible(prev => {
+            const next: Record<string, boolean> = { ...prev, equity: true };
+            symbols.forEach(s => { if (!(s in next)) next[s] = true; });
+            if (hasBtcBenchmark && !('BTC_BENCH' in next)) next['BTC_BENCH'] = true;
+            return next;
+        });
+    }, [symbols, hasBtcBenchmark]);
 
     const toggle = (key: string) => {
         if (key === 'equity') return; // equity always visible

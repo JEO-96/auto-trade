@@ -1,14 +1,12 @@
 """
-MomentumElite4hStrategy - 4시간봉 전용 엘리트 전략
+MultiSignal15mStrategy - 15분봉 멀티시그널 전략
 
-v2 변경사항 (필터 강화 + 임계값 완화):
-- 골든크로스 필터: EMA_50 > EMA_200 (전 시그널 공통)
-- DI+ > DI- 방향성 필터 (전 시그널 공통)
-- RSI 상한 77 (과매수 진입 방지)
-- breakout_adx_min 24→22 (확인된 추세에서 더 많은 진입)
-- trend_rider_adx_min 30→26 (확인된 추세에서 더 많은 추세추종)
-- ATR TP 4.0→4.5 (엘리트는 더 큰 수익 목표)
-- Bull Pullback 볼륨 필터 추가: volume > vol_avg * 1.2
+3가지 진입 경로 (돌파/추세/풀백):
+- Golden Cross + DI+ 방향성 글로벌 필터
+- 돌파: ADX 25+, RSI 55+, MACD, 볼륨 1.3x
+- 추세: ADX 30+, EMA_20 바운스, RSI 50+
+- 풀백: EMA_50 반등 + MACD + RSI 50+
+- 트레일링 스탑 2.0%
 """
 
 import pandas as pd
@@ -16,46 +14,42 @@ import numpy as np
 from core.strategies.base import BaseStrategy
 
 
-class MomentumElite4hStrategy(BaseStrategy):
-    """4시간봉 전용 Momentum Elite 전략."""
+class MultiSignal15mStrategy(BaseStrategy):
+    """15분봉 멀티시그널 전략 (돌파/추세/풀백 3중 신호)."""
 
     def __init__(self):
         super().__init__()
         self.use_trailing_stop = True
 
-        self.rsi_period = 14
-        self.macd_fast = 12
-        self.macd_slow = 26
-        self.macd_signal = 9
-        self.volume_ma_period = 20
+        # 시그널 임계값
+        self.rsi_threshold = 55
+        self.volume_multiplier = 1.3
 
-        # 4h 시그널 임계값
-        self.rsi_threshold = 57
-        self.rsi_upper_limit = 77  # 과매수 진입 방지
-        self.volume_multiplier = 1.5
-        self.pullback_volume_multiplier = 1.2  # Bull Pullback 볼륨 필터
-
-        # ADX 차등 문턱 (골든크로스+DI 필터로 낮춰도 안전)
-        self.breakout_adx_min = 22
-        self.trend_rider_adx_min = 26
-        self.trend_rider_rsi_min = 53
+        # ADX 차등 문턱
+        self.breakout_adx_min = 25
+        self.trend_rider_adx_min = 30
+        self.trend_rider_rsi_min = 50
 
         # Bull Pullback
         self.pullback_rsi_min = 50
+        self.pullback_volume_multiplier = 1.1
 
-        # 4h 출구 파라미터
-        self.atr_sl_multiplier = 1.8
-        self.atr_tp_multiplier = 4.5
-        self.trailing_stop_multiplier = 2.2
+        # RSI 과매수 상한
+        self.rsi_upper_limit = 76
+
+        # 출구 파라미터 (실매매용 ATR 기반)
+        self.atr_sl_multiplier = 1.5
+        self.atr_tp_multiplier = 3.0
+        self.trailing_stop_multiplier = 2.0
+
+        # 트레일링 스탑 모드
+        self.backtest_sl_pct = 0.025   # 2.5% trailing stop
+        self.backtest_tp_pct = None    # TP 없음
+        self.backtest_trailing = True
 
         # 리스크 스케일링
         self.risk_adx_threshold = 35
-        self.risk_high_multiplier = 1.8
-        self.risk_default_multiplier = 1.2
-
-        # 백테스트 SL/TP (그리드 서치 최적화: 97% PnL, 16.4% MaxDD)
-        self.backtest_sl_pct = 0.015  # 1.5% SL
-        self.backtest_tp_pct = 0.10   # 10% TP
+        self.risk_high_multiplier = 1.5
 
     def apply_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         df = super().apply_indicators(df)
@@ -86,23 +80,27 @@ class MomentumElite4hStrategy(BaseStrategy):
         ema_50 = current.get('EMA_50', None)
         ema_20 = current.get('EMA_20', None)
 
-        core_vals = [rsi_val, adx_val, dmp_val, dmn_val, macd_val, macds_val, vol_avg, ema_200, ema_100, ema_50, ema_20]
+        core_vals = [rsi_val, adx_val, macd_val, macds_val, vol_avg, ema_200, ema_50, ema_20]
         if any(v is None or pd.isna(v) for v in core_vals):
             return False
         if vol_avg == 0:
             return False
 
-        # === 공통 필터 (전 시그널 적용) ===
         # 가격 > EMA_200
         if current['close'] <= ema_200:
             return False
-        # 골든크로스: EMA_50 > EMA_200
+
+        # Golden Cross: EMA_50 > EMA_200
         if ema_50 <= ema_200:
             return False
-        # 방향성 필터: DI+ > DI-
+
+        # DI+ > DI-
+        if dmp_val is None or dmn_val is None or pd.isna(dmp_val) or pd.isna(dmn_val):
+            return False
         if dmp_val <= dmn_val:
             return False
-        # 과매수 진입 방지
+
+        # RSI 과매수 상한
         if rsi_val > self.rsi_upper_limit:
             return False
 
@@ -112,8 +110,10 @@ class MomentumElite4hStrategy(BaseStrategy):
             and rsi_val > self.rsi_threshold
             and macd_val > macds_val
             and current['volume'] > vol_avg * self.volume_multiplier
-            and current['close'] > ema_100
         )
+        # EMA_100 필터 (있으면 적용)
+        if breakout and ema_100 is not None and not pd.isna(ema_100):
+            breakout = current['close'] > ema_100
 
         # 2. TREND RIDER
         trend_rider = False
@@ -126,7 +126,7 @@ class MomentumElite4hStrategy(BaseStrategy):
                 and rsi_val > self.trend_rider_rsi_min
             )
 
-        # 3. BULL PULLBACK (볼륨 필터 추가)
+        # 3. BULL PULLBACK
         bull_pullback = (
             prev['low'] < ema_50
             and current['close'] > ema_50
@@ -152,4 +152,4 @@ class MomentumElite4hStrategy(BaseStrategy):
             return 1.0
         if adx > self.risk_adx_threshold:
             return self.risk_high_multiplier
-        return self.risk_default_multiplier
+        return 1.0

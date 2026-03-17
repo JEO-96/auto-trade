@@ -15,12 +15,16 @@ export const BOT_STRATEGIES = [
     { value: 'momentum_aggressive_1h', label: '모멘텀 공격형 (1시간)' },
     { value: 'momentum_aggressive_4h', label: '모멘텀 공격형 (4시간)' },
     { value: 'momentum_aggressive_1d', label: '모멘텀 공격형 (1일)' },
-    { value: 'momentum_elite_1h', label: '모멘텀 엘리트 (1시간)' },
-    { value: 'momentum_elite_4h', label: '모멘텀 엘리트 (4시간)' },
-    { value: 'momentum_elite_1d', label: '모멘텀 엘리트 (1일)' },
-    { value: 'steady_compounder_1h', label: '스테디 복리 (1시간)' },
-    { value: 'steady_compounder_4h', label: '스테디 복리 (4시간)' },
-    { value: 'steady_compounder_1d', label: '스테디 복리 (1일)' },
+    { value: 'multi_signal_1h', label: '멀티시그널 (1시간)' },
+    { value: 'multi_signal_4h', label: '멀티시그널 (4시간)' },
+    { value: 'multi_signal_1d', label: '멀티시그널 (1일)' },
+    { value: 'quick_swing_1h', label: '퀵 스윙 (1시간)' },
+    { value: 'trend_rider_4h', label: '트렌드 라이더 (4시간)' },
+    { value: 'wide_swing_1d', label: '와이드 스윙 (1일)' },
+    { value: 'scalper_15m', label: '스캘퍼 (15분)' },
+    { value: 'quick_swing_15m', label: '퀵 스윙 (15분)' },
+    { value: 'multi_signal_15m', label: '멀티시그널 (15분)' },
+    { value: 'trend_follower_15m', label: '추세추종 (15분)' },
 ] as const;
 
 /** 백테스트 전용 전략 */
@@ -34,12 +38,16 @@ export const STRATEGIES = [
     { value: 'momentum_aggressive_1h', label: '모멘텀 공격형 (1시간)' },
     { value: 'momentum_aggressive_4h', label: '모멘텀 공격형 (4시간)' },
     { value: 'momentum_aggressive_1d', label: '모멘텀 공격형 (1일)' },
-    { value: 'momentum_elite_1h', label: '모멘텀 엘리트 (1시간)' },
-    { value: 'momentum_elite_4h', label: '모멘텀 엘리트 (4시간)' },
-    { value: 'momentum_elite_1d', label: '모멘텀 엘리트 (1일)' },
-    { value: 'steady_compounder_1h', label: '스테디 복리 (1시간)' },
-    { value: 'steady_compounder_4h', label: '스테디 복리 (4시간)' },
-    { value: 'steady_compounder_1d', label: '스테디 복리 (1일)' },
+    { value: 'multi_signal_1h', label: '멀티시그널 (1시간)' },
+    { value: 'multi_signal_4h', label: '멀티시그널 (4시간)' },
+    { value: 'multi_signal_1d', label: '멀티시그널 (1일)' },
+    { value: 'quick_swing_1h', label: '퀵 스윙 (1시간)' },
+    { value: 'trend_rider_4h', label: '트렌드 라이더 (4시간)' },
+    { value: 'wide_swing_1d', label: '와이드 스윙 (1일)' },
+    { value: 'scalper_15m', label: '스캘퍼 (15분)' },
+    { value: 'quick_swing_15m', label: '퀵 스윙 (15분)' },
+    { value: 'multi_signal_15m', label: '멀티시그널 (15분)' },
+    { value: 'trend_follower_15m', label: '추세추종 (15분)' },
 ] as const;
 
 export const BOT_TIMEFRAMES = [
@@ -80,13 +88,18 @@ const STRATEGY_LABEL_MAP: Record<string, string> = {
     'momentum_breakout_basic': '모멘텀 돌파 (기본)',
     'momentum_breakout_pro_stable': '모멘텀 돌파 Pro (안정형)',
     'momentum_breakout_pro_aggressive': '모멘텀 돌파 Pro (공격형)',
-    'momentum_breakout_elite': '모멘텀 돌파 Elite',
+    'momentum_breakout_elite': '멀티시그널',
+    'momentum_elite_1h': '멀티시그널 (1시간)',
+    'momentum_elite_4h': '멀티시그널 (4시간)',
+    'momentum_elite_1d': '멀티시그널 (1일)',
+    'steady_compounder_1h': '퀵 스윙 (1시간)',
+    'steady_compounder_1d': '와이드 스윙 (1일)',
     'james_basic': '모멘텀 돌파 (기본)',
     'james_pro_stable': '모멘텀 돌파 Pro (안정형)',
     'james_pro_aggressive': '모멘텀 돌파 Pro (공격형)',
-    'james_pro_elite': '모멘텀 돌파 PRO (초고수익형)',
-    'steady_compounder': '스테디 복리 (주간 안정형)',
-    'steady_compounder_v1': '스테디 복리 V1 (백업)',
+    'james_pro_elite': '멀티시그널',
+    'steady_compounder': '트렌드 라이더 (주간 안정형)',
+    'steady_compounder_v1': '트렌드 라이더 V1 (백업)',
 };
 
 /**
@@ -133,7 +146,7 @@ export const TIMEFRAME_LABEL_MAP: Record<string, string> = Object.fromEntries(
 );
 
 /** 백테스트/설정에서 제외할 초단기 타임프레임 */
-export const EXCLUDED_SHORT_TIMEFRAMES = ['1m', '5m', '15m'] as const;
+export const EXCLUDED_SHORT_TIMEFRAMES = ['1m', '5m'] as const;
 
 /** 백테스트/설정용 타임프레임 (초단기 제외) */
 export const BACKTEST_TIMEFRAMES = BOT_TIMEFRAMES.filter(

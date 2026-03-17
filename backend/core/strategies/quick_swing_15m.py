@@ -1,35 +1,35 @@
 """
-SteadyCompounder1dStrategy - 일봉 최적화 스테디 복리 전략
+QuickSwing15mStrategy - 15분봉 퀵 스윙 전략
 
-steady_compounder_4h 대비 변경:
-- ADX > 13 (일봉은 추세가 강해 낮은 임계값)
-- ATR SL 2.0x, TP 4.0x, trailing 2.5x (넓은 스윙)
-- RSI 과열 78
-- EMA_200 추세 필터
-- 거래량 평균 이상 유지
+빠른 익절 + 엄격한 진입 + 높은 승률:
+- EMA_20 > EMA_50 정배열 + EMA_200 매크로
+- ADX > 18, MACD > signal
+- RSI 과열 74 (엄격)
+- OR 조건 3신호: RSI 반등, MACD 크로스, EMA_20 바운스
+- 트레일링 스탑 1.8% (빠른 수익 확보)
 """
 
 import pandas as pd
 import numpy as np
-from core import config
 from core.strategies.base import BaseStrategy
 
 
-class SteadyCompounder1dStrategy(BaseStrategy):
-    """일봉 최적화 스테디 복리 전략."""
+class QuickSwing15mStrategy(BaseStrategy):
+    """15분봉 퀵 스윙 전략 (빠른 익절, 높은 승률)."""
 
     def __init__(self):
         super().__init__()
         self.use_trailing_stop = True
 
-        # 1d 손익 파라미터
-        self.atr_sl_multiplier = 2.0
-        self.atr_tp_multiplier = 4.0
-        self.trailing_stop_multiplier = 2.5
+        # 출구 파라미터 (실매매용 ATR 기반)
+        self.atr_sl_multiplier = 1.2
+        self.atr_tp_multiplier = 2.0
+        self.trailing_stop_multiplier = 1.5
 
-        # 백테스트 SL/TP (그리드 서치 최적화: 101% PnL, 14.0% MaxDD)
-        self.backtest_sl_pct = 0.04   # 4% SL
-        self.backtest_tp_pct = 0.20   # 20% TP
+        # 트레일링 스탑 모드
+        self.backtest_sl_pct = 0.020   # 2.0% trailing stop
+        self.backtest_tp_pct = None    # TP 없음
+        self.backtest_trailing = True
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 200:
@@ -40,7 +40,7 @@ class SteadyCompounder1dStrategy(BaseStrategy):
 
         required_cols = [
             self.rsi_col, self.macd_col, self.macds_col,
-            self.vol_ma_col, 'EMA_200', 'EMA_50', 'EMA_20',
+            self.vol_ma_col, 'EMA_50', 'EMA_20', 'EMA_200',
             self.adx_col,
         ]
         if not self._validate_indicators(current, required_cols):
@@ -60,12 +60,12 @@ class SteadyCompounder1dStrategy(BaseStrategy):
 
         # ========== 공통 필터 ==========
 
-        # EMA_200 위 (장기 추세 필터)
-        if current['close'] < current['EMA_200']:
-            return False
-
         # EMA 정배열
         if current['EMA_20'] <= current['EMA_50']:
+            return False
+
+        # 매크로 상승 추세: 가격 > EMA_200
+        if current['close'] < current['EMA_200']:
             return False
 
         # 가격 > EMA_20
@@ -76,23 +76,23 @@ class SteadyCompounder1dStrategy(BaseStrategy):
         if macd_val <= macds_val:
             return False
 
-        # RSI 과열
-        if rsi_curr > 78:
+        # RSI 과열 방지
+        if rsi_curr > 74:
             return False
 
-        # ADX > 13 (가벼운 추세 필터)
-        if current[self.adx_col] < 13:
+        # ADX 최소 추세
+        if current[self.adx_col] < 18:
             return False
 
         # 거래량 평균 이상
         if current['volume'] < current[self.vol_ma_col]:
             return False
 
-        # ========== 진입 신호 ==========
+        # ========== 진입 신호 (OR 조건) ==========
 
         # 신호 1: RSI 눌림목 반등
         signal_rsi_bounce = (
-            rsi_prev < 50 and
+            rsi_prev < 48 and
             rsi_curr > rsi_prev
         )
 

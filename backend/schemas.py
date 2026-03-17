@@ -210,6 +210,10 @@ class EquityPoint(BaseModel):
     time: str
     value: float
 
+class PriceChangePoint(BaseModel):
+    time: str
+    value: float
+
 class BacktestResponse(BaseModel):
     status: str
     task_id: Optional[str] = None
@@ -219,6 +223,8 @@ class BacktestResponse(BaseModel):
     total_trades: Optional[int] = None
     trades: Optional[List[BacktestTradeResponse]] = None
     equity_curve: Optional[List[EquityPoint]] = None
+    price_changes: Optional[dict[str, List[PriceChangePoint]]] = None
+    btc_benchmark: Optional[List[PriceChangePoint]] = None
 
 class BacktestTaskResponse(BaseModel):
     task_id: str

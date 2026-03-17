@@ -24,12 +24,16 @@ DEFAULT_STRATEGY_TIMEFRAMES: dict[str, list[str]] = {
     "momentum_aggressive_1h": ["1h"],
     "momentum_aggressive_4h": ["4h"],
     "momentum_aggressive_1d": ["1d"],
-    "momentum_elite_1h": ["1h"],
-    "momentum_elite_4h": ["4h"],
-    "momentum_elite_1d": ["1d"],
-    "steady_compounder_1h": ["1h"],
-    "steady_compounder_4h": ["4h"],
-    "steady_compounder_1d": ["1d"],
+    "multi_signal_1h": ["1h"],
+    "multi_signal_4h": ["4h"],
+    "multi_signal_1d": ["1d"],
+    "quick_swing_1h": ["1h"],
+    "trend_rider_4h": ["4h"],
+    "wide_swing_1d": ["1d"],
+    "scalper_15m": ["15m"],
+    "quick_swing_15m": ["15m"],
+    "multi_signal_15m": ["15m"],
+    "trend_follower_15m": ["15m"],
 }
 
 SETTINGS_KEY = "backtest_strategy_timeframes"

@@ -1,7 +1,7 @@
 """
-MomentumElite1hStrategy - 1시간봉 전용 엘리트 전략
+MultiSignal1hStrategy - 1시간봉 전용 멀티시그널 전략
 
-momentum_elite_1d 대비 변경:
+3가지 진입 신호(돌파/추세/풀백)를 조합하는 전략:
 - RSI 60, upper limit 76 (과매수 진입 방지)
 - 볼륨 1.5x
 - ADX breakout 28, trend_rider 35 (1h 노이즈 필터 강화)
@@ -17,8 +17,8 @@ import numpy as np
 from core.strategies.base import BaseStrategy
 
 
-class MomentumElite1hStrategy(BaseStrategy):
-    """1시간봉 전용 Momentum Elite 전략."""
+class MultiSignal1hStrategy(BaseStrategy):
+    """1시간봉 전용 멀티시그널 전략 (돌파/추세/풀백 3중 신호)."""
 
     def __init__(self):
         super().__init__()
@@ -58,7 +58,7 @@ class MomentumElite1hStrategy(BaseStrategy):
         self.risk_high_multiplier = 1.5
         self.risk_default_multiplier = 1.0
 
-        # 백테스트 SL/TP (그리드 서치 최적화: 110% PnL, 30.1% MaxDD)
+        # 백테스트 SL/TP
         self.backtest_sl_pct = 0.02   # 2% SL
         self.backtest_tp_pct = 0.15   # 15% TP
 

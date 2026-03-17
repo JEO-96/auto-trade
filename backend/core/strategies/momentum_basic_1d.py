@@ -1,18 +1,13 @@
 """
 MomentumBasic1D - 일봉 최적화 모멘텀 브레이크아웃 전략
 
-기본 전략(momentum_breakout_basic) 대비 개선 사항:
-- EMA_200 + EMA_50 이중 트렌드 필터 (강한 추세 정렬만 진입)
-- RSI 임계값 62 (일봉은 강한 신호만 유효)
-- 볼륨 배수 2.0x (일봉 거래량은 안정적이므로 기본값 유지)
-- ADX > 25 필터 (강한 추세에서만 진입)
-- ATR 기반 손절/익절 (SL 2.0x, TP 4.0x RR) — 일봉 변동성 반영
-- 트레일링 스탑 2.5x ATR
-- 풀백 진입 조건 추가 (MaxDD 감소 목적)
-- DI+ > DI- 방향성 필터 (추세 방향 확인)
-
-백테스트 기준선: +52.04% / 70거래 / 52.9% 승률 / 42.2% MaxDD
-목표: MaxDD 대폭 감소 (42% → 25% 이하) + 승률 유지/향상
+일봉 전용 기본 모멘텀 브레이크아웃:
+- EMA_200 + EMA_50 이중 트렌드 필터
+- RSI 임계값 50 + ADX 18 (일봉 신호 적극 포착)
+- 볼륨 배수 1.0x (일봉은 신호 자체가 적으므로 완화)
+- DI+ > DI- 방향성 필터
+- 풀백 진입 조건 (ADX 22+)
+- SL 3% / TP 20% (일봉 변동성 반영)
 """
 
 import pandas as pd
@@ -36,24 +31,28 @@ class MomentumBasic1DStrategy(BaseStrategy):
         super().__init__()
         self.use_trailing_stop = True
 
-        # 일봉 최적화 신호 임계값 (엄격)
-        self.rsi_threshold = 62.0
-        self.adx_threshold = 25.0
-        self.volume_multiplier = 2.0
+        # 일봉 최적화 신호 임계값 (완화: 일봉은 신호 자체가 적어 적극 포착)
+        self.rsi_threshold = 50.0
+        self.adx_threshold = 18.0
+        self.volume_multiplier = 1.0
 
         # 일봉 최적화 출구 파라미터 (넓은 SL/TP)
         self.atr_sl_multiplier = 2.0
         self.atr_tp_multiplier = 4.0
         self.trailing_stop_multiplier = 2.5
 
+        # 백테스트/실매매 SL/TP (일봉 변동성 반영, 넓은 TP)
+        self.backtest_sl_pct = 0.03   # 3% SL
+        self.backtest_tp_pct = 0.20   # 20% TP
+
         # 풀백 진입용 ADX 임계값
-        self.pullback_adx_threshold = 30
+        self.pullback_adx_threshold = 22
 
-        # 윅 필터 비율
-        self.wick_filter_ratio = 0.9
+        # 윅 필터 비활성화 (일봉에서는 너무 제한적)
+        self.wick_filter_ratio = 999.0
 
-        # RSI 과열 상한 (일봉에서 과매수 구간 진입 방지)
-        self.rsi_upper_limit = 78.0
+        # RSI 과열 상한
+        self.rsi_upper_limit = 80.0
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         # EMA_200 계산에 충분한 데이터 필요
