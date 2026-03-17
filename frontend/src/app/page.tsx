@@ -105,15 +105,6 @@ export default function Home() {
                             </p>
                         </div>
 
-                        {/* 사업자 정보 */}
-                        <div className="text-center leading-relaxed text-gray-600 space-y-1 [text-wrap:pretty]">
-                            <p>
-                                <span className="text-gray-500">플레이위드</span> | 대표 주은오 | 사업자등록번호 880-58-00862
-                            </p>
-                            <p>서울특별시 영등포구 경인로 882, 1103호(영등포동1가, 여의도씨티아이)</p>
-                            <p>이메일 seal5945@gmail.com | 호스팅 Amazon Web Services</p>
-                        </div>
-
                         {/* 링크 */}
                         <div className="flex items-center gap-4">
                             <Link href="/terms" className="text-gray-600 hover:text-gray-400 transition-colors underline underline-offset-2">

@@ -10,7 +10,8 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { updateNickname, getUserProfile, getPosts, linkTelegram, unlinkTelegram, testTelegramNotification } from '@/lib/api/community';
-import { updateNotificationSettings } from '@/lib/api/auth';
+import { updateNotificationSettings, withdrawAccount } from '@/lib/api/auth';
+import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import { useAuth } from '@/contexts/AuthContext';
 import type { NotificationSettings } from '@/types/user';
 import { formatDate } from '@/lib/utils';
@@ -24,12 +25,14 @@ const POST_TYPE_BADGE: Record<PostType, { label: string; variant: 'success' | 'w
 };
 
 export default function ProfilePage() {
-    const { user, refreshUser } = useAuth();
+    const { user, refreshUser, logout } = useAuth();
     const toast = useToast();
     const [nickname, setNickname] = useState('');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState('');
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+    const [withdrawLoading, setWithdrawLoading] = useState(false);
     const [myPosts, setMyPosts] = useState<CommunityPost[]>([]);
     const [postCount, setPostCount] = useState(0);
     const [loadingPosts, setLoadingPosts] = useState(true);
@@ -451,6 +454,43 @@ export default function ProfilePage() {
                     </div>
                 )}
             </div>
+
+            {/* 회원 탈퇴 */}
+            <div className="mt-10 p-6 bg-red-500/[0.03] border border-red-500/10 rounded-2xl">
+                <h3 className="text-sm font-semibold text-red-400 mb-2">회원 탈퇴</h3>
+                <p className="text-xs text-gray-500 mb-4">
+                    탈퇴 시 모든 데이터(봇, 거래 기록, API 키 등)가 영구 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                </p>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="!text-red-400 hover:!bg-red-500/10"
+                    onClick={() => setShowWithdrawModal(true)}
+                >
+                    회원 탈퇴
+                </Button>
+            </div>
+
+            <DeleteConfirmationModal
+                isOpen={showWithdrawModal}
+                title="회원 탈퇴"
+                message="정말로 탈퇴하시겠습니까? 모든 데이터가 영구 삭제되며 복구할 수 없습니다."
+                loading={withdrawLoading}
+                onConfirm={async () => {
+                    setWithdrawLoading(true);
+                    try {
+                        await withdrawAccount();
+                        toast.success('회원 탈퇴가 완료되었습니다.');
+                        logout();
+                    } catch {
+                        toast.error('탈퇴 처리에 실패했습니다.');
+                    } finally {
+                        setWithdrawLoading(false);
+                        setShowWithdrawModal(false);
+                    }
+                }}
+                onCancel={() => setShowWithdrawModal(false)}
+            />
         </PageContainer>
     );
 }

@@ -51,3 +51,8 @@ export async function updateNotificationSettings(
     const res = await api.put<NotificationSettings>('/auth/notifications', data);
     return res.data;
 }
+
+// 회원 탈퇴
+export async function withdrawAccount(): Promise<void> {
+    await api.delete('/auth/withdraw');
+}

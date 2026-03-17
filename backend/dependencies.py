@@ -23,6 +23,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(models.User).filter(models.User.email == email).first()
     if user is None:
         raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="관리자 승인 대기 중입니다. 승인 후 이용 가능합니다.",
+        )
     return user
 
 def get_current_user_optional(
@@ -42,6 +47,21 @@ def get_current_user_optional(
     user = db.query(models.User).filter(models.User.email == email).first()
     if user is None:
         return None
+    return user
+
+
+def get_current_user_any(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """is_active 체크 없이 JWT 유효한 사용자 반환 (승인 대기 유저 포함)."""
+    try:
+        payload = auth.jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except auth.JWTError:
+        raise credentials_exception
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if user is None:
+        raise credentials_exception
     return user
 
 

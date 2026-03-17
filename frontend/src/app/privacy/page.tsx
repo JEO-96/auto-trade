@@ -23,7 +23,7 @@ export default function PrivacyPage() {
 
                     <section>
                         <h2 className="text-base font-semibold text-white mb-3">제1조 (개인정보의 처리 목적)</h2>
-                        <p className="mb-3">플레이위드(이하 &quot;회사&quot;)는 Backtested 서비스(이하 &quot;서비스&quot;) 제공을 위해 다음의 목적으로 개인정보를 처리합니다.</p>
+                        <p className="mb-3">Backtested(이하 &quot;서비스&quot;) 제공을 위해 다음의 목적으로 개인정보를 처리합니다.</p>
                         <ul className="space-y-2 list-disc list-inside">
                             <li><strong className="text-gray-400">회원가입 및 관리:</strong> 본인 식별, 서비스 이용 자격 확인, 부정 이용 방지</li>
                             <li><strong className="text-gray-400">서비스 제공:</strong> 자동매매 봇 운영, 백테스트 실행, 커뮤니티 기능 제공</li>
@@ -134,15 +134,13 @@ export default function PrivacyPage() {
                             <li>개인정보 처리 정지 요청</li>
                             <li>회원 탈퇴 및 계정 삭제 요청</li>
                         </ul>
-                        <p className="mt-3">위 요청은 이메일(seal5945@gmail.com)로 접수할 수 있으며, 지체 없이 처리합니다.</p>
+                        <p className="mt-3">위 요청은 프로필 페이지의 회원 탈퇴 기능을 통해 직접 처리할 수 있습니다.</p>
                     </section>
 
                     <section>
                         <h2 className="text-base font-semibold text-white mb-3">제8조 (개인정보 보호책임자)</h2>
                         <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-1">
-                            <p><span className="text-gray-400">성명:</span> 주은오</p>
-                            <p><span className="text-gray-400">직위:</span> 대표</p>
-                            <p><span className="text-gray-400">이메일:</span> seal5945@gmail.com</p>
+                            <p><span className="text-gray-400">서비스명:</span> Backtested</p>
                         </div>
                     </section>
 
@@ -153,9 +151,8 @@ export default function PrivacyPage() {
 
                 </div>
 
-                <div className="mt-12 pt-8 border-t border-white/[0.04] text-xs text-gray-500 text-center space-y-2">
-                    <p>플레이위드 | 대표 주은오 | 사업자등록번호 880-58-00862</p>
-                    <p>서울특별시 영등포구 경인로 882, 1103호(영등포동1가, 여의도씨티아이)</p>
+                <div className="mt-12 pt-8 border-t border-white/[0.04] text-xs text-gray-500 text-center">
+                    <p>© {new Date().getFullYear()} Backtested. All rights reserved.</p>
                 </div>
             </div>
         </div>

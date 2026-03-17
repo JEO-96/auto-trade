@@ -4,9 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import Union
+import bot_manager
 import models, schemas, auth
 from crypto_utils import encrypt_token
-from dependencies import get_db, get_current_user
+from dependencies import get_db, get_current_user, get_current_user_any
 from kakao_service import exchange_code_for_tokens, get_user_info, verify_token, KakaoAuthError
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -62,7 +63,7 @@ async def kakao_login_endpoint(request: Request, login_data: schemas.KakaoLogin,
             user = user_by_email
             user.kakao_id = kakao_id
         else:
-            user = models.User(email=email, kakao_id=kakao_id, is_active=True)
+            user = models.User(email=email, kakao_id=kakao_id, is_active=False)
             db.add(user)
             is_new_user = True
 
@@ -113,7 +114,7 @@ async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteR
     is_new_user = False
     user = db.query(models.User).filter(models.User.kakao_id == data.kakao_id).first()
     if not user:
-        user = models.User(email=data.email, kakao_id=data.kakao_id, nickname=data.nickname, is_active=True)
+        user = models.User(email=data.email, kakao_id=data.kakao_id, nickname=data.nickname, is_active=False)
         db.add(user)
         is_new_user = True
     else:
@@ -132,7 +133,7 @@ async def kakao_complete_register(request: Request, data: schemas.KakaoCompleteR
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me", response_model=schemas.UserResponse)
-def get_me(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_me(current_user: models.User = Depends(get_current_user_any), db: Session = Depends(get_db)):
     return schemas.UserResponse(
         id=current_user.id,
         email=current_user.email,
@@ -184,6 +185,52 @@ def update_notification_settings(
         notification_system=current_user.notification_system,
         notification_interval=current_user.notification_interval or "realtime",
     )
+
+
+@router.delete("/withdraw")
+async def withdraw_account(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """회원 탈퇴: 실행 중인 봇 정지 + 모든 사용자 데이터 삭제"""
+    user_id = current_user.id
+
+    # 1. 실행 중인 봇 정지
+    user_bots = db.query(models.BotConfig).filter(models.BotConfig.user_id == user_id).all()
+    for bot in user_bots:
+        task = bot_manager.active_bots.get(bot.id)
+        if task is not None and not task.done():
+            task.cancel()
+            try:
+                await task
+            except Exception:
+                pass
+
+    # 2. 관련 데이터 삭제 (순서 중요: FK 의존성)
+    bot_ids = [b.id for b in user_bots]
+    if bot_ids:
+        db.query(models.ActivePosition).filter(models.ActivePosition.bot_id.in_(bot_ids)).delete(synchronize_session=False)
+        db.query(models.TradeLog).filter(models.TradeLog.bot_id.in_(bot_ids)).delete(synchronize_session=False)
+        db.query(models.BotConfig).filter(models.BotConfig.user_id == user_id).delete(synchronize_session=False)
+
+    db.query(models.ExchangeKey).filter(models.ExchangeKey.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.BacktestHistory).filter(models.BacktestHistory.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.PostLike).filter(models.PostLike.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.PostComment).filter(models.PostComment.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.CommunityPost).filter(models.CommunityPost.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.ChatMessage).filter(models.ChatMessage.user_id == user_id).delete(synchronize_session=False)
+
+    # 크레딧 관련
+    db.query(models.CreditTransaction).filter(models.CreditTransaction.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.PaymentOrder).filter(models.PaymentOrder.user_id == user_id).delete(synchronize_session=False)
+    db.query(models.UserCredit).filter(models.UserCredit.user_id == user_id).delete(synchronize_session=False)
+
+    # 3. 유저 삭제
+    db.delete(current_user)
+    db.commit()
+
+    logger.info("User %d withdrew from the service.", user_id)
+    return {"status": "success", "message": "회원 탈퇴가 완료되었습니다."}
 
 
 # ──────────────────────────────────────────────
