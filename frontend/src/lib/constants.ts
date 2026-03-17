@@ -156,6 +156,24 @@ export const BACKTEST_TIMEFRAMES = BOT_TIMEFRAMES.filter(
 /** 실시간 봇 현황 폴링 간격 (ms) */
 export const LIVE_BOTS_POLL_INTERVAL_MS = 15000;
 
+/** 전략 타임프레임 필터 탭 */
+export const STRATEGY_TIMEFRAME_TABS = [
+    { value: 'all', label: '전체' },
+    { value: '15m', label: '15분' },
+    { value: '1h', label: '1시간' },
+    { value: '4h', label: '4시간' },
+    { value: '1d', label: '1일' },
+] as const;
+
+/** 전략 목록을 타임프레임으로 필터링 */
+export function filterStrategiesByTimeframe<T extends { value: string }>(
+    strategies: T[],
+    timeframe: string,
+): T[] {
+    if (timeframe === 'all') return strategies;
+    return strategies.filter(s => getStrategyTimeframe(s.value) === timeframe);
+}
+
 /** 차트 컬러 팔레트 (도넛차트, 자산 분포 등) */
 export const CHART_COLORS = [
     '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',

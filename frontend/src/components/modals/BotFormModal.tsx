@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, Edit3, AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { SelectInput } from '@/components/ui/Input';
 import ModalWrapper, { ModalHeader } from '@/components/ui/ModalWrapper';
-import { SYMBOLS, BOT_STRATEGIES, EXCHANGES, getStrategyTimeframe, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
+import { SYMBOLS, BOT_STRATEGIES, EXCHANGES, getStrategyTimeframe, TIMEFRAME_LABEL_MAP, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe } from '@/lib/constants';
 import type { StrategyItem } from '@/lib/api/settings';
 
 export interface BotFormData {
@@ -47,6 +47,12 @@ export default function BotFormModal({
     onFormChange,
 }: BotFormModalProps) {
     const displayStrategies = strategies ?? BOT_STRATEGIES.map(s => ({ value: s.value, label: s.label, status: s.status }));
+
+    const [tfFilter, setTfFilter] = useState('all');
+    const filteredStrategies = useMemo(
+        () => filterStrategiesByTimeframe(displayStrategies, tfFilter),
+        [displayStrategies, tfFilter],
+    );
 
     return (
         <ModalWrapper isOpen={isOpen}>
@@ -106,25 +112,43 @@ export default function BotFormModal({
                         </div>
                     </div>
 
-                    <SelectInput
-                        type="select"
-                        label="전략 (Strategy)"
-                        value={formData.strategy_name}
-                        onChange={(e) => {
-                            const newStrategy = e.target.value;
-                            const newTimeframe = getStrategyTimeframe(newStrategy);
-                            onFormChange({ ...formData, strategy_name: newStrategy, timeframe: newTimeframe });
-                        }}
-                    >
-                        {[
-                            ...displayStrategies.filter(s => s.status === 'confirmed'),
-                            ...displayStrategies.filter(s => s.status !== 'confirmed'),
-                        ].map((s) => (
-                            <option key={s.value} value={s.value}>
-                                {s.status === 'confirmed' ? `✅ ${s.label}` : `🧪 ${s.label}`}
-                            </option>
-                        ))}
-                    </SelectInput>
+                    <div>
+                        <label className="text-xs text-th-text-muted font-medium mb-2 block">전략 (Strategy)</label>
+                        <div className="flex gap-1 mb-2">
+                            {STRATEGY_TIMEFRAME_TABS.map(tab => (
+                                <button
+                                    key={tab.value}
+                                    type="button"
+                                    onClick={() => setTfFilter(tab.value)}
+                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
+                                        tfFilter === tab.value
+                                            ? 'bg-primary/10 border-primary/30 text-primary'
+                                            : 'bg-th-card border-th-border text-th-text-muted hover:text-th-text-secondary'
+                                    }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                        <SelectInput
+                            type="select"
+                            value={formData.strategy_name}
+                            onChange={(e) => {
+                                const newStrategy = e.target.value;
+                                const newTimeframe = getStrategyTimeframe(newStrategy);
+                                onFormChange({ ...formData, strategy_name: newStrategy, timeframe: newTimeframe });
+                            }}
+                        >
+                            {[
+                                ...filteredStrategies.filter(s => s.status === 'confirmed'),
+                                ...filteredStrategies.filter(s => s.status !== 'confirmed'),
+                            ].map((s) => (
+                                <option key={s.value} value={s.value}>
+                                    {s.status === 'confirmed' ? `✅ ${s.label}` : `🧪 ${s.label}`}
+                                </option>
+                            ))}
+                        </SelectInput>
+                    </div>
 
                     {/* 캔들 주기 (전략에 의해 자동 설정) */}
                     <div>

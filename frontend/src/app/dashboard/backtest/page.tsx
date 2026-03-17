@@ -8,7 +8,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
-import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel, getStrategyTimeframe, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
+import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel, getStrategyTimeframe, TIMEFRAME_LABEL_MAP, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe } from '@/lib/constants';
 import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle } from '@/lib/api/backtest';
 import { getBacktestSettings } from '@/lib/api/settings';
 import { useStrategies } from '@/lib/useStrategies';
@@ -52,6 +52,9 @@ export default function BacktestPage() {
         }
         return fallback;
     });
+
+    // 타임프레임 필터
+    const [backtestTfFilter, setBacktestTfFilter] = useState('all');
 
     // 인라인 제목 수정
     const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
@@ -190,6 +193,10 @@ export default function BacktestPage() {
     const allowedStrategies = useMemo(
         () => backtestStrategies.filter(s => s.value in strategyTimeframeMap),
         [strategyTimeframeMap, backtestStrategies],
+    );
+    const filteredBacktestStrategies = useMemo(
+        () => filterStrategiesByTimeframe(allowedStrategies, backtestTfFilter),
+        [allowedStrategies, backtestTfFilter],
     );
     // 전략 변경 시 타임프레임 자동 설정
     const prevStrategyRef = useRef(form.strategy_name);
@@ -776,6 +783,22 @@ export default function BacktestPage() {
                             {/* Strategy */}
                             <div>
                                 <label className="text-xs text-th-text-muted font-medium mb-2 block">전략 선택</label>
+                                <div className="flex gap-1 mb-2">
+                                    {STRATEGY_TIMEFRAME_TABS.map(tab => (
+                                        <button
+                                            key={tab.value}
+                                            type="button"
+                                            onClick={() => setBacktestTfFilter(tab.value)}
+                                            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
+                                                backtestTfFilter === tab.value
+                                                    ? 'bg-primary/10 border-primary/30 text-primary'
+                                                    : 'bg-th-card border-th-border text-th-text-muted hover:text-th-text-secondary'
+                                            }`}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
                                 <select
                                     name="strategy_name"
                                     value={form.strategy_name}
@@ -783,8 +806,8 @@ export default function BacktestPage() {
                                     className="w-full bg-th-card border border-th-border rounded-xl px-4 py-3 text-sm font-medium text-th-text appearance-none cursor-pointer focus:border-primary/30 transition-colors [&>option]:bg-[--select-bg] [&>option]:text-th-text"
                                 >
                                     {[
-                                        ...allowedStrategies.filter(s => s.status === 'confirmed'),
-                                        ...allowedStrategies.filter(s => s.status !== 'confirmed'),
+                                        ...filteredBacktestStrategies.filter(s => s.status === 'confirmed'),
+                                        ...filteredBacktestStrategies.filter(s => s.status !== 'confirmed'),
                                     ].map(s => (
                                         <option key={s.value} value={s.value}>
                                             {s.status === 'confirmed' ? `✅ ${s.label}` : `🧪 ${s.label}`}
