@@ -142,8 +142,11 @@ class ExecutionEngine:
             logger.info("[PAPER] BUY executed for %s at %.2f (slip %.3f%%). Amount: %.4f", symbol, fill_price, slippage * 100, amount)
             return {"status": "success", "price": fill_price, "amount": amount}
         else:
+            # Upbit 시장가 매수: price를 함께 전달해야 cost(=amount*price)를 계산함
+            _amount = amount
+            _price = price
             order = self._retry_order(
-                lambda: self.exchange.create_market_buy_order(symbol, amount),
+                lambda: self.exchange.create_order(symbol, 'market', 'buy', _amount, _price),
                 symbol,
             )
             if order is None:
@@ -170,8 +173,9 @@ class ExecutionEngine:
             logger.info("[PAPER] SELL (%s) for %s at %.2f (slip %.3f%%)", reason, symbol, fill_price, slippage * 100)
             return {"status": "success", "price": fill_price, "amount": amount}
         else:
+            _amount = amount
             order = self._retry_order(
-                lambda: self.exchange.create_market_sell_order(symbol, amount),
+                lambda: self.exchange.create_order(symbol, 'market', 'sell', _amount),
                 symbol,
             )
             if order is None:
