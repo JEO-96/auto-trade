@@ -8,13 +8,76 @@ concurrency:
   group: deploy-production
   cancel-in-progress: true
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/jeo-96/auto-trade
+
 jobs:
+  # ──────────────────────────────────────────────
+  # Job 1: GitHub Actions에서 이미지 빌드 → GHCR push
+  # (서버 RAM 414MB에서 빌드 불가 → CI에서 수행)
+  # ──────────────────────────────────────────────
+  build:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Login to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build & Push Backend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: true
+        tags: ${{ env.IMAGE_PREFIX }}/backend:latest,${{ env.IMAGE_PREFIX }}/backend:${{ github.sha }}
+        cache-from: type=gha,scope=backend
+        cache-to: type=gha,mode=max,scope=backend
+
+    - name: Build & Push Frontend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        push: true
+        tags: ${{ env.IMAGE_PREFIX }}/frontend:latest,${{ env.IMAGE_PREFIX }}/frontend:${{ github.sha }}
+        build-args: |
+          NEXT_PUBLIC_API_URL=/api
+          NEXT_PUBLIC_KAKAO_CLIENT_ID=a43327cd97c0575590d2a6a11335c5ba
+        cache-from: type=gha,scope=frontend
+        cache-to: type=gha,mode=max,scope=frontend
+
+    - name: Build & Push Nginx
+      uses: docker/build-push-action@v5
+      with:
+        context: ./nginx
+        push: true
+        tags: ${{ env.IMAGE_PREFIX }}/nginx:latest,${{ env.IMAGE_PREFIX }}/nginx:${{ github.sha }}
+        cache-from: type=gha,scope=nginx
+        cache-to: type=gha,mode=max,scope=nginx
+
+  # ──────────────────────────────────────────────
+  # Job 2: 서버에서 pull → 롤링 재시작 (무중단)
+  # ──────────────────────────────────────────────
   deploy:
     name: Deploy to Server
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
-    - name: Deploy via SSH
+    - name: Zero-Downtime Deploy via SSH
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
@@ -26,40 +89,69 @@ jobs:
 
         cd ~/traiding-bot
 
-        # 1. 최신 코드
+        # 1. 최신 코드 (docker-compose.yml, nginx.conf 등)
         git fetch origin main
         git reset --hard origin/main
 
-        # 2. 서버에서 직접 빌드 & 시작
-        docker-compose down --remove-orphans || true
-        docker builder prune -f 2>/dev/null || true
-        docker-compose up -d --build
+        # 2. GHCR 로그인 & 새 이미지 pull (기존 컨테이너 유지)
+        echo "$GHCR_PAT" | docker login ghcr.io -u jeo-96 --password-stdin 2>/dev/null || true
+        echo "Pulling new images..."
+        docker-compose pull
 
-        # 3. 헬스체크 (최대 120초)
-        echo "Waiting for services..."
-        for i in $(seq 1 24); do
-          if curl -sf http://127.0.0.1:8000/docs > /dev/null 2>&1; then
+        # 3. 롤링 재시작: nginx 유지한 채 backend → frontend 순서로 교체
+        echo "Restarting backend..."
+        docker-compose up -d --no-deps backend
+
+        # 4. 백엔드 헬스체크 (최대 60초)
+        echo "Waiting for backend health..."
+        for i in $(seq 1 12); do
+          if docker-compose exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')" 2>/dev/null; then
             echo "Backend is healthy!"
             break
           fi
-          if [ "$i" -eq 24 ]; then
-            echo "WARNING: Health check timed out"
+          if [ "$i" -eq 12 ]; then
+            echo "WARNING: Backend health check timed out"
             docker-compose logs --tail=20 backend
           fi
-          echo "Waiting... ($i/24)"
+          echo "Waiting... ($i/12)"
           sleep 5
         done
 
+        # 5. 프론트엔드 교체
+        echo "Restarting frontend..."
+        docker-compose up -d --no-deps frontend
+
+        # 6. 프론트엔드 헬스체크 (최대 60초)
+        echo "Waiting for frontend health..."
+        for i in $(seq 1 12); do
+          if docker-compose exec -T frontend wget --no-verbose --tries=1 --spider http://127.0.0.1:3000 2>/dev/null; then
+            echo "Frontend is healthy!"
+            break
+          fi
+          if [ "$i" -eq 12 ]; then
+            echo "WARNING: Frontend health check timed out"
+            docker-compose logs --tail=20 frontend
+          fi
+          echo "Waiting... ($i/12)"
+          sleep 5
+        done
+
+        # 7. nginx 교체 (설정 변경 시에만 실제 재시작됨)
+        echo "Updating nginx..."
+        docker-compose up -d --no-deps nginx
+
+        # 8. 최종 상태 확인
         docker-compose ps
 
-        # 4. 미사용 이미지 정리
+        # 9. 미사용 이미지 정리
         docker image prune -f
 
-        echo "Deployment Successful!"
+        echo "Zero-downtime deployment successful!"
         DEPLOY_SCRIPT
         rm -f ~/.ssh/deploy_key
 
 # 💡 GitHub Secrets 설정 (Settings → Secrets and variables → Actions):
-#    - SERVER_IP: 서버 공인 IP (IPv4 또는 IPv6)
-#    - SERVER_USERNAME: 서버 접속 계정 (예: ubuntu, root)
-#    - SSH_PRIVATE_KEY: 서버 SSH 개인 키 내용
+#    - SERVER_IP: 서버 공인 IP
+#    - SERVER_USERNAME: 서버 접속 계정 (예: ubuntu)
+#    - SSH_PRIVATE_KEY: 서버 SSH 개인 키
+#    - GHCR_PAT: GitHub PAT (read:packages, write:packages) — 서버 docker login용

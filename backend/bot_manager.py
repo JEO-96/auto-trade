@@ -252,6 +252,48 @@ def _is_candle_close_time(timeframe: str, tolerance_minutes: int = 2) -> bool:
     return remainder <= tolerance_minutes or (interval - remainder) <= tolerance_minutes
 
 
+# 사용자별 알림 주기 설정 → 분 단위 매핑
+_NOTIFICATION_INTERVAL_MINUTES: dict[str, int] = {
+    'realtime': 0,    # 매 캔들 마감마다
+    '4h': 240,
+    '12h': 720,
+    'daily': 1440,
+}
+
+
+def _get_user_notification_interval(user_id: int) -> str:
+    """DB에서 사용자의 notification_interval 설정을 조회."""
+    try:
+        with database.get_db_session() as db:
+            user = db.query(models.User).filter(models.User.id == user_id).first()
+            if user and user.notification_interval:
+                return user.notification_interval
+    except Exception as e:
+        logger.error("[Notification] Failed to get interval for user %d: %s", user_id, e)
+    return "realtime"
+
+
+def _should_send_feedback(user_id: int, timeframe: str, last_feedback_ts: float) -> bool:
+    """사용자의 알림 주기 설정에 따라 정기 피드백을 전송할지 결정.
+    - realtime: 매 캔들 마감마다 (기존 동작)
+    - 4h/12h/daily: 해당 간격 이상 경과한 경우에만 전송
+    """
+    interval_setting = _get_user_notification_interval(user_id)
+
+    if interval_setting == "realtime":
+        return True  # 매 캔들 마감마다 전송
+
+    interval_minutes = _NOTIFICATION_INTERVAL_MINUTES.get(interval_setting, 0)
+    if interval_minutes <= 0:
+        return True
+
+    # 마지막 피드백 이후 경과 시간(분) 확인
+    now_ts = datetime.now().timestamp()
+    elapsed_minutes = (now_ts - last_feedback_ts) / 60
+
+    return elapsed_minutes >= interval_minutes
+
+
 def _build_tick_feedback(
     signal_details: list[str],
     paper_trading: bool,
@@ -373,6 +415,7 @@ async def run_bot_loop(bot_config_id: int) -> None:
 
     consecutive_errors: int = 0
     last_feedback_candle_close: int = -1  # 마지막으로 피드백을 보낸 캔들 마감 시각(분)
+    last_feedback_ts: float = 0.0  # 마지막 피드백 전송 unix timestamp
 
     # 봇 시작 알림
     mode_label = "🧪 모의투자" if paper_trading else "💵 실매매"
@@ -579,12 +622,14 @@ async def run_bot_loop(bot_config_id: int) -> None:
                     list(active_positions.keys()),
                 )
 
-                # 캔들 마감 시점에 1회만 피드백 전송 (가장 가까운 마감 시각 기준 중복 방지)
+                # 캔들 마감 시점에 피드백 전송 (사용자 알림 주기 설정 반영)
                 nearest_close = _get_nearest_candle_close(timeframe)
                 if (signal_details
                         and _is_candle_close_time(timeframe)
-                        and nearest_close != last_feedback_candle_close):
+                        and nearest_close != last_feedback_candle_close
+                        and _should_send_feedback(user_id, timeframe, last_feedback_ts)):
                     last_feedback_candle_close = nearest_close
+                    last_feedback_ts = datetime.now().timestamp()
 
                     feedback_msg = _build_tick_feedback(
                         signal_details, paper_trading, strategy_name, timeframe, total_equity,

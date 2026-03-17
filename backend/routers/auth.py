@@ -152,6 +152,7 @@ def get_me(current_user: models.User = Depends(get_current_user), db: Session = 
         notification_trade=current_user.notification_trade if current_user.notification_trade is not None else True,
         notification_bot_status=current_user.notification_bot_status if current_user.notification_bot_status is not None else True,
         notification_system=current_user.notification_system if current_user.notification_system is not None else True,
+        notification_interval=current_user.notification_interval or "realtime",
     )
 
 
@@ -162,6 +163,7 @@ def get_notification_settings(current_user: models.User = Depends(get_current_us
         notification_trade=current_user.notification_trade if current_user.notification_trade is not None else True,
         notification_bot_status=current_user.notification_bot_status if current_user.notification_bot_status is not None else True,
         notification_system=current_user.notification_system if current_user.notification_system is not None else True,
+        notification_interval=current_user.notification_interval or "realtime",
     )
 
 
@@ -172,15 +174,24 @@ def update_notification_settings(
     db: Session = Depends(get_db),
 ):
     """알림 설정 업데이트"""
+    # notification_interval 유효성 검증
+    valid_intervals = {"realtime", "4h", "12h", "daily"}
+    if data.notification_interval not in valid_intervals:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"notification_interval은 {', '.join(sorted(valid_intervals))} 중 하나여야 합니다.",
+        )
     current_user.notification_trade = data.notification_trade
     current_user.notification_bot_status = data.notification_bot_status
     current_user.notification_system = data.notification_system
+    current_user.notification_interval = data.notification_interval
     db.commit()
     db.refresh(current_user)
     return schemas.NotificationSettings(
         notification_trade=current_user.notification_trade,
         notification_bot_status=current_user.notification_bot_status,
         notification_system=current_user.notification_system,
+        notification_interval=current_user.notification_interval or "realtime",
     )
 
 

@@ -10,12 +10,14 @@ export interface User {
     notification_trade?: boolean;
     notification_bot_status?: boolean;
     notification_system?: boolean;
+    notification_interval?: string;
 }
 
 export interface NotificationSettings {
     notification_trade: boolean;
     notification_bot_status: boolean;
     notification_system: boolean;
+    notification_interval: string;  // realtime, 4h, 12h, daily
 }
 
 export interface CreditBalance {

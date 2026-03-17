@@ -1,5 +1,6 @@
 services:
   backend:
+    image: ghcr.io/jeo-96/auto-trade/backend:latest
     build: ./backend
     restart: always
     env_file:
@@ -9,12 +10,13 @@ services:
       - ENV=production
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 60s
+      start_period: 30s
 
   frontend:
+    image: ghcr.io/jeo-96/auto-trade/frontend:latest
     build:
       context: ./frontend
       args:
@@ -29,12 +31,13 @@ services:
       - HOSTNAME=0.0.0.0
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 60s
+      start_period: 30s
 
   nginx:
+    image: ghcr.io/jeo-96/auto-trade/nginx:latest
     build: ./nginx
     restart: always
     ports:

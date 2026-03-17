@@ -17,6 +17,7 @@ class User(Base):
     notification_trade = Column(Boolean, default=True)       # 매매 체결 알림
     notification_bot_status = Column(Boolean, default=True)  # 봇 시작/정지 알림
     notification_system = Column(Boolean, default=True)      # 시스템/공지 알림
+    notification_interval = Column(String, default="realtime")  # 정기 피드백 주기: realtime, 4h, 12h, daily
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False) # 관리자 여부
     created_at = Column(DateTime, default=lambda: datetime.utcnow()) # Added registration time

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { User as UserIcon, Check, Heart, MessageCircle, Mail, Calendar, Send, Link2, Unlink, Bell, TrendingUp, Bot, AlertTriangle } from 'lucide-react';
+import { User as UserIcon, Check, Heart, MessageCircle, Mail, Calendar, Send, Link2, Unlink, Bell, TrendingUp, Bot, AlertTriangle, Clock } from 'lucide-react';
 import PageContainer from '@/components/ui/PageContainer';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Badge from '@/components/ui/Badge';
@@ -46,6 +46,7 @@ export default function ProfilePage() {
         notification_trade: true,
         notification_bot_status: true,
         notification_system: true,
+        notification_interval: 'realtime',
     });
     const [notifSaving, setNotifSaving] = useState(false);
 
@@ -58,6 +59,7 @@ export default function ProfilePage() {
                 notification_trade: user.notification_trade ?? true,
                 notification_bot_status: user.notification_bot_status ?? true,
                 notification_system: user.notification_system ?? true,
+                notification_interval: user.notification_interval ?? 'realtime',
             });
         }
     }, [user]);
@@ -156,6 +158,7 @@ export default function ProfilePage() {
     };
 
     const handleToggleNotification = async (key: keyof NotificationSettings) => {
+        if (key === 'notification_interval') return; // interval은 별도 핸들러 사용
         const updated = { ...notifSettings, [key]: !notifSettings[key] };
         setNotifSettings(updated);
         setNotifSaving(true);
@@ -163,9 +166,24 @@ export default function ProfilePage() {
             await updateNotificationSettings(updated);
             await refreshUser();
         } catch (err: unknown) {
-            // 실패 시 원복
             setNotifSettings(notifSettings);
             const msg = err instanceof Error ? err.message : '알림 설정 변경에 실패했습니다.';
+            toast.error(msg);
+        } finally {
+            setNotifSaving(false);
+        }
+    };
+
+    const handleChangeInterval = async (interval: string) => {
+        const updated = { ...notifSettings, notification_interval: interval };
+        setNotifSettings(updated);
+        setNotifSaving(true);
+        try {
+            await updateNotificationSettings(updated);
+            await refreshUser();
+        } catch (err: unknown) {
+            setNotifSettings(notifSettings);
+            const msg = err instanceof Error ? err.message : '알림 주기 변경에 실패했습니다.';
             toast.error(msg);
         } finally {
             setNotifSaving(false);
@@ -349,6 +367,46 @@ export default function ProfilePage() {
                             </button>
                         </div>
                     ))}
+                </div>
+            </div>
+
+            {/* Notification Interval */}
+            <div className="glass-panel rounded-2xl p-6 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                    <Clock className="w-4 h-4 text-purple-400" />
+                    <h3 className="text-sm font-semibold text-white">정기 분석 알림 주기</h3>
+                    {!user?.telegram_chat_id && (
+                        <span className="text-[10px] text-gray-500 ml-auto">텔레그램 연동 후 사용 가능</span>
+                    )}
+                </div>
+                <p className="text-[11px] text-gray-500 mb-3">
+                    캔들 분석 피드백의 전송 주기를 설정합니다. 매매 체결/봇 상태 알림은 항상 즉시 전송됩니다.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {([
+                        { value: 'realtime', label: '매 캔들', desc: '캔들 마감마다' },
+                        { value: '4h', label: '4시간', desc: '4시간 간격' },
+                        { value: '12h', label: '12시간', desc: '12시간 간격' },
+                        { value: 'daily', label: '1일', desc: '하루 1회' },
+                    ]).map(({ value, label, desc }) => {
+                        const isSelected = notifSettings.notification_interval === value;
+                        return (
+                            <button
+                                key={value}
+                                type="button"
+                                disabled={!user?.telegram_chat_id || notifSaving}
+                                onClick={() => handleChangeInterval(value)}
+                                className={`p-3 rounded-xl border text-center transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                                    isSelected
+                                        ? 'border-primary bg-primary/10 text-primary'
+                                        : 'border-white/[0.06] bg-white/[0.02] text-gray-400 hover:bg-white/[0.04]'
+                                }`}
+                            >
+                                <p className={`text-sm font-bold ${isSelected ? 'text-primary' : 'text-white'}`}>{label}</p>
+                                <p className="text-[10px] text-gray-500 mt-0.5">{desc}</p>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
