@@ -1,12 +1,13 @@
 import logging
 import os
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import Union
 import bot_manager
 import models, schemas, auth
-from crypto_utils import encrypt_token
+from crypto_utils import encrypt_token, decrypt_token
 from dependencies import get_db, get_current_user, get_current_user_any
 from kakao_service import exchange_code_for_tokens, get_user_info, verify_token, KakaoAuthError
 from slowapi import Limiter
@@ -192,8 +193,24 @@ async def withdraw_account(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """회원 탈퇴: 실행 중인 봇 정지 + 모든 사용자 데이터 삭제"""
+    """회원 탈퇴: 카카오 연동 해제 + 실행 중인 봇 정지 + 모든 사용자 데이터 삭제"""
     user_id = current_user.id
+
+    # 0. 카카오 연동 해제 (unlink)
+    if current_user.kakao_access_token:
+        try:
+            kakao_token = decrypt_token(current_user.kakao_access_token)
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    "https://kapi.kakao.com/v1/user/unlink",
+                    headers={"Authorization": f"Bearer {kakao_token}"},
+                )
+                if resp.status_code == 200:
+                    logger.info("User %d: Kakao unlink successful.", user_id)
+                else:
+                    logger.warning("User %d: Kakao unlink failed (status=%d).", user_id, resp.status_code)
+        except Exception as e:
+            logger.warning("User %d: Kakao unlink error: %s", user_id, e)
 
     # 1. 실행 중인 봇 정지
     user_bots = db.query(models.BotConfig).filter(models.BotConfig.user_id == user_id).all()
