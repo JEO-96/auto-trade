@@ -15,6 +15,7 @@ import type { BotFormData } from '@/components/modals/BotFormModal';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import SummaryStats from '@/components/sections/SummaryStats';
 import AssetDetailModal from '@/components/modals/AssetDetailModal';
+import { useAuth } from '@/contexts/AuthContext';
 import { BOT_POLL_INTERVAL_MS, BOT_STATUS, getStrategyTimeframe } from '@/lib/constants';
 import {
     getBotList, getBotStatus, getBotLogs, startBot, stopBot,
@@ -41,6 +42,7 @@ const defaultFormState: BotFormData = {
 
 export default function DashboardPage() {
     const toast = useToast();
+    const { user } = useAuth();
     const { botStrategies } = useStrategies();
 
     // Bot list state
@@ -330,6 +332,7 @@ export default function DashboardPage() {
                 liveBotLimitReached={liveBotLimitReached}
                 availableKrw={availableKrw}
                 strategies={botStrategies}
+                isAdmin={!!user?.is_admin}
                 onSubmit={handleFormSubmit}
                 onClose={() => setShowBotModal(false)}
                 onFormChange={setFormData}

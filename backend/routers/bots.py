@@ -116,8 +116,13 @@ def create_bot(
             detail=f"Maximum {MAX_BOTS_PER_USER} bots allowed per user.",
         )
 
-    # 실매매 봇 개수 제한 (사용자당 1개)
+    # 실매매 봇: 법률 검토 완료 전까지 관리자만 허용
     if not req.paper_trading_mode:
+        if not current_user.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="실매매 기능은 현재 준비 중입니다. 모의투자 모드를 이용해주세요.",
+            )
         live_bot_count = db.query(models.BotConfig).filter(
             models.BotConfig.user_id == current_user.id,
             models.BotConfig.paper_trading_mode == False,
@@ -191,8 +196,13 @@ def update_bot(
             detail="Allocated capital must be positive.",
         )
 
-    # 모의투자 → 실매매로 변경 시, 기존 실매매 봇 수 체크
+    # 모의투자 → 실매매로 변경 시: 관리자만 허용 + 기존 실매매 봇 수 체크
     if "paper_trading_mode" in update_data and update_data["paper_trading_mode"] is False:
+        if not current_user.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="실매매 기능은 현재 준비 중입니다. 모의투자 모드를 이용해주세요.",
+            )
         if bot.paper_trading_mode:  # 현재 모의투자인 봇을 실매매로 바꾸려는 경우만
             live_bot_count = db.query(models.BotConfig).filter(
                 models.BotConfig.user_id == current_user.id,
@@ -247,6 +257,13 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
 
     if _is_bot_running(bot_id):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bot already running.")
+
+    # 실매매 봇: 관리자만 시작 허용
+    if not bot.paper_trading_mode and not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="실매매 기능은 현재 준비 중입니다. 모의투자 모드를 이용해주세요.",
+        )
 
     # 실매매 봇 검증: 운용자본 vs 거래소 KRW 잔고
     if not bot.paper_trading_mode:

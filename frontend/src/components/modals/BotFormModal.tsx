@@ -28,6 +28,8 @@ export interface BotFormModalProps {
     availableKrw?: number;
     /** API에서 가져온 전략 목록 (없으면 하드코딩 상수 사용) */
     strategies?: StrategyItem[];
+    /** 관리자 여부 (실매매는 관리자만 허용) */
+    isAdmin?: boolean;
     onSubmit: (e: React.FormEvent) => void;
     onClose: () => void;
     onFormChange: (data: BotFormData) => void;
@@ -42,10 +44,12 @@ export default function BotFormModal({
     liveBotLimitReached,
     availableKrw,
     strategies,
+    isAdmin = false,
     onSubmit,
     onClose,
     onFormChange,
 }: BotFormModalProps) {
+    const liveDisabled = !isAdmin || liveBotLimitReached;
     const displayStrategies = strategies ?? BOT_STRATEGIES.map(s => ({ value: s.value, label: s.label, status: s.status }));
 
     const [tfFilter, setTfFilter] = useState('all');
@@ -177,23 +181,31 @@ export default function BotFormModal({
                             <button
                                 type="button"
                                 onClick={() => {
-                                    if (!liveBotLimitReached) {
+                                    if (!liveDisabled) {
                                         onFormChange({ ...formData, paper_trading_mode: false });
                                     }
                                 }}
-                                disabled={liveBotLimitReached}
+                                disabled={liveDisabled}
                                 className={`py-3 rounded-xl text-sm font-semibold transition-all border ${
                                     !formData.paper_trading_mode
                                         ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                                        : liveBotLimitReached
+                                        : liveDisabled
                                             ? 'bg-white/[0.02] border-white/[0.04] text-gray-500 cursor-not-allowed'
                                             : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10'
                                 }`}
                             >
-                                실매매
+                                실매매 {!isAdmin && <span className="text-[10px] opacity-60">(준비중)</span>}
                             </button>
                         </div>
-                        {liveBotLimitReached && formData.paper_trading_mode && (
+                        {!isAdmin && formData.paper_trading_mode && (
+                            <div className="mt-3 flex items-start gap-2.5 p-3 bg-blue-500/[0.06] rounded-xl border border-blue-500/15">
+                                <AlertTriangle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                                <p className="text-xs text-blue-400/90 leading-relaxed">
+                                    실매매 기능은 현재 준비 중입니다. 모의투자 모드로 전략을 테스트해보세요.
+                                </p>
+                            </div>
+                        )}
+                        {isAdmin && liveBotLimitReached && formData.paper_trading_mode && (
                             <div className="mt-3 flex items-start gap-2.5 p-3 bg-yellow-500/[0.06] rounded-xl border border-yellow-500/15">
                                 <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
                                 <p className="text-xs text-yellow-400/90 leading-relaxed">
