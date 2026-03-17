@@ -26,9 +26,9 @@ class Scalper15mStrategy(BaseStrategy):
         super().__init__()
         self.use_trailing_stop = True
 
-        # 신호 임계값
-        self.rsi_threshold = 45
-        self.adx_threshold = 18
+        # 신호 임계값 (최적화: ADX 25로 강한 추세만 포착)
+        self.rsi_threshold = 30
+        self.adx_threshold = 25
         self.volume_multiplier = 1.0
 
         # 출구 파라미터 (실매매용 ATR 기반)

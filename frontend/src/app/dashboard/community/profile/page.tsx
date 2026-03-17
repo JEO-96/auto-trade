@@ -83,7 +83,7 @@ export default function ProfilePage() {
         <PageContainer maxWidth="max-w-3xl">
             <Link
                 href="/dashboard/community"
-                className="inline-flex items-center gap-1.5 text-xs text-th-text-muted hover:text-th-text transition-colors mb-6"
+                className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-6"
             >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 커뮤니티로 돌아가기
@@ -92,16 +92,16 @@ export default function ProfilePage() {
             {/* Profile Card */}
             <div className="glass-panel rounded-2xl p-6 mb-6">
                 <div className="flex items-center gap-4 mb-6">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-th-border">
-                        <UserIcon className="w-7 h-7 text-th-text-secondary" />
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-white/[0.06]">
+                        <UserIcon className="w-7 h-7 text-gray-400" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold text-th-text">{user?.nickname || user?.email || '사용자'}</h1>
-                        <p className="text-xs text-th-text-muted">{user?.email}</p>
+                        <h1 className="text-lg font-bold text-white">{user?.nickname || user?.email || '사용자'}</h1>
+                        <p className="text-xs text-gray-500">{user?.email}</p>
                     </div>
                     <div className="ml-auto text-right">
-                        <p className="text-2xl font-bold text-th-text">{postCount}</p>
-                        <p className="text-[10px] text-th-text-muted">게시글</p>
+                        <p className="text-2xl font-bold text-white">{postCount}</p>
+                        <p className="text-[10px] text-gray-500">게시글</p>
                     </div>
                 </div>
 
@@ -127,12 +127,12 @@ export default function ProfilePage() {
 
             {/* My Posts */}
             <div className="glass-panel rounded-2xl p-6">
-                <h2 className="text-base font-bold text-th-text mb-4">내 게시글</h2>
+                <h2 className="text-base font-bold text-white mb-4">내 게시글</h2>
 
                 {loadingPosts ? (
                     <LoadingSpinner size="sm" message="불러오는 중..." />
                 ) : myPosts.length === 0 ? (
-                    <p className="text-xs text-th-text-muted text-center py-8">작성한 게시글이 없습니다.</p>
+                    <p className="text-xs text-gray-500 text-center py-8">작성한 게시글이 없습니다.</p>
                 ) : (
                     <div className="space-y-2">
                         {myPosts.map((post) => {
@@ -141,13 +141,13 @@ export default function ProfilePage() {
                                 <Link
                                     key={post.id}
                                     href={`/dashboard/community/post?id=${post.id}`}
-                                    className="flex items-center gap-3 p-3 rounded-xl bg-th-card border border-th-border-light hover:bg-th-hover transition-colors group"
+                                    className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.03] transition-colors group"
                                 >
                                     <Badge variant={badge.variant}>{badge.label}</Badge>
-                                    <span className="flex-1 text-sm text-th-text font-medium truncate group-hover:text-primary transition-colors">
+                                    <span className="flex-1 text-sm text-white font-medium truncate group-hover:text-primary transition-colors">
                                         {post.title}
                                     </span>
-                                    <div className="flex items-center gap-3 text-[11px] text-th-text-muted shrink-0">
+                                    <div className="flex items-center gap-3 text-[11px] text-gray-500 shrink-0">
                                         <span className="flex items-center gap-0.5">
                                             <Heart className="w-3 h-3" /> {post.like_count}
                                         </span>

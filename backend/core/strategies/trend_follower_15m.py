@@ -24,22 +24,23 @@ class TrendFollower15mStrategy(BaseStrategy):
 
     def __init__(self):
         super().__init__()
-        self.use_trailing_stop = True
+        self.use_trailing_stop = False
 
         # 출구 파라미터 (실매매용 ATR 기반)
-        self.atr_sl_multiplier = 2.0
-        self.atr_tp_multiplier = 3.5
+        self.atr_sl_multiplier = 1.5
+        self.atr_tp_multiplier = 2.5
         self.trailing_stop_multiplier = 2.5
 
-        # 넓은 트레일링 스탑 (추세 최대 추종)
-        self.backtest_sl_pct = 0.040   # 4.0% trailing stop
-        self.backtest_tp_pct = None    # TP 없음
-        self.backtest_trailing = True
+        # 고정 SL/TP 모드 (최적화: FIXED 1.2/3.0%가 TRAIL 4.0% 대비 +54.8% 개선)
+        self.backtest_sl_pct = 0.012   # 1.2% stop loss
+        self.backtest_tp_pct = 0.030   # 3.0% take profit
+        self.backtest_trailing = False
 
-        # 진입 조건
-        self.adx_threshold = 22
-        self.rsi_lower = 50
-        self.rsi_upper = 72
+        # 진입 조건 (최적화: ADX 25+, RSI 30-68, EMA 0.2%로 타이트)
+        self.adx_threshold = 25
+        self.rsi_lower = 30
+        self.rsi_upper = 68
+        self.ema_proximity_pct = 0.002  # EMA_20 근접 판단 기준 (0.2%)
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 200:
@@ -87,8 +88,8 @@ class TrendFollower15mStrategy(BaseStrategy):
         if prev_ema20 is None or pd.isna(prev_ema20):
             return False
 
-        # 이전 봉 저가가 EMA_20에 근접 (0.5% 이내) 또는 이전 봉 종가 < EMA_20
-        ema20_proximity = abs(prev['low'] - prev_ema20) / prev_ema20 < 0.005
+        # 이전 봉 저가가 EMA_20에 근접 또는 이전 봉 종가 < EMA_20
+        ema20_proximity = abs(prev['low'] - prev_ema20) / prev_ema20 < self.ema_proximity_pct
         prev_below_ema = prev['close'] < prev_ema20
 
         return ema20_proximity or prev_below_ema

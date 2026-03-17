@@ -24,7 +24,7 @@ export default function LoadingSpinner({
                 aria-hidden="true"
             />
             {message && (
-                <p className="text-th-text-muted text-sm font-medium">{message}</p>
+                <p className="text-gray-500 text-sm font-medium">{message}</p>
             )}
             <span className="sr-only">{message || '로딩 중...'}</span>
         </div>

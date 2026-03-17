@@ -15,7 +15,8 @@
   --text-muted: #64748B;
   --border: rgba(255, 255, 255, 0.06);
   --border-light: rgba(255, 255, 255, 0.04);
-  --hover: rgba(255, 255, 255, 0.04);
+  --hover: rgba(255, 255, 255, 0.03);
+  --hover-emphasis: rgba(255, 255, 255, 0.10);
   --card: rgba(255, 255, 255, 0.03);
   --overlay: rgba(0, 0, 0, 0.7);
   --modal: #0d1117;
@@ -24,8 +25,8 @@
   --scrollbar-hover: rgba(255, 255, 255, 0.15);
   --glass: rgba(15, 23, 42, 0.5);
   --glass-hover: rgba(15, 23, 42, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.06);
-  --glass-border-hover: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.14);
   --dot-pattern: rgba(255, 255, 255, 0.05);
   --select-bg: #1e293b;
   --focus-ring: rgba(59, 130, 246, 0.6);

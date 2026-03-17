@@ -21,6 +21,11 @@ class QuickSwing15mStrategy(BaseStrategy):
         super().__init__()
         self.use_trailing_stop = True
 
+        # 진입 파라미터 (최적화: ADX 25로 강한 추세, RSI 35 눌림목)
+        self.rsi_bounce_threshold = 35
+        self.adx_threshold = 25
+        self.rsi_upper_limit = 74
+
         # 출구 파라미터 (실매매용 ATR 기반)
         self.atr_sl_multiplier = 1.2
         self.atr_tp_multiplier = 2.0
@@ -77,11 +82,11 @@ class QuickSwing15mStrategy(BaseStrategy):
             return False
 
         # RSI 과열 방지
-        if rsi_curr > 74:
+        if rsi_curr > self.rsi_upper_limit:
             return False
 
         # ADX 최소 추세
-        if current[self.adx_col] < 18:
+        if current[self.adx_col] < self.adx_threshold:
             return False
 
         # 거래량 평균 이상
@@ -92,7 +97,7 @@ class QuickSwing15mStrategy(BaseStrategy):
 
         # 신호 1: RSI 눌림목 반등
         signal_rsi_bounce = (
-            rsi_prev < 48 and
+            rsi_prev < self.rsi_bounce_threshold and
             rsi_curr > rsi_prev
         )
 

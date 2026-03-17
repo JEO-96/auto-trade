@@ -307,10 +307,10 @@ export default function BacktestPage() {
                 {/* 공유 모달 */}
                 {shareModal && typeof document !== 'undefined' && createPortal(
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShareModal(null)}>
-                        <div className="rounded-2xl p-6 w-full max-w-md mx-4 bg-[#0f172a] border border-th-border shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="rounded-2xl p-6 w-full max-w-md mx-4 bg-[#0f172a] border border-white/[0.08] shadow-2xl" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-base font-bold text-th-text">커뮤니티에 공유</h3>
-                                <button onClick={() => setShareModal(null)} className="text-th-text-muted hover:text-th-text"><X className="w-4 h-4" /></button>
+                                <h3 className="text-base font-bold text-white">커뮤니티에 공유</h3>
+                                <button onClick={() => setShareModal(null)} className="text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
                             </div>
                             {shareSuccess ? (
                                 <div className="text-center py-8">
@@ -324,14 +324,14 @@ export default function BacktestPage() {
                                         onChange={(e) => setShareTitle(e.target.value)}
                                         placeholder="제목을 입력하세요"
                                         maxLength={100}
-                                        className="w-full bg-th-input border border-th-border rounded-xl px-4 py-3 text-sm text-th-text placeholder-th-text-muted mb-3 focus:border-primary/30 transition-colors"
+                                        className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-3 focus:border-primary/30 transition-colors"
                                     />
                                     <textarea
                                         value={shareContent}
                                         onChange={(e) => setShareContent(e.target.value)}
                                         placeholder="소감이나 분석 내용을 작성하세요 (선택)"
                                         rows={3}
-                                        className="w-full bg-th-input border border-th-border rounded-xl px-4 py-3 text-sm text-th-text placeholder-th-text-muted mb-4 resize-none focus:border-primary/30 transition-colors"
+                                        className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-4 resize-none focus:border-primary/30 transition-colors"
                                     />
                                     <div className="flex gap-2">
                                         <Button onClick={handleShare} loading={sharing} disabled={!shareTitle.trim()} size="sm">
@@ -350,17 +350,17 @@ export default function BacktestPage() {
                 <header className="mb-6">
                     <button
                         onClick={exitDetailMode}
-                        className="flex items-center gap-1.5 text-sm text-th-text-secondary hover:text-th-text transition-colors mb-4"
+                        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors mb-4"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         기록으로 돌아가기
                     </button>
                     <div className="flex items-start justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold text-th-text mb-1">{metaTitle}</h1>
+                            <h1 className="text-2xl font-bold text-white mb-1">{metaTitle}</h1>
                             {viewingHistoryMeta && (
-                                <div className="flex items-center gap-3 text-xs text-th-text-muted flex-wrap">
-                                    <span className="text-th-text-secondary">{getStrategyLabel(viewingHistoryMeta.strategy_name)}</span>
+                                <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                                    <span className="text-gray-400">{getStrategyLabel(viewingHistoryMeta.strategy_name)}</span>
                                     <span>{(viewingHistoryMeta.symbols || []).join(', ')}</span>
                                     <span>{viewingHistoryMeta.timeframe}</span>
                                     {viewingHistoryMeta.start_date && viewingHistoryMeta.end_date && (
@@ -386,14 +386,14 @@ export default function BacktestPage() {
                 </header>
 
                 <div className="flex flex-col gap-5">
-                    <p className="text-xs text-th-text-muted">
+                    <p className="text-xs text-gray-500">
                         * 이 결과는 과거 데이터 시뮬레이션이며 실제 수익을 보장하지 않습니다.
                     </p>
 
                     {/* Stats - full width */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div className="glass-panel p-5 rounded-2xl">
-                            <p className="text-[11px] text-th-text-muted font-medium uppercase tracking-wider mb-2">누적 수익</p>
+                            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">누적 수익</p>
                             <p className={`text-2xl font-bold truncate ${isProfit ? 'text-emerald-400' : 'text-red-400'}`}>
                                 {isProfit ? '+' : ''}₩{Math.round(result.final_capital - result.initial_capital).toLocaleString()}
                             </p>
@@ -404,19 +404,19 @@ export default function BacktestPage() {
                         </div>
 
                         <div className="glass-panel p-5 rounded-2xl">
-                            <p className="text-[11px] text-th-text-muted font-medium uppercase tracking-wider mb-2">초기 투자금</p>
-                            <p className="text-2xl font-bold text-th-text truncate">₩{Math.round(result.initial_capital).toLocaleString()}</p>
+                            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">초기 투자금</p>
+                            <p className="text-2xl font-bold text-white truncate">₩{Math.round(result.initial_capital).toLocaleString()}</p>
                         </div>
 
                         <div className="glass-panel p-5 rounded-2xl">
-                            <p className="text-[11px] text-th-text-muted font-medium uppercase tracking-wider mb-2">최종 자산</p>
-                            <p className="text-2xl font-bold text-th-text truncate">₩{Math.round(result.final_capital).toLocaleString()}</p>
+                            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">최종 자산</p>
+                            <p className="text-2xl font-bold text-white truncate">₩{Math.round(result.final_capital).toLocaleString()}</p>
                         </div>
 
                         <div className="glass-panel p-5 rounded-2xl">
-                            <p className="text-[11px] text-th-text-muted font-medium uppercase tracking-wider mb-2">매매 횟수</p>
+                            <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">매매 횟수</p>
                             <p className="text-2xl font-bold text-primary">
-                                {result.total_trades}<span className="text-sm text-th-text-muted ml-1 font-medium">회</span>
+                                {result.total_trades}<span className="text-sm text-gray-500 ml-1 font-medium">회</span>
                             </p>
                         </div>
                     </div>
@@ -433,7 +433,7 @@ export default function BacktestPage() {
                                     </h3>
                                     <div className="flex items-center gap-2">
                                         <div className="w-2.5 h-2.5 rounded-full bg-primary"></div>
-                                        <span className="text-xs text-th-text-muted">포트폴리오 가치</span>
+                                        <span className="text-xs text-gray-500">포트폴리오 가치</span>
                                     </div>
                                 </div>
                                 <div className="h-[280px] w-full">
@@ -448,7 +448,7 @@ export default function BacktestPage() {
                                         <Activity className="w-4 h-4 text-emerald-400" />
                                         전략 vs 시장 비교
                                     </h3>
-                                    <span className="text-[10px] text-th-text-muted">변동률 (%) 기준</span>
+                                    <span className="text-[10px] text-gray-500">변동률 (%) 기준</span>
                                 </div>
                                 <BacktestComparisonChart
                                     equityCurve={result.equity_curve}
@@ -461,18 +461,18 @@ export default function BacktestPage() {
 
                     {/* Trade History - full width */}
                     <div className="glass-panel rounded-2xl overflow-hidden">
-                        <div className="p-5 border-b border-th-border-light flex justify-between items-center">
+                        <div className="p-5 border-b border-white/[0.04] flex justify-between items-center">
                             <h3 className="text-base font-bold flex items-center gap-2">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                                 매매 이력
                             </h3>
-                            <span className="text-xs text-th-text-muted">{result.trades.length}건</span>
+                            <span className="text-xs text-gray-500">{result.trades.length}건</span>
                         </div>
 
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
-                                    <tr className="text-[10px] font-semibold uppercase tracking-wider text-th-text-muted border-b border-th-border-light">
+                                    <tr className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 border-b border-white/[0.04]">
                                         <th className="px-5 py-3 text-left">일시</th>
                                         <th className="px-5 py-3 text-left">종목</th>
                                         <th className="px-5 py-3 text-center">구분</th>
@@ -482,31 +482,31 @@ export default function BacktestPage() {
                                 </thead>
                                 <tbody className="divide-y divide-white/[0.03]">
                                     {result.trades.map((trade: BacktestTrade, idx: number) => (
-                                        <tr key={idx} className="hover:bg-th-hover transition-colors text-sm">
+                                        <tr key={idx} className="hover:bg-white/[0.02] transition-colors text-sm">
                                             <td className="px-5 py-4">
-                                                <p className="text-xs text-th-text-secondary">
+                                                <p className="text-xs text-gray-400">
                                                     {new Date(trade.time).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}
                                                 </p>
-                                                <p className="text-[10px] text-th-text-muted mt-0.5">
+                                                <p className="text-[10px] text-gray-500 mt-0.5">
                                                     {new Date(trade.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}
                                                 </p>
                                             </td>
                                             <td className="px-5 py-4">
-                                                <span className="font-semibold text-th-text">{trade.symbol?.split('/')[0]}</span>
+                                                <span className="font-semibold text-white">{trade.symbol?.split('/')[0]}</span>
                                             </td>
                                             <td className="px-5 py-4 text-center">
                                                 <Badge variant={trade.side === TRADE_SIDE.BUY ? 'success' : 'danger'}>
                                                     {TRADE_SIDE_LABELS[trade.side]}
                                                 </Badge>
                                             </td>
-                                            <td className="px-5 py-4 text-right font-mono text-sm text-th-text-secondary whitespace-nowrap">
+                                            <td className="px-5 py-4 text-right font-mono text-sm text-gray-400 whitespace-nowrap">
                                                 ₩{Math.round(Number(trade.price ?? 0)).toLocaleString()}
                                             </td>
                                             <td className="px-5 py-4 text-right whitespace-nowrap">
-                                                <p className={`font-mono text-sm font-medium ${trade.pnl > 0 ? 'text-emerald-400' : trade.pnl < 0 ? 'text-red-400' : 'text-th-text-muted'}`}>
+                                                <p className={`font-mono text-sm font-medium ${trade.pnl > 0 ? 'text-emerald-400' : trade.pnl < 0 ? 'text-red-400' : 'text-gray-500'}`}>
                                                     {trade.pnl !== 0 ? (trade.pnl > 0 ? `+₩${Math.round(Number(trade.pnl)).toLocaleString()}` : `-₩${Math.round(Math.abs(trade.pnl)).toLocaleString()}`) : '-'}
                                                 </p>
-                                                <p className="text-[10px] text-th-text-muted font-mono mt-0.5">
+                                                <p className="text-[10px] text-gray-500 font-mono mt-0.5">
                                                     ₩{Math.round(Number(trade.capital ?? 0)).toLocaleString()}
                                                 </p>
                                             </td>
@@ -534,20 +534,20 @@ export default function BacktestPage() {
             />
 
             <header className="mb-6">
-                <h1 className="text-2xl font-bold mb-1 text-th-text">전략 백테스팅</h1>
-                <p className="text-sm text-th-text-muted max-w-xl mb-4">
+                <h1 className="text-2xl font-bold mb-1 text-white">전략 백테스팅</h1>
+                <p className="text-sm text-gray-500 max-w-xl mb-4">
                     다양한 전략의 과거 성과를 분석하고 포트폴리오 시뮬레이션으로 검증하세요.
                 </p>
-                <div className="flex gap-1.5 bg-th-card p-1 rounded-xl border border-th-border-light w-fit">
+                <div className="flex gap-1.5 bg-white/[0.02] p-1 rounded-xl border border-white/[0.04] w-fit">
                     <button
                         onClick={() => setActiveTab('run')}
-                        className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${activeTab === 'run' ? 'bg-primary/10 text-primary' : 'text-th-text-muted hover:text-th-text'}`}
+                        className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${activeTab === 'run' ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:text-white'}`}
                     >
                         <Play className="w-3.5 h-3.5" /> 실행
                     </button>
                     <button
                         onClick={() => setActiveTab('history')}
-                        className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${activeTab === 'history' ? 'bg-primary/10 text-primary' : 'text-th-text-muted hover:text-th-text'}`}
+                        className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg transition-all ${activeTab === 'history' ? 'bg-primary/10 text-primary' : 'text-gray-500 hover:text-white'}`}
                     >
                         <History className="w-3.5 h-3.5" /> 기록
                     </button>
@@ -557,10 +557,10 @@ export default function BacktestPage() {
             {/* 공유 모달 - Portal로 body에 직접 렌더링 */}
             {shareModal && typeof document !== 'undefined' && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShareModal(null)}>
-                    <div className="rounded-2xl p-6 w-full max-w-md mx-4 bg-[#0f172a] border border-th-border shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                    <div className="rounded-2xl p-6 w-full max-w-md mx-4 bg-[#0f172a] border border-white/[0.08] shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-base font-bold text-th-text">커뮤니티에 공유</h3>
-                            <button onClick={() => setShareModal(null)} className="text-th-text-muted hover:text-th-text"><X className="w-4 h-4" /></button>
+                            <h3 className="text-base font-bold text-white">커뮤니티에 공유</h3>
+                            <button onClick={() => setShareModal(null)} className="text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
                         </div>
                         {shareSuccess ? (
                             <div className="text-center py-8">
@@ -574,14 +574,14 @@ export default function BacktestPage() {
                                     onChange={(e) => setShareTitle(e.target.value)}
                                     placeholder="제목을 입력하세요"
                                     maxLength={100}
-                                    className="w-full bg-th-input border border-th-border rounded-xl px-4 py-3 text-sm text-th-text placeholder-th-text-muted mb-3 focus:border-primary/30 transition-colors"
+                                    className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-3 focus:border-primary/30 transition-colors"
                                 />
                                 <textarea
                                     value={shareContent}
                                     onChange={(e) => setShareContent(e.target.value)}
                                     placeholder="소감이나 분석 내용을 작성하세요 (선택)"
                                     rows={3}
-                                    className="w-full bg-th-input border border-th-border rounded-xl px-4 py-3 text-sm text-th-text placeholder-th-text-muted mb-4 resize-none focus:border-primary/30 transition-colors"
+                                    className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 mb-4 resize-none focus:border-primary/30 transition-colors"
                                 />
                                 <div className="flex gap-2">
                                     <Button onClick={handleShare} loading={sharing} disabled={!shareTitle.trim()} size="sm">
@@ -599,7 +599,7 @@ export default function BacktestPage() {
             {/* 기록 탭 */}
             {activeTab === 'history' && (
                 <div className="glass-panel rounded-2xl p-6">
-                    <h3 className="text-base font-bold text-th-text mb-5 flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white mb-5 flex items-center gap-2">
                         <History className="w-5 h-5 text-primary" />
                         백테스트 기록
                     </h3>
@@ -629,7 +629,7 @@ export default function BacktestPage() {
                                                     : 'bg-red-500/[0.04] border-red-500/20 hover:border-red-500/40'
                                                 : h.status === 'failed'
                                                     ? 'bg-red-500/[0.03] border-red-500/10'
-                                                    : 'bg-th-card border-th-border'
+                                                    : 'bg-white/[0.02] border-white/[0.08]'
                                         }`}
                                         onClick={() => h.status === 'completed' && loadHistoryDetail(h.id)}
                                     >
@@ -643,22 +643,22 @@ export default function BacktestPage() {
                                                                 value={editTitleValue}
                                                                 onChange={(e) => setEditTitleValue(e.target.value)}
                                                                 onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(h.id); if (e.key === 'Escape') setEditingTitleId(null); }}
-                                                                className="bg-th-input border border-primary/30 rounded-lg px-2 py-1 text-xs text-th-text w-48 focus:outline-none"
+                                                                className="bg-white/[0.05] border border-primary/30 rounded-lg px-2 py-1 text-xs text-white w-48 focus:outline-none"
                                                                 autoFocus
                                                             />
-                                                            <button onClick={() => handleSaveTitle(h.id)} className="text-primary hover:text-th-text transition-colors" title="저장">
+                                                            <button onClick={() => handleSaveTitle(h.id)} className="text-primary hover:text-white transition-colors" title="저장">
                                                                 <Check className="w-3.5 h-3.5" />
                                                             </button>
-                                                            <button onClick={() => setEditingTitleId(null)} className="text-th-text-muted hover:text-th-text transition-colors" title="취소">
+                                                            <button onClick={() => setEditingTitleId(null)} className="text-gray-500 hover:text-white transition-colors" title="취소">
                                                                 <X className="w-3.5 h-3.5" />
                                                             </button>
                                                         </div>
                                                     ) : (
                                                         <div className="flex items-center gap-1.5">
-                                                            <p className="text-sm font-bold text-th-text truncate">{displayTitle}</p>
+                                                            <p className="text-sm font-bold text-white truncate">{displayTitle}</p>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); setEditingTitleId(h.id); setEditTitleValue(h.title || ''); }}
-                                                                className="text-th-text-muted hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                                                                className="text-gray-500 hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
                                                                 title="제목 수정"
                                                             >
                                                                 <Pencil className="w-3 h-3" />
@@ -670,8 +670,8 @@ export default function BacktestPage() {
                                                     {h.status === 'completed' ? '완료' : h.status === 'failed' ? '실패' : '진행중'}
                                                 </Badge>
                                             </div>
-                                            <div className="flex items-center gap-3 text-[11px] text-th-text-muted flex-wrap mb-3">
-                                                <span className="text-th-text-secondary">{getStrategyLabel(h.strategy_name)}</span>
+                                            <div className="flex items-center gap-3 text-[11px] text-gray-500 flex-wrap mb-3">
+                                                <span className="text-gray-400">{getStrategyLabel(h.strategy_name)}</span>
                                                 <span>{(h.symbols || []).join(', ')}</span>
                                                 <span>{h.timeframe}</span>
                                                 <span>₩{h.initial_capital.toLocaleString()}</span>
@@ -696,13 +696,13 @@ export default function BacktestPage() {
                                                         </p>
                                                     </div>
                                                     <div className="text-right space-y-0.5">
-                                                        <p className="text-[11px] text-th-text-secondary">
-                                                            <span className="text-th-text-muted">투자금</span>{' '}
-                                                            <span className="font-semibold text-th-text-secondary">₩{h.initial_capital.toLocaleString()}</span>
+                                                        <p className="text-[11px] text-gray-400">
+                                                            <span className="text-gray-500">투자금</span>{' '}
+                                                            <span className="font-semibold text-gray-400">₩{h.initial_capital.toLocaleString()}</span>
                                                         </p>
-                                                        <p className="text-[11px] text-th-text-secondary">
-                                                            <span className="text-th-text-muted">거래</span>{' '}
-                                                            <span className="font-semibold text-th-text-secondary">{h.total_trades}회</span>
+                                                        <p className="text-[11px] text-gray-400">
+                                                            <span className="text-gray-500">거래</span>{' '}
+                                                            <span className="font-semibold text-gray-400">{h.total_trades}회</span>
                                                         </p>
                                                     </div>
                                                 </div>
@@ -714,12 +714,12 @@ export default function BacktestPage() {
                                         </div>
 
                                         {/* 하단 액션 바 */}
-                                        <div className="flex items-center justify-end gap-1 px-3 py-2 border-t border-th-border-light" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center justify-end gap-1 px-3 py-2 border-t border-white/[0.04]" onClick={(e) => e.stopPropagation()}>
                                             {h.status === 'completed' && (
                                                 <>
                                                     <button
                                                         onClick={() => loadHistoryDetail(h.id)}
-                                                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-th-text-secondary hover:text-th-text hover:bg-th-hover transition-colors"
+                                                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold text-gray-400 hover:text-white hover:bg-white/[0.02] transition-colors"
                                                     >
                                                         상세보기
                                                     </button>
@@ -736,7 +736,7 @@ export default function BacktestPage() {
                                             )}
                                             <button
                                                 onClick={() => setDeletingHistoryId(h.id)}
-                                                className="px-2 py-1.5 rounded-lg text-[11px] text-th-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                                className="px-2 py-1.5 rounded-lg text-[11px] text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
                                                 title="삭제"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" />
@@ -762,7 +762,7 @@ export default function BacktestPage() {
                         <form onSubmit={runBacktest} className="space-y-6">
                             {/* Assets */}
                             <div>
-                                <label className="text-xs text-th-text-muted font-medium mb-2 block">분석 대상 자산</label>
+                                <label className="text-xs text-gray-500 font-medium mb-2 block">분석 대상 자산</label>
                                 <div className="grid grid-cols-2 gap-2">
                                     {SYMBOLS.map(s => (
                                         <button
@@ -771,7 +771,7 @@ export default function BacktestPage() {
                                             onClick={() => toggleSymbol(s)}
                                             className={`py-2.5 rounded-xl text-xs font-semibold transition-all border ${form.symbols.includes(s)
                                                 ? 'bg-primary/10 border-primary/30 text-primary'
-                                                : 'bg-th-card border-th-border text-th-text-muted hover:border-th-border'
+                                                : 'bg-white/[0.02] border-white/[0.08] text-gray-500 hover:border-white/[0.08]'
                                                 }`}
                                         >
                                             {s.split('/')[0]} <span className="opacity-40 text-[10px]">/ KRW</span>
@@ -782,7 +782,7 @@ export default function BacktestPage() {
 
                             {/* Strategy */}
                             <div>
-                                <label className="text-xs text-th-text-muted font-medium mb-2 block">전략 선택</label>
+                                <label className="text-xs text-gray-500 font-medium mb-2 block">전략 선택</label>
                                 <div className="flex gap-1 mb-2">
                                     {STRATEGY_TIMEFRAME_TABS.map(tab => (
                                         <button
@@ -792,7 +792,7 @@ export default function BacktestPage() {
                                             className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
                                                 backtestTfFilter === tab.value
                                                     ? 'bg-primary/10 border-primary/30 text-primary'
-                                                    : 'bg-th-card border-th-border text-th-text-muted hover:text-th-text-secondary'
+                                                    : 'bg-white/[0.02] border-white/[0.08] text-gray-500 hover:text-gray-400'
                                             }`}
                                         >
                                             {tab.label}
@@ -803,7 +803,7 @@ export default function BacktestPage() {
                                     name="strategy_name"
                                     value={form.strategy_name}
                                     onChange={handleChange}
-                                    className="w-full bg-th-card border border-th-border rounded-xl px-4 py-3 text-sm font-medium text-th-text appearance-none cursor-pointer focus:border-primary/30 transition-colors [&>option]:bg-[--select-bg] [&>option]:text-th-text"
+                                    className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-4 py-3 text-sm font-medium text-white appearance-none cursor-pointer focus:border-primary/30 transition-colors [&>option]:bg-[--select-bg] [&>option]:text-white"
                                 >
                                     {[
                                         ...filteredBacktestStrategies.filter(s => s.status === 'confirmed'),
@@ -818,16 +818,16 @@ export default function BacktestPage() {
 
                             {/* Timeframe (자동 설정) */}
                             <div>
-                                <label className="text-xs text-th-text-muted font-medium mb-2 block">캔들 주기</label>
-                                <div className="bg-th-card border border-th-border-light rounded-xl px-4 py-3 flex items-center gap-2">
+                                <label className="text-xs text-gray-500 font-medium mb-2 block">캔들 주기</label>
+                                <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 flex items-center gap-2">
                                     <span className="text-sm font-semibold text-primary">{TIMEFRAME_LABEL_MAP[form.timeframe] || form.timeframe}</span>
-                                    <span className="text-[10px] text-th-text-muted">(전략에 의해 자동 설정)</span>
+                                    <span className="text-[10px] text-gray-500">(전략에 의해 자동 설정)</span>
                                 </div>
                             </div>
 
                             {/* 테스트 기간 */}
                             <div>
-                                <label className="text-xs text-th-text-muted font-medium mb-2 block">테스트 기간</label>
+                                <label className="text-xs text-gray-500 font-medium mb-2 block">테스트 기간</label>
                                 <div className="grid grid-cols-3 gap-1.5 mb-3">
                                     {[
                                         { key: '1m', label: '1개월', months: 1 },
@@ -844,7 +844,7 @@ export default function BacktestPage() {
                                             className={`py-2 text-xs font-semibold rounded-lg transition-all border ${
                                                 form.period_preset === preset.key
                                                     ? 'bg-primary/10 border-primary/30 text-primary'
-                                                    : 'bg-th-card border-th-border text-th-text-muted hover:text-th-text-secondary hover:border-th-border'
+                                                    : 'bg-white/[0.02] border-white/[0.08] text-gray-500 hover:text-gray-400 hover:border-white/[0.08]'
                                             }`}
                                         >
                                             {preset.label}
@@ -853,28 +853,28 @@ export default function BacktestPage() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-[10px] text-th-text-muted font-medium mb-1 block">시작일</label>
+                                        <label className="text-[10px] text-gray-500 font-medium mb-1 block">시작일</label>
                                         <input
                                             type="date"
                                             name="start_date"
                                             value={form.start_date}
                                             onChange={handleChange}
-                                            className="w-full bg-th-card border border-th-border rounded-xl px-3 py-2.5 text-xs text-th-text focus:border-primary/30 transition-colors [color-scheme:dark]"
+                                            className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-3 py-2.5 text-xs text-white focus:border-primary/30 transition-colors [color-scheme:dark]"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-th-text-muted font-medium mb-1 block">종료일</label>
+                                        <label className="text-[10px] text-gray-500 font-medium mb-1 block">종료일</label>
                                         <input
                                             type="date"
                                             name="end_date"
                                             value={form.end_date}
                                             onChange={handleChange}
-                                            className="w-full bg-th-card border border-th-border rounded-xl px-3 py-2.5 text-xs text-th-text focus:border-primary/30 transition-colors [color-scheme:dark]"
+                                            className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-3 py-2.5 text-xs text-white focus:border-primary/30 transition-colors [color-scheme:dark]"
                                         />
                                     </div>
                                 </div>
                                 {form.start_date && form.end_date && (
-                                    <p className="text-[10px] text-th-text-muted text-center mt-2">
+                                    <p className="text-[10px] text-gray-500 text-center mt-2">
                                         {form.start_date} ~ {form.end_date}
                                         <span className="ml-1.5 text-primary font-semibold">
                                             ({Math.ceil((new Date(form.end_date).getTime() - new Date(form.start_date).getTime()) / 86400000)}일)
@@ -884,10 +884,10 @@ export default function BacktestPage() {
                             </div>
 
                             {/* Initial Capital */}
-                            <div className="pt-4 border-t border-th-border-light">
-                                <label className="text-xs text-th-text-muted font-medium mb-2 block">초기 투자금</label>
+                            <div className="pt-4 border-t border-white/[0.04]">
+                                <label className="text-xs text-gray-500 font-medium mb-2 block">초기 투자금</label>
                                 <div className="relative">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-th-text-muted font-semibold">₩</div>
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₩</div>
                                     <input
                                         type="text"
                                         inputMode="numeric"
@@ -897,7 +897,7 @@ export default function BacktestPage() {
                                             const val = e.target.value.replace(/[^0-9]/g, '');
                                             setForm({ ...form, initial_capital: val ? Number(val) : 0 });
                                         }}
-                                        className="w-full bg-th-card border border-th-border rounded-xl pl-10 pr-4 py-3 text-lg font-bold text-th-text focus:border-primary/30 transition-colors font-mono"
+                                        className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl pl-10 pr-4 py-3 text-lg font-bold text-white focus:border-primary/30 transition-colors font-mono"
                                         placeholder="0"
                                     />
                                 </div>
@@ -905,7 +905,7 @@ export default function BacktestPage() {
 
                             {/* Commission Rate */}
                             <div>
-                                <label className="text-xs text-th-text-muted font-medium mb-2 block">수수료율 (%)</label>
+                                <label className="text-xs text-gray-500 font-medium mb-2 block">수수료율 (%)</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -913,10 +913,10 @@ export default function BacktestPage() {
                                     max="10"
                                     value={form.commission_rate_pct}
                                     onChange={(e) => setForm({ ...form, commission_rate_pct: parseFloat(e.target.value) || 0 })}
-                                    className="w-full bg-th-card border border-th-border rounded-xl px-4 py-3 text-sm font-medium text-th-text focus:border-primary/30 transition-colors font-mono"
+                                    className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-4 py-3 text-sm font-medium text-white focus:border-primary/30 transition-colors font-mono"
                                     placeholder="0.05"
                                 />
-                                <p className="text-[10px] text-th-text-muted mt-1.5">
+                                <p className="text-[10px] text-gray-500 mt-1.5">
                                     예: 0.05 = 0.05% (업비트 기본 수수료)
                                 </p>
                             </div>
@@ -945,7 +945,7 @@ export default function BacktestPage() {
                     {loading && (
                         <div className="glass-panel flex-1 rounded-2xl flex flex-col items-center justify-center p-12 min-h-[400px]">
                             <LoadingSpinner size="lg" />
-                            <p className="text-xl font-bold text-th-text mb-1 mt-4">{Math.round(progress)}%</p>
+                            <p className="text-xl font-bold text-white mb-1 mt-4">{Math.round(progress)}%</p>
                             <p className="text-sm text-primary">{progressMessage}</p>
                         </div>
                     )}
@@ -964,7 +964,7 @@ export default function BacktestPage() {
                         <>
                             {/* Backtest disclaimer + share button */}
                             <div className="flex items-center justify-between">
-                                <p className="text-xs text-th-text-muted">
+                                <p className="text-xs text-gray-500">
                                     * 이 결과는 과거 데이터 시뮬레이션이며 실제 수익을 보장하지 않습니다.
                                 </p>
                                 {viewingHistoryId && (
@@ -983,7 +983,7 @@ export default function BacktestPage() {
                             {/* Stats */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <div className="glass-panel p-5 rounded-2xl">
-                                    <p className="text-[11px] text-th-text-muted font-medium uppercase tracking-wider mb-2">누적 수익</p>
+                                    <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">누적 수익</p>
                                     <p className={`text-2xl font-bold truncate ${result.final_capital >= result.initial_capital ? 'text-emerald-400' : 'text-red-400'}`}>
                                         ₩{Math.round(result.final_capital - result.initial_capital).toLocaleString()}
                                     </p>
@@ -994,14 +994,14 @@ export default function BacktestPage() {
                                 </div>
 
                                 <div className="glass-panel p-5 rounded-2xl">
-                                    <p className="text-[11px] text-th-text-muted font-medium uppercase tracking-wider mb-2">최종 자산</p>
-                                    <p className="text-2xl font-bold text-th-text truncate">₩{Math.round(result.final_capital).toLocaleString()}</p>
+                                    <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">최종 자산</p>
+                                    <p className="text-2xl font-bold text-white truncate">₩{Math.round(result.final_capital).toLocaleString()}</p>
                                 </div>
 
                                 <div className="glass-panel p-5 rounded-2xl">
-                                    <p className="text-[11px] text-th-text-muted font-medium uppercase tracking-wider mb-2">매매 횟수</p>
+                                    <p className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-2">매매 횟수</p>
                                     <p className="text-2xl font-bold text-primary">
-                                        {result.total_trades}<span className="text-sm text-th-text-muted ml-1 font-medium">회</span>
+                                        {result.total_trades}<span className="text-sm text-gray-500 ml-1 font-medium">회</span>
                                     </p>
                                 </div>
                             </div>
@@ -1016,7 +1016,7 @@ export default function BacktestPage() {
                                         </h3>
                                         <div className="flex items-center gap-2">
                                             <div className="w-2.5 h-2.5 rounded-full bg-primary"></div>
-                                            <span className="text-xs text-th-text-muted">포트폴리오 가치</span>
+                                            <span className="text-xs text-gray-500">포트폴리오 가치</span>
                                         </div>
                                     </div>
                                     <div className="h-[280px] w-full">
@@ -1033,7 +1033,7 @@ export default function BacktestPage() {
                                             <Activity className="w-4 h-4 text-emerald-400" />
                                             전략 vs 시장 비교
                                         </h3>
-                                        <span className="text-[10px] text-th-text-muted">변동률 (%) 기준</span>
+                                        <span className="text-[10px] text-gray-500">변동률 (%) 기준</span>
                                     </div>
                                     <BacktestComparisonChart
                                         equityCurve={result.equity_curve}
@@ -1045,18 +1045,18 @@ export default function BacktestPage() {
 
                             {/* Trade History */}
                             <div className="glass-panel rounded-2xl overflow-hidden">
-                                <div className="p-5 border-b border-th-border-light flex justify-between items-center">
+                                <div className="p-5 border-b border-white/[0.04] flex justify-between items-center">
                                     <h3 className="text-base font-bold flex items-center gap-2">
                                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                                         매매 이력
                                     </h3>
-                                    <span className="text-xs text-th-text-muted">{result.trades.length}건</span>
+                                    <span className="text-xs text-gray-500">{result.trades.length}건</span>
                                 </div>
 
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
-                                            <tr className="text-[10px] font-semibold uppercase tracking-wider text-th-text-muted border-b border-th-border-light">
+                                            <tr className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 border-b border-white/[0.04]">
                                                 <th className="px-5 py-3 text-left">일시</th>
                                                 <th className="px-5 py-3 text-left">종목</th>
                                                 <th className="px-5 py-3 text-center">구분</th>
@@ -1066,31 +1066,31 @@ export default function BacktestPage() {
                                         </thead>
                                         <tbody className="divide-y divide-white/[0.03]">
                                             {result.trades.map((trade: BacktestTrade, idx: number) => (
-                                                <tr key={idx} className="hover:bg-th-hover transition-colors text-sm">
+                                                <tr key={idx} className="hover:bg-white/[0.02] transition-colors text-sm">
                                                     <td className="px-5 py-4">
-                                                        <p className="text-xs text-th-text-secondary">
+                                                        <p className="text-xs text-gray-400">
                                                             {new Date(trade.time).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace(/\.$/, '')}
                                                         </p>
-                                                        <p className="text-[10px] text-th-text-muted mt-0.5">
+                                                        <p className="text-[10px] text-gray-500 mt-0.5">
                                                             {new Date(trade.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })}
                                                         </p>
                                                     </td>
                                                     <td className="px-5 py-4">
-                                                        <span className="font-semibold text-th-text">{trade.symbol?.split('/')[0]}</span>
+                                                        <span className="font-semibold text-white">{trade.symbol?.split('/')[0]}</span>
                                                     </td>
                                                     <td className="px-5 py-4 text-center">
                                                         <Badge variant={trade.side === TRADE_SIDE.BUY ? 'success' : 'danger'}>
                                                             {TRADE_SIDE_LABELS[trade.side]}
                                                         </Badge>
                                                     </td>
-                                                    <td className="px-5 py-4 text-right font-mono text-sm text-th-text-secondary whitespace-nowrap">
+                                                    <td className="px-5 py-4 text-right font-mono text-sm text-gray-400 whitespace-nowrap">
                                                         ₩{Math.round(Number(trade.price ?? 0)).toLocaleString()}
                                                     </td>
                                                     <td className="px-5 py-4 text-right whitespace-nowrap">
-                                                        <p className={`font-mono text-sm font-medium ${trade.pnl > 0 ? 'text-emerald-400' : trade.pnl < 0 ? 'text-red-400' : 'text-th-text-muted'}`}>
+                                                        <p className={`font-mono text-sm font-medium ${trade.pnl > 0 ? 'text-emerald-400' : trade.pnl < 0 ? 'text-red-400' : 'text-gray-500'}`}>
                                                             {trade.pnl !== 0 ? (trade.pnl > 0 ? `+₩${Math.round(Number(trade.pnl)).toLocaleString()}` : `-₩${Math.round(Math.abs(trade.pnl)).toLocaleString()}`) : '-'}
                                                         </p>
-                                                        <p className="text-[10px] text-th-text-muted font-mono mt-0.5">
+                                                        <p className="text-[10px] text-gray-500 font-mono mt-0.5">
                                                             ₩{Math.round(Number(trade.capital ?? 0)).toLocaleString()}
                                                         </p>
                                                     </td>
@@ -1205,17 +1205,17 @@ function EquityCurveChart({ data }: { data: EquityCurvePoint[] }) {
 
             {hoverIndex !== null && (
                 <div
-                    className="absolute z-10 p-3 rounded-xl bg-surface/95 border border-th-border backdrop-blur-md shadow-lg pointer-events-none"
+                    className="absolute z-10 p-3 rounded-xl bg-surface/95 border border-white/[0.08] backdrop-blur-md shadow-lg pointer-events-none"
                     style={{
                         left: `${(hoverIndex / divisor) * 100}%`,
                         top: `${(points[hoverIndex].y / height) * 100}%`,
                         transform: `translate(${hoverIndex > divisor / 2 ? '-110%' : '10%'}, -50%)`
                     }}
                 >
-                    <p className="text-[10px] text-th-text-muted mb-1">
+                    <p className="text-[10px] text-gray-500 mb-1">
                         {new Date(data[hoverIndex].time).toLocaleString()}
                     </p>
-                    <p className="text-base font-bold text-th-text">
+                    <p className="text-base font-bold text-white">
                         ₩{Math.round(data[hoverIndex].value).toLocaleString()}
                     </p>
                     <p className={`text-xs font-medium flex items-center gap-1 ${data[hoverIndex].value >= data[0].value ? 'text-emerald-400' : 'text-red-400'}`}>

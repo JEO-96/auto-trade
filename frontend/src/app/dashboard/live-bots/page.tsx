@@ -55,11 +55,11 @@ export default function LiveBotsPage() {
     return (
         <PageContainer>
             <header className="mb-6">
-                <h1 className="text-2xl font-bold mb-1 text-th-text flex items-center gap-2">
+                <h1 className="text-2xl font-bold mb-1 text-white flex items-center gap-2">
                     <Radio className="w-6 h-6 text-secondary" />
                     실시간 봇 현황
                 </h1>
-                <p className="text-sm text-th-text-muted">
+                <p className="text-sm text-gray-500">
                     현재 플랫폼에서 실행 중인 모든 자동매매 봇을 확인할 수 있습니다.
                 </p>
             </header>
@@ -67,16 +67,16 @@ export default function LiveBotsPage() {
             {/* 요약 카드 */}
             <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="glass-panel rounded-2xl p-4 text-center">
-                    <p className="text-2xl font-bold text-th-text">{bots.length}</p>
-                    <p className="text-xs text-th-text-muted mt-1">전체 실행 중</p>
+                    <p className="text-2xl font-bold text-white">{bots.length}</p>
+                    <p className="text-xs text-gray-500 mt-1">전체 실행 중</p>
                 </div>
                 <div className="glass-panel rounded-2xl p-4 text-center">
                     <p className="text-2xl font-bold text-red-400">{liveCount}</p>
-                    <p className="text-xs text-th-text-muted mt-1">실매매</p>
+                    <p className="text-xs text-gray-500 mt-1">실매매</p>
                 </div>
                 <div className="glass-panel rounded-2xl p-4 text-center">
                     <p className="text-2xl font-bold text-primary">{paperCount}</p>
-                    <p className="text-xs text-th-text-muted mt-1">모의투자</p>
+                    <p className="text-xs text-gray-500 mt-1">모의투자</p>
                 </div>
             </div>
 
@@ -94,10 +94,10 @@ export default function LiveBotsPage() {
                         <div key={strategyKey} className="glass-panel rounded-2xl p-5">
                             <div className="flex items-center gap-2 mb-4 min-w-0">
                                 <Bot className="w-4 h-4 text-primary shrink-0" />
-                                <h3 className="text-sm font-bold text-th-text truncate">
+                                <h3 className="text-sm font-bold text-white truncate">
                                     {getStrategyLabel(strategyKey)}
                                 </h3>
-                                <span className="text-[10px] text-th-text-muted font-mono truncate hidden sm:inline">
+                                <span className="text-[10px] text-gray-500 font-mono truncate hidden sm:inline">
                                     {strategyKey}
                                 </span>
                                 <Badge variant="default" className="ml-auto">
@@ -109,26 +109,26 @@ export default function LiveBotsPage() {
                                 {groupBots.map((bot, idx) => (
                                     <div
                                         key={`${strategyKey}-${idx}`}
-                                        className="flex items-center gap-3 p-3 rounded-xl bg-th-card border border-th-border-light"
+                                        className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]"
                                     >
                                         {/* 상태 표시 */}
                                         <div className="relative">
-                                            <Users className="w-8 h-8 text-th-text-muted" />
+                                            <Users className="w-8 h-8 text-gray-500" />
                                             <div className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0d1117] ${
                                                 bot.paper_trading_mode ? 'bg-primary' : 'bg-red-400'
                                             }`} />
                                         </div>
 
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-th-text truncate">
+                                            <p className="text-sm font-semibold text-white truncate">
                                                 {bot.nickname ?? '사용자'}
                                             </p>
                                             <div className="flex items-center gap-2 mt-0.5 min-w-0">
-                                                <span className="text-[10px] text-th-text-secondary font-mono truncate">
+                                                <span className="text-[10px] text-gray-400 font-mono truncate">
                                                     {bot.symbol}
                                                 </span>
-                                                <span className="text-[10px] text-th-text-muted">|</span>
-                                                <span className="text-[10px] text-th-text-secondary flex items-center gap-0.5">
+                                                <span className="text-[10px] text-gray-500">|</span>
+                                                <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
                                                     <Clock className="w-2.5 h-2.5" />
                                                     {TIMEFRAME_LABEL_MAP[bot.timeframe] ?? bot.timeframe}
                                                 </span>

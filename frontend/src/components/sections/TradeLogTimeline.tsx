@@ -30,19 +30,19 @@ export default function TradeLogTimeline({
         <div className="lg:col-span-8">
             <div className="glass-panel p-4 sm:p-6 rounded-2xl min-h-[500px] flex flex-col">
                 {/* Header */}
-                <div className="flex justify-between items-center gap-2 mb-6 pb-4 border-b border-th-border-light">
+                <div className="flex justify-between items-center gap-2 mb-6 pb-4 border-b border-white/[0.04]">
                     <h3 className="text-base font-bold flex items-center gap-2 min-w-0">
                         <BarChart2 className="w-5 h-5 text-secondary shrink-0" />
                         <span className="shrink-0">실행 타임라인</span>
                         {selectedBot && (
-                            <span className="text-xs text-th-text-muted font-normal truncate max-w-[120px] sm:max-w-[200px]">
+                            <span className="text-xs text-gray-500 font-normal truncate max-w-[120px] sm:max-w-[200px]">
                                 {selectedBot.symbol}
                             </span>
                         )}
                     </h3>
                     <button
                         aria-label="타임라인 필터"
-                        className="flex items-center gap-1.5 text-xs font-medium bg-th-card hover:bg-th-hover px-3 py-2 rounded-lg border border-th-border transition-colors text-th-text-secondary shrink-0"
+                        className="flex items-center gap-1.5 text-xs font-medium bg-white/[0.02] hover:bg-white/[0.03] px-3 py-2 rounded-lg border border-white/[0.06] transition-colors text-gray-400 shrink-0"
                     >
                         <ListFilter className="w-3.5 h-3.5" />
                         필터
@@ -74,7 +74,7 @@ export default function TradeLogTimeline({
                                         <p className={`text-sm font-bold ${log.side === TRADE_SIDE.BUY ? 'text-primary' : 'text-red-400'}`}>
                                             {TRADE_SIDE_LABELS[log.side]}
                                         </p>
-                                        <p className="text-[10px] text-th-text-muted font-medium truncate">
+                                        <p className="text-[10px] text-gray-500 font-medium truncate">
                                             {log.symbol} &middot; {log.timestamp}
                                         </p>
                                     </div>
@@ -89,21 +89,21 @@ export default function TradeLogTimeline({
                             </div>
 
                             {/* Bottom: Details grid */}
-                            <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-3 border-t border-th-border-light">
+                            <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-3 border-t border-white/[0.04]">
                                 <div className="min-w-0">
-                                    <p className="text-[10px] text-th-text-muted mb-0.5">체결가</p>
-                                    <p className="font-mono text-xs sm:text-sm text-th-text font-medium truncate">
+                                    <p className="text-[10px] text-gray-500 mb-0.5">체결가</p>
+                                    <p className="font-mono text-xs sm:text-sm text-white font-medium truncate">
                                         {formatKRW(Number(log.price ?? 0))}
                                     </p>
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] text-th-text-muted mb-0.5">수량</p>
-                                    <p className="font-mono text-xs sm:text-sm text-th-text font-medium truncate">
+                                    <p className="text-[10px] text-gray-500 mb-0.5">수량</p>
+                                    <p className="font-mono text-xs sm:text-sm text-white font-medium truncate">
                                         {formatAmount(log.amount)}
                                     </p>
                                 </div>
                                 <div className="min-w-0 text-right">
-                                    <p className="text-[10px] text-th-text-muted mb-0.5">트리거</p>
+                                    <p className="text-[10px] text-gray-500 mb-0.5">트리거</p>
                                     <p className="text-xs text-secondary font-medium truncate">
                                         {log.reason}
                                     </p>
@@ -119,13 +119,13 @@ export default function TradeLogTimeline({
                     )}
 
                     {selectedBotRunning && (
-                        <div className="flex items-center gap-3 p-4 bg-th-card rounded-xl border border-th-border-light">
+                        <div className="flex items-center gap-3 p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]">
                             <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
                                 <Activity className="w-4 h-4 text-primary animate-pulse" />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-sm text-th-text font-medium">실시간 스트리밍 중...</p>
-                                <p className="text-[10px] text-th-text-muted truncate">다음 돌파 패턴을 탐색하고 있습니다</p>
+                                <p className="text-sm text-white font-medium">실시간 스트리밍 중...</p>
+                                <p className="text-[10px] text-gray-500 truncate">다음 돌파 패턴을 탐색하고 있습니다</p>
                             </div>
                         </div>
                     )}

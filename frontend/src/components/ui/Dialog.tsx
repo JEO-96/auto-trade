@@ -50,7 +50,7 @@ const DialogContent = forwardRef<
             )}
             {...props}
         >
-            <div className="bg-th-modal border border-th-border rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden">
                 {children}
             </div>
         </DialogPrimitive.Content>
@@ -72,7 +72,7 @@ function DialogHeader({
     return (
         <div
             className={cn(
-                'flex items-center justify-between p-6 border-b border-th-border',
+                'flex items-center justify-between p-6 border-b border-white/[0.06]',
                 className
             )}
             {...props}
@@ -80,7 +80,7 @@ function DialogHeader({
             <div className="flex items-center gap-3">
                 {icon}
                 {title && (
-                    <DialogPrimitive.Title className="text-base font-bold text-th-text">
+                    <DialogPrimitive.Title className="text-base font-bold text-white">
                         {title}
                     </DialogPrimitive.Title>
                 )}
@@ -89,12 +89,12 @@ function DialogHeader({
                 <button
                     onClick={onClose}
                     aria-label="닫기"
-                    className="text-th-text-muted hover:text-th-text-secondary transition-colors rounded-lg p-1 hover:bg-th-hover"
+                    className="text-gray-500 hover:text-gray-300 transition-colors rounded-lg p-1"
                 >
                     <X className="w-5 h-5" />
                 </button>
             ) : (
-                <DialogPrimitive.Close className="text-th-text-muted hover:text-th-text-secondary transition-colors rounded-lg p-1 hover:bg-th-hover">
+                <DialogPrimitive.Close className="text-gray-500 hover:text-gray-300 transition-colors rounded-lg p-1">
                     <X className="w-5 h-5" />
                     <span className="sr-only">닫기</span>
                 </DialogPrimitive.Close>

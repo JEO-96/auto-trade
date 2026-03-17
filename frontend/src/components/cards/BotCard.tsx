@@ -46,7 +46,7 @@ export default function BotCard({
                         : 'border-red-500/20 hover:border-red-500/30'
                     : isSelected
                         ? 'border-primary/30 bg-primary/[0.03]'
-                        : 'border-transparent hover:border-th-border'
+                        : 'border-transparent hover:border-white/[0.06]'
             }`}
         >
             {/* Top row: symbol + status */}
@@ -61,12 +61,12 @@ export default function BotCard({
                         {(() => {
                             const symbols = bot.symbol.split(',').map(s => s.trim()).filter(Boolean);
                             if (symbols.length <= 2) {
-                                return <span className="text-base font-bold text-th-text break-all">{bot.symbol}</span>;
+                                return <span className="text-base font-bold text-white break-all">{bot.symbol}</span>;
                             }
                             return (
                                 <div className="flex flex-wrap gap-1">
                                     {symbols.map((sym) => (
-                                        <span key={sym} className="text-xs font-bold text-th-text bg-th-border px-1.5 py-0.5 rounded">
+                                        <span key={sym} className="text-xs font-bold text-white bg-white/[0.06] px-1.5 py-0.5 rounded">
                                             {sym.replace('/KRW', '')}
                                         </span>
                                     ))}
@@ -91,8 +91,8 @@ export default function BotCard({
             </div>
 
             {/* Bot details */}
-            <div className="flex items-center gap-4 text-[11px] text-th-text-muted mb-4">
-                <span className="uppercase font-semibold text-[10px] bg-th-border px-1.5 py-0.5 rounded">
+            <div className="flex items-center gap-4 text-[11px] text-gray-500 mb-4">
+                <span className="uppercase font-semibold text-[10px] bg-white/[0.06] px-1.5 py-0.5 rounded">
                     {bot.exchange_name || 'upbit'}
                 </span>
                 <span>{getStrategyLabel(bot.strategy_name)}</span>
@@ -101,19 +101,19 @@ export default function BotCard({
 
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <p className="text-[10px] text-th-text-muted font-medium uppercase tracking-wider mb-0.5">운용 자본</p>
-                    <p className="text-sm font-semibold text-th-text font-mono">
+                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-0.5">운용 자본</p>
+                    <p className="text-sm font-semibold text-white font-mono">
                         {bot.paper_trading_mode ? formatKRW(bot.allocated_capital ?? 0) : '잔고 100%'}
                     </p>
                 </div>
                 <div className="text-right">
-                    <p className="text-[10px] text-th-text-muted font-medium uppercase tracking-wider mb-0.5">RSI / Vol MA</p>
-                    <p className="text-sm font-semibold text-th-text font-mono">{bot.rsi_period} / {bot.volume_ma_period}</p>
+                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-0.5">RSI / Vol MA</p>
+                    <p className="text-sm font-semibold text-white font-mono">{bot.rsi_period} / {bot.volume_ma_period}</p>
                 </div>
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-2 pt-3 border-t border-th-border-light" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 pt-3 border-t border-white/[0.04]" onClick={(e) => e.stopPropagation()}>
                 {isRunning ? (
                     <Button
                         variant="danger"

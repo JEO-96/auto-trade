@@ -15,11 +15,11 @@ export default function StatCard({ title, value, subtitle, icon, accentColor = '
 
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-th-text-muted text-[11px] font-semibold uppercase tracking-wider">{title}</h3>
-                    {icon && <div className="text-th-text-muted/40 group-hover:text-th-text-muted transition-colors">{icon}</div>}
+                    <h3 className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">{title}</h3>
+                    {icon && <div className="text-white/20 group-hover:text-white/50 transition-colors">{icon}</div>}
                 </div>
 
-                <p className="text-2xl font-bold text-th-text tracking-tight">{value}</p>
+                <p className="text-2xl font-bold text-white tracking-tight">{value}</p>
             </div>
 
             {subtitle && (

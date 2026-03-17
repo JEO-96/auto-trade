@@ -338,13 +338,13 @@ export default function DashboardPage() {
             {/* Header */}
             <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold mb-1 text-th-text">트레이딩 대시보드</h1>
-                    <p className="text-sm text-th-text-muted">봇 관리 및 실시간 모니터링</p>
+                    <h1 className="text-2xl font-bold mb-1 text-white">트레이딩 대시보드</h1>
+                    <p className="text-sm text-gray-500">봇 관리 및 실시간 모니터링</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-th-card border border-th-border text-xs">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs">
                         <div className="w-1.5 h-1.5 rounded-full bg-secondary"></div>
-                        <span className="font-medium text-th-text-secondary">UPBIT 연결됨</span>
+                        <span className="font-medium text-gray-400">UPBIT 연결됨</span>
                     </div>
                     <Button variant="primary" size="sm" onClick={openCreateModal}>
                         <Plus className="w-4 h-4" />
@@ -394,7 +394,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Bot Cards */}
                     <div className="lg:col-span-4 space-y-4">
-                        <h3 className="text-sm font-bold text-th-text-secondary uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                             <Activity className="w-4 h-4" />
                             봇 목록
                         </h3>

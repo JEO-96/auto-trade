@@ -34,10 +34,10 @@ function StarDisplay({ rating }: { rating: number }) {
             {[1, 2, 3, 4, 5].map((i) => (
                 <Star
                     key={i}
-                    className={`w-5 h-5 ${i <= rating ? 'text-amber-400 fill-amber-400' : 'text-th-text-muted'}`}
+                    className={`w-5 h-5 ${i <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-500'}`}
                 />
             ))}
-            <span className="text-sm text-th-text-secondary ml-1 font-semibold">{rating}/5</span>
+            <span className="text-sm text-gray-400 ml-1 font-semibold">{rating}/5</span>
         </div>
     );
 }
@@ -148,7 +148,7 @@ export default function PublicPostDetailPage() {
     if (!post) {
         return (
             <div className="max-w-3xl mx-auto">
-                <p className="text-th-text-secondary text-center py-20">게시글을 찾을 수 없습니다.</p>
+                <p className="text-gray-400 text-center py-20">게시글을 찾을 수 없습니다.</p>
             </div>
         );
     }
@@ -160,7 +160,7 @@ export default function PublicPostDetailPage() {
         <div className="max-w-3xl mx-auto">
             <Link
                 href={basePath}
-                className="inline-flex items-center gap-1.5 text-xs text-th-text-muted hover:text-th-text transition-colors mb-6"
+                className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors mb-6"
             >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 커뮤니티로 돌아가기
@@ -171,14 +171,14 @@ export default function PublicPostDetailPage() {
                 <div className="flex items-center gap-2 mb-3">
                     <Badge variant={badge.variant}>{badge.label}</Badge>
                     {post.strategy_name && (
-                        <span className="text-[11px] text-th-text-muted font-medium">{getStrategyLabel(post.strategy_name)}</span>
+                        <span className="text-[11px] text-gray-500 font-medium">{getStrategyLabel(post.strategy_name)}</span>
                     )}
                     {post.timeframe && (
-                        <span className="text-[11px] text-th-text-muted font-medium">{getTimeframeLabel(post.timeframe)}</span>
+                        <span className="text-[11px] text-gray-500 font-medium">{getTimeframeLabel(post.timeframe)}</span>
                     )}
                 </div>
 
-                <h1 className="text-xl font-bold text-th-text mb-3">{post.title}</h1>
+                <h1 className="text-xl font-bold text-white mb-3">{post.title}</h1>
 
                 {post.post_type === 'strategy_review' && post.rating && (
                     <div className="mb-4">
@@ -186,13 +186,13 @@ export default function PublicPostDetailPage() {
                     </div>
                 )}
 
-                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-th-border-light">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-th-border">
+                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-white/[0.04]">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-white/[0.06]">
                         <UserIcon className="w-3.5 h-3.5 text-white/60" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-th-text">{post.author_nickname ?? '익명'}</p>
-                        <p className="text-[10px] text-th-text-muted">{formatDateTime(post.created_at)}</p>
+                        <p className="text-sm font-semibold text-white">{post.author_nickname ?? '익명'}</p>
+                        <p className="text-[10px] text-gray-500">{formatDateTime(post.created_at)}</p>
                     </div>
                 </div>
 
@@ -200,33 +200,33 @@ export default function PublicPostDetailPage() {
                 {post.post_type === 'backtest_share' && post.backtest_data && (
                     <div className="mb-5 space-y-3">
                         <div className="grid grid-cols-3 gap-3">
-                            <div className="p-3 bg-th-card rounded-xl border border-th-border-light text-center">
-                                <p className="text-[10px] text-th-text-muted mb-1">초기 자본</p>
-                                <p className="text-sm font-bold text-th-text">₩{Number(post.backtest_data.initial_capital).toLocaleString()}</p>
+                            <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
+                                <p className="text-[10px] text-gray-500 mb-1">초기 자본</p>
+                                <p className="text-sm font-bold text-white">₩{Number(post.backtest_data.initial_capital).toLocaleString()}</p>
                             </div>
-                            <div className="p-3 bg-th-card rounded-xl border border-th-border-light text-center">
-                                <p className="text-[10px] text-th-text-muted mb-1">최종 자본</p>
+                            <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
+                                <p className="text-[10px] text-gray-500 mb-1">최종 자본</p>
                                 <p className={`text-sm font-bold ${Number(post.backtest_data.final_capital) >= Number(post.backtest_data.initial_capital) ? 'text-secondary' : 'text-red-400'}`}>
                                     ₩{Number(post.backtest_data.final_capital).toLocaleString()}
                                 </p>
                             </div>
-                            <div className="p-3 bg-th-card rounded-xl border border-th-border-light text-center">
-                                <p className="text-[10px] text-th-text-muted mb-1">총 거래</p>
-                                <p className="text-sm font-bold text-th-text">{String(post.backtest_data.total_trades)}회</p>
+                            <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
+                                <p className="text-[10px] text-gray-500 mb-1">총 거래</p>
+                                <p className="text-sm font-bold text-white">{String(post.backtest_data.total_trades)}회</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-th-text-muted px-1 flex-wrap">
+                        <div className="flex items-center gap-4 text-xs text-gray-500 px-1 flex-wrap">
                             {post.backtest_data.strategy_name && (
-                                <span>전략: <span className="text-th-text-secondary font-medium">{getStrategyLabel(String(post.backtest_data.strategy_name))}</span></span>
+                                <span>전략: <span className="text-gray-400 font-medium">{getStrategyLabel(String(post.backtest_data.strategy_name))}</span></span>
                             )}
                             {post.backtest_data.timeframe && (
-                                <span>주기: <span className="text-th-text-secondary font-medium">{getTimeframeLabel(String(post.backtest_data.timeframe))}</span></span>
+                                <span>주기: <span className="text-gray-400 font-medium">{getTimeframeLabel(String(post.backtest_data.timeframe))}</span></span>
                             )}
                             {post.backtest_data.start_date && post.backtest_data.end_date && (
-                                <span>기간: <span className="text-th-text-secondary font-medium">{String(post.backtest_data.start_date)} ~ {String(post.backtest_data.end_date)}</span></span>
+                                <span>기간: <span className="text-gray-400 font-medium">{String(post.backtest_data.start_date)} ~ {String(post.backtest_data.end_date)}</span></span>
                             )}
                             {post.backtest_data.commission_rate != null && (
-                                <span>수수료: <span className="text-th-text-secondary font-medium">{(Number(post.backtest_data.commission_rate) * 100).toFixed(2)}%</span></span>
+                                <span>수수료: <span className="text-gray-400 font-medium">{(Number(post.backtest_data.commission_rate) * 100).toFixed(2)}%</span></span>
                             )}
                         </div>
                     </div>
@@ -235,22 +235,22 @@ export default function PublicPostDetailPage() {
                 {/* Performance Data */}
                 {post.post_type === 'performance_share' && post.performance_data && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-                        <div className="p-3 bg-th-card rounded-xl border border-th-border-light">
-                            <p className="text-[10px] text-th-text-muted mb-1">총 PnL</p>
+                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                            <p className="text-[10px] text-gray-500 mb-1">총 PnL</p>
                             <p className={`text-sm font-bold ${post.performance_data.total_pnl >= 0 ? 'text-secondary' : 'text-red-400'}`}>
                                 ₩{Number(post.performance_data.total_pnl).toLocaleString()}
                             </p>
                         </div>
-                        <div className="p-3 bg-th-card rounded-xl border border-th-border-light">
-                            <p className="text-[10px] text-th-text-muted mb-1">승률</p>
-                            <p className="text-sm font-bold text-th-text">{post.performance_data.win_rate}%</p>
+                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                            <p className="text-[10px] text-gray-500 mb-1">승률</p>
+                            <p className="text-sm font-bold text-white">{post.performance_data.win_rate}%</p>
                         </div>
-                        <div className="p-3 bg-th-card rounded-xl border border-th-border-light">
-                            <p className="text-[10px] text-th-text-muted mb-1">거래 수</p>
-                            <p className="text-sm font-bold text-th-text">{post.performance_data.trade_count}회</p>
+                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                            <p className="text-[10px] text-gray-500 mb-1">거래 수</p>
+                            <p className="text-sm font-bold text-white">{post.performance_data.trade_count}회</p>
                         </div>
-                        <div className="p-3 bg-th-card rounded-xl border border-th-border-light">
-                            <p className="text-[10px] text-th-text-muted mb-1">유형</p>
+                        <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                            <p className="text-[10px] text-gray-500 mb-1">유형</p>
                             <p className={`text-sm font-bold ${post.performance_data.is_paper ? 'text-primary' : 'text-secondary'}`}>
                                 {post.performance_data.is_paper ? '모의투자' : '실투자'}
                             </p>
@@ -259,31 +259,31 @@ export default function PublicPostDetailPage() {
                 )}
 
                 {post.content && (
-                    <div className="text-sm text-th-text-secondary leading-relaxed whitespace-pre-wrap mb-5">
+                    <div className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap mb-5">
                         {post.content}
                     </div>
                 )}
 
-                <div className="flex items-center gap-4 pt-4 border-t border-th-border-light">
+                <div className="flex items-center gap-4 pt-4 border-t border-white/[0.04]">
                     <button
                         onClick={handleLike}
                         title={isAuthenticated ? undefined : '로그인이 필요합니다'}
                         className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
-                            !isAuthenticated ? 'text-th-text-muted cursor-default' :
-                            post.is_liked ? 'text-red-400' : 'text-th-text-muted hover:text-red-400'
+                            !isAuthenticated ? 'text-gray-500 cursor-default' :
+                            post.is_liked ? 'text-red-400' : 'text-gray-500 hover:text-red-400'
                         }`}
                     >
                         <Heart className={`w-4 h-4 ${post.is_liked ? 'fill-red-400' : ''}`} />
                         좋아요 {post.like_count}
                     </button>
-                    <span className="flex items-center gap-1.5 text-sm text-th-text-muted">
+                    <span className="flex items-center gap-1.5 text-sm text-gray-500">
                         <MessageCircle className="w-4 h-4" />
                         댓글 {post.comment_count}
                     </span>
                     {isAuthor && (
                         <button
                             onClick={handleDeletePost}
-                            className="ml-auto flex items-center gap-1.5 text-xs text-th-text-muted hover:text-red-400 transition-colors"
+                            className="ml-auto flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-400 transition-colors"
                         >
                             <Trash2 className="w-3.5 h-3.5" />
                             삭제
@@ -294,31 +294,31 @@ export default function PublicPostDetailPage() {
 
             {/* Comments */}
             <div className="glass-panel rounded-2xl p-6">
-                <h3 className="text-base font-bold text-th-text mb-4 flex items-center gap-2">
+                <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
                     <MessageCircle className="w-4 h-4 text-primary" />
                     댓글 {comments.length}
                 </h3>
 
                 <div className="space-y-3 mb-5">
                     {comments.length === 0 ? (
-                        <p className="text-xs text-th-text-muted text-center py-6">아직 댓글이 없습니다.</p>
+                        <p className="text-xs text-gray-500 text-center py-6">아직 댓글이 없습니다.</p>
                     ) : (
                         comments.map((comment) => (
-                            <div key={comment.id} className="flex gap-3 p-3 rounded-xl bg-th-card border border-th-border-light">
-                                <div className="w-7 h-7 rounded-lg bg-th-hover flex items-center justify-center shrink-0">
-                                    <UserIcon className="w-3.5 h-3.5 text-th-text-muted" />
+                            <div key={comment.id} className="flex gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                                <div className="w-7 h-7 rounded-lg bg-white/[0.03] flex items-center justify-center shrink-0">
+                                    <UserIcon className="w-3.5 h-3.5 text-gray-500" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-xs font-semibold text-th-text">{comment.author_nickname ?? '익명'}</span>
-                                        <span className="text-[10px] text-th-text-muted">{formatDateTime(comment.created_at)}</span>
+                                        <span className="text-xs font-semibold text-white">{comment.author_nickname ?? '익명'}</span>
+                                        <span className="text-[10px] text-gray-500">{formatDateTime(comment.created_at)}</span>
                                     </div>
-                                    <p className="text-sm text-th-text-secondary leading-relaxed">{comment.content}</p>
+                                    <p className="text-sm text-gray-400 leading-relaxed">{comment.content}</p>
                                 </div>
                                 {user?.id === comment.user_id && (
                                     <button
                                         onClick={() => handleDeleteComment(comment.id)}
-                                        className="text-th-text-muted hover:text-red-400 transition-colors shrink-0"
+                                        className="text-gray-500 hover:text-red-400 transition-colors shrink-0"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -336,7 +336,7 @@ export default function PublicPostDetailPage() {
                             onChange={(e) => setCommentText(e.target.value)}
                             placeholder="댓글을 입력하세요..."
                             maxLength={500}
-                            className="flex-1 bg-th-card border border-th-border rounded-xl px-4 py-2.5 text-sm text-th-text placeholder-th-text-muted focus:border-primary/30 transition-colors"
+                            className="flex-1 bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-primary/30 transition-colors"
                         />
                         <Button type="submit" size="sm" loading={submittingComment} disabled={!commentText.trim()}>
                             <Send className="w-3.5 h-3.5" />
@@ -345,7 +345,7 @@ export default function PublicPostDetailPage() {
                 ) : (
                     <Link
                         href="/login"
-                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-th-card border border-th-border text-sm text-th-text-secondary hover:text-primary hover:border-primary/20 transition-colors"
+                        className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/[0.02] border border-white/[0.06] text-sm text-gray-400 hover:text-primary hover:border-primary/20 transition-colors"
                     >
                         <LogIn className="w-4 h-4" />
                         로그인하여 댓글을 남겨보세요

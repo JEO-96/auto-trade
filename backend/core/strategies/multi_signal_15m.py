@@ -21,13 +21,13 @@ class MultiSignal15mStrategy(BaseStrategy):
         super().__init__()
         self.use_trailing_stop = True
 
-        # 시그널 임계값
-        self.rsi_threshold = 55
-        self.volume_multiplier = 1.3
+        # 시그널 임계값 (멀티심볼 최적화: rsi 50, vol 1.2x)
+        self.rsi_threshold = 50
+        self.volume_multiplier = 1.2
 
-        # ADX 차등 문턱
-        self.breakout_adx_min = 25
-        self.trend_rider_adx_min = 30
+        # ADX 차등 문턱 (멀티심볼 최적화: 높은 ADX로 노이즈 필터)
+        self.breakout_adx_min = 28
+        self.trend_rider_adx_min = 35
         self.trend_rider_rsi_min = 50
 
         # Bull Pullback
@@ -42,8 +42,8 @@ class MultiSignal15mStrategy(BaseStrategy):
         self.atr_tp_multiplier = 3.0
         self.trailing_stop_multiplier = 2.0
 
-        # 트레일링 스탑 모드
-        self.backtest_sl_pct = 0.025   # 2.5% trailing stop
+        # 트레일링 스탑 모드 (멀티심볼 최적화: TRAIL 2.0%가 최적)
+        self.backtest_sl_pct = 0.020   # 2.0% trailing stop
         self.backtest_tp_pct = None    # TP 없음
         self.backtest_trailing = True
 

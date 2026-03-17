@@ -89,6 +89,16 @@ jobs:
 
         cd ~/traiding-bot
 
+        # 0. docker compose v2 플러그인 설치 (없으면)
+        if ! docker compose version &>/dev/null; then
+          echo "Installing docker compose v2 plugin..."
+          sudo mkdir -p /usr/local/lib/docker/cli-plugins
+          sudo curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" \
+            -o /usr/local/lib/docker/cli-plugins/docker-compose
+          sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+          echo "Installed: $(docker compose version)"
+        fi
+
         # 1. 최신 코드 (docker-compose.yml, nginx.conf 등)
         git fetch origin main
         git reset --hard origin/main
@@ -96,22 +106,22 @@ jobs:
         # 2. GHCR 로그인 & 새 이미지 pull (기존 컨테이너 유지)
         echo "$GHCR_PAT" | docker login ghcr.io -u jeo-96 --password-stdin 2>/dev/null || true
         echo "Pulling new images..."
-        docker-compose pull
+        docker compose pull
 
         # 3. 롤링 재시작: nginx 유지한 채 backend → frontend 순서로 교체
         echo "Restarting backend..."
-        docker-compose up -d --no-deps backend
+        docker compose up -d --no-deps backend
 
         # 4. 백엔드 헬스체크 (최대 60초)
         echo "Waiting for backend health..."
         for i in $(seq 1 12); do
-          if docker-compose exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')" 2>/dev/null; then
+          if docker compose exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')" 2>/dev/null; then
             echo "Backend is healthy!"
             break
           fi
           if [ "$i" -eq 12 ]; then
             echo "WARNING: Backend health check timed out"
-            docker-compose logs --tail=20 backend
+            docker compose logs --tail=20 backend
           fi
           echo "Waiting... ($i/12)"
           sleep 5
@@ -119,18 +129,18 @@ jobs:
 
         # 5. 프론트엔드 교체
         echo "Restarting frontend..."
-        docker-compose up -d --no-deps frontend
+        docker compose up -d --no-deps frontend
 
         # 6. 프론트엔드 헬스체크 (최대 60초)
         echo "Waiting for frontend health..."
         for i in $(seq 1 12); do
-          if docker-compose exec -T frontend wget --no-verbose --tries=1 --spider http://127.0.0.1:3000 2>/dev/null; then
+          if docker compose exec -T frontend wget --no-verbose --tries=1 --spider http://127.0.0.1:3000 2>/dev/null; then
             echo "Frontend is healthy!"
             break
           fi
           if [ "$i" -eq 12 ]; then
             echo "WARNING: Frontend health check timed out"
-            docker-compose logs --tail=20 frontend
+            docker compose logs --tail=20 frontend
           fi
           echo "Waiting... ($i/12)"
           sleep 5
@@ -138,10 +148,10 @@ jobs:
 
         # 7. nginx 교체 (설정 변경 시에만 실제 재시작됨)
         echo "Updating nginx..."
-        docker-compose up -d --no-deps nginx
+        docker compose up -d --no-deps nginx
 
         # 8. 최종 상태 확인
-        docker-compose ps
+        docker compose ps
 
         # 9. 미사용 이미지 정리
         docker image prune -f

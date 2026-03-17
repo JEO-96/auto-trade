@@ -70,22 +70,22 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
 
     return (
         <section
-            className="mb-6 rounded-xl border border-th-border bg-th-card overflow-hidden"
+            className="mb-6 rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden"
             aria-label="시작 가이드"
         >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-th-border-light">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.04]">
                 <div className="flex items-center gap-3">
-                    <h2 className="text-sm font-bold text-th-text">
+                    <h2 className="text-sm font-bold text-white">
                         {allCompleted ? '설정 완료!' : '시작 가이드'}
                     </h2>
-                    <span className="text-xs text-th-text-muted">
+                    <span className="text-xs text-gray-500">
                         {completedCount}/{steps.length} 완료
                     </span>
                 </div>
                 <button
                     onClick={handleDismiss}
-                    className="text-th-text-muted hover:text-th-text-secondary transition-colors text-xs flex items-center gap-1"
+                    className="text-gray-500 hover:text-gray-300 transition-colors text-xs flex items-center gap-1"
                     aria-label="가이드 닫기"
                 >
                     <X className="w-3.5 h-3.5" />
@@ -94,7 +94,7 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
             </div>
 
             {/* Progress bar */}
-            <div className="h-0.5 bg-th-border-light">
+            <div className="h-0.5 bg-white/[0.04]">
                 <div
                     className="h-full bg-primary transition-all duration-500 ease-out"
                     style={{ width: `${progressPercent}%` }}
@@ -102,12 +102,12 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
             </div>
 
             {/* Steps */}
-            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-th-border-light">
+            <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/[0.04]">
                 {steps.map((step, index) => (
                     <button
                         key={step.id}
                         onClick={() => router.push(step.href)}
-                        className="flex items-center gap-4 px-5 py-4 text-left hover:bg-th-hover transition-colors group"
+                        className="flex items-center gap-4 px-5 py-4 text-left hover:bg-white/[0.03] transition-colors group"
                     >
                         {/* Step number / check */}
                         <div
@@ -115,7 +115,7 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
                                 'flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors',
                                 step.completed
                                     ? 'bg-emerald-500/15 text-emerald-400'
-                                    : 'bg-th-card text-th-text-muted group-hover:text-th-text-secondary',
+                                    : 'bg-white/[0.02] text-gray-500 group-hover:text-gray-300',
                             ].join(' ')}
                         >
                             {step.completed ? (
@@ -128,7 +128,7 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
                         {/* Text */}
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-th-text-muted uppercase tracking-wider">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                                     Step {index + 1}
                                 </span>
                                 {step.completed && (
@@ -139,18 +139,18 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
                             </div>
                             <p className={[
                                 'text-sm font-medium mt-0.5',
-                                step.completed ? 'text-th-text-muted' : 'text-th-text',
+                                step.completed ? 'text-gray-500' : 'text-white',
                             ].join(' ')}>
                                 {step.title}
                             </p>
-                            <p className="text-xs text-th-text-muted mt-0.5 truncate">
+                            <p className="text-xs text-gray-500 mt-0.5 truncate">
                                 {step.description}
                             </p>
                         </div>
 
                         {/* Arrow */}
                         {!step.completed && (
-                            <ChevronRight className="w-4 h-4 text-th-text-muted group-hover:text-th-text-secondary transition-colors flex-shrink-0" />
+                            <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0" />
                         )}
                     </button>
                 ))}
