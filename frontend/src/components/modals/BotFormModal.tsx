@@ -58,6 +58,21 @@ export default function BotFormModal({
         [displayStrategies, tfFilter],
     );
 
+    // 타임프레임 탭 변경 시 현재 선택된 전략이 필터 목록에 없으면 첫 번째 전략으로 자동 선택
+    React.useEffect(() => {
+        if (filteredStrategies.length > 0 && !filteredStrategies.some(s => s.value === formData.strategy_name)) {
+            const sorted = [
+                ...filteredStrategies.filter(s => s.status === 'confirmed'),
+                ...filteredStrategies.filter(s => s.status !== 'confirmed'),
+            ];
+            const first = sorted[0];
+            if (first) {
+                const newTimeframe = getStrategyTimeframe(first.value);
+                onFormChange({ ...formData, strategy_name: first.value, timeframe: newTimeframe });
+            }
+        }
+    }, [filteredStrategies]);
+
     return (
         <ModalWrapper isOpen={isOpen}>
                 <ModalHeader

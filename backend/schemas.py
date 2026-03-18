@@ -114,7 +114,7 @@ class BotConfigCreate(BaseModel):
     symbol: str
     timeframe: str = "1h"
     exchange_name: str = "upbit"
-    strategy_name: str = "momentum_stable"
+    strategy_name: str = "momentum_stable_1h"
     paper_trading_mode: bool = True
     allocated_capital: float = 1000000.0
     rsi_period: int = 14
