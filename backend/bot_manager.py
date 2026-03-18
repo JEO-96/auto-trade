@@ -477,6 +477,10 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                         total_equity += (active_positions[symbol]['position_amount'] * curr_price)
 
                     # Process logic for this symbol
+                    # timestamp 컬럼이 Timestamp 타입이면 indicator 값 비교 시
+                    # 'float > Timestamp' 에러 발생 → index로 이동하여 제거
+                    if 'timestamp' in df.columns:
+                        df = df.set_index('timestamp', drop=True)
                     df = strategy.apply_indicators(df)
                     # Use iloc[-2] (last CLOSED candle) for all signal checks.
                     # iloc[-1] is the still-forming candle and must not be used for signals.
