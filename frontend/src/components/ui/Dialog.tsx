@@ -39,6 +39,7 @@ const DialogContent = forwardRef<
             ref={ref}
             className={cn(
                 'fixed left-[50%] top-[50%] z-50 w-full translate-x-[-50%] translate-y-[-50%] px-4',
+                'max-h-[90vh]',
                 maxWidth,
                 'data-[state=open]:animate-in data-[state=closed]:animate-out',
                 'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
@@ -50,7 +51,7 @@ const DialogContent = forwardRef<
             )}
             {...props}
         >
-            <div className="bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh]">
                 {children}
             </div>
         </DialogPrimitive.Content>
