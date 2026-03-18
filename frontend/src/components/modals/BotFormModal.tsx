@@ -177,25 +177,22 @@ export default function BotFormModal({
                                 }
                             }}
                         >
+                            {userStrategies.length > 0 && userStrategies.map((cs) => (
+                                <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>
+                                    ⭐ {cs.name}
+                                </option>
+                            ))}
                             {userStrategies.length > 0 && (
-                                <optgroup label="내 커스텀 전략">
-                                    {userStrategies.map((cs) => (
-                                        <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>
-                                            {cs.name}
-                                        </option>
-                                    ))}
-                                </optgroup>
+                                <option disabled>──────────</option>
                             )}
-                            <optgroup label="기본 전략">
-                                {[
-                                    ...filteredStrategies.filter(s => s.status === 'confirmed'),
-                                    ...filteredStrategies.filter(s => s.status !== 'confirmed'),
-                                ].map((s) => (
-                                    <option key={s.value} value={s.value}>
-                                        {s.status === 'confirmed' ? `✅ ${s.label}` : `🧪 ${s.label}`}
-                                    </option>
-                                ))}
-                            </optgroup>
+                            {[
+                                ...filteredStrategies.filter(s => s.status === 'confirmed'),
+                                ...filteredStrategies.filter(s => s.status !== 'confirmed'),
+                            ].map((s) => (
+                                <option key={s.value} value={s.value}>
+                                    {s.status === 'confirmed' ? `✅ ${s.label}` : `🧪 ${s.label}`}
+                                </option>
+                            ))}
                         </SelectInput>
                     </div>
 
