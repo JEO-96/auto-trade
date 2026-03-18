@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -32,28 +32,38 @@ const DialogContent = forwardRef<
     React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
         maxWidth?: string;
     }
->(({ className, children, maxWidth = 'max-w-md', ...props }, ref) => (
-    <DialogPortal>
-        <DialogOverlay />
-        <DialogPrimitive.Content
-            ref={ref}
-            className={cn(
-                'fixed inset-0 z-50 flex items-center justify-center px-4 py-4',
-                maxWidth,
-                'data-[state=open]:animate-in data-[state=closed]:animate-out',
-                'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
-                'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
-                'duration-200',
-                className
-            )}
-            {...props}
-        >
-            <div className={cn('w-full bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl overflow-y-auto max-h-[calc(100vh-2rem)]', maxWidth)}>
-                {children}
-            </div>
-        </DialogPrimitive.Content>
-    </DialogPortal>
-));
+>(({ className, children, maxWidth = 'max-w-md', ...props }, ref) => {
+    // Manually lock body scroll without blocking touch events inside dialog
+    useEffect(() => {
+        const original = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = original; };
+    }, []);
+
+    return (
+        <DialogPortal>
+            <DialogOverlay />
+            <DialogPrimitive.Content
+                ref={ref}
+                className={cn(
+                    'fixed inset-0 z-50 overflow-y-auto',
+                    'data-[state=open]:animate-in data-[state=closed]:animate-out',
+                    'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
+                    'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
+                    'duration-200',
+                    className
+                )}
+                {...props}
+            >
+                <div className="flex items-center justify-center min-h-full px-4 py-4">
+                    <div className={cn('w-full bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl', maxWidth)}>
+                        {children}
+                    </div>
+                </div>
+            </DialogPrimitive.Content>
+        </DialogPortal>
+    );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 function DialogHeader({
