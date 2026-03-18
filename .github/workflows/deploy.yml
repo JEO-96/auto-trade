@@ -112,7 +112,7 @@ jobs:
 
         # 3. 롤링 재시작: nginx 유지한 채 backend → frontend 순서로 교체
         echo "Restarting backend..."
-        docker compose up -d --no-deps backend
+        docker compose up -d --no-deps --force-recreate backend
 
         # 4. 백엔드 헬스체크 (최대 60초)
         echo "Waiting for backend health..."
@@ -131,7 +131,7 @@ jobs:
 
         # 5. 프론트엔드 교체
         echo "Restarting frontend..."
-        docker compose up -d --no-deps frontend
+        docker compose up -d --no-deps --force-recreate frontend
 
         # 6. 프론트엔드 헬스체크 (최대 60초)
         echo "Waiting for frontend health..."
@@ -150,7 +150,7 @@ jobs:
 
         # 7. nginx 교체 (설정 변경 시에만 실제 재시작됨)
         echo "Updating nginx..."
-        docker compose up -d --no-deps nginx
+        docker compose up -d --no-deps --force-recreate nginx
 
         # 8. 최종 상태 확인
         docker compose ps
