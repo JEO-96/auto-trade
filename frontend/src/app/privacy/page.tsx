@@ -129,7 +129,9 @@ export default function PrivacyPage() {
                     <section>
                         <h2 className="text-base font-semibold text-white mb-3">제8조 (개인정보 보호책임자)</h2>
                         <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-1">
-                            <p><span className="text-gray-400">서비스명:</span> Backtested</p>
+                            <p><span className="text-gray-400">성명:</span> 주은오</p>
+                            <p><span className="text-gray-400">직위:</span> 대표</p>
+                            <p><span className="text-gray-400">이메일:</span> seal5945@gmail.com</p>
                         </div>
                     </section>
 

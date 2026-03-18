@@ -15,7 +15,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-    title: 'Backtested | 검증된 자동매매 플랫폼',
+    title: 'Backtested | 백테스트로 검증된 투자 전략 플랫폼',
     description: '백테스트로 검증된 전략으로 모의투자. 알고리즘 트레이딩의 새로운 기준.',
     manifest: '/manifest.json',
     appleWebApp: {

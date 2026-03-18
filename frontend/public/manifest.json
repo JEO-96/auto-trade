@@ -1,7 +1,7 @@
 {
   "name": "Backtested - 알고리즘 트레이딩",
   "short_name": "Backtested",
-  "description": "백테스트로 검증된 전략, 성과 기반 수수료. 알고리즘 트레이딩 플랫폼.",
+  "description": "백테스트로 검증된 투자 전략 플랫폼. 모의투자와 알림 서비스.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
