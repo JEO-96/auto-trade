@@ -78,13 +78,15 @@ jobs:
 
     steps:
     - name: Zero-Downtime Deploy via SSH
+      env:
+        GHCR_PAT: ${{ secrets.GHCR_PAT }}
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
         chmod 600 ~/.ssh/deploy_key
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key \
           ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_IP }} \
-          'bash -s' << 'DEPLOY_SCRIPT'
+          "GHCR_PAT=${GHCR_PAT}" 'bash -s' << 'DEPLOY_SCRIPT'
         set -e
 
         cd ~/traiding-bot
