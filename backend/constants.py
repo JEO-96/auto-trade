@@ -11,8 +11,9 @@ import re
 # ──────────────────────────────────────────────
 # 봇 제한 (Bot Limits)
 # ──────────────────────────────────────────────
-MAX_BOTS_PER_USER: int = 5           # 사용자당 최대 봇 수
-MAX_LIVE_BOTS_PER_USER: int = 1      # 실매매 봇은 사용자당 최대 1개
+MAX_BOTS_PER_USER: int = 5           # 관리자 최대 봇 수
+MAX_BOTS_PER_REGULAR_USER: int = 1   # 일반 사용자 최대 봇 수 (모의투자만)
+MAX_LIVE_BOTS_PER_USER: int = 1      # 실매매 봇은 관리자만 최대 1개
 
 # ──────────────────────────────────────────────
 # 입력값 검증 (Validation)

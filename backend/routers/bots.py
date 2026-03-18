@@ -11,6 +11,7 @@ import models
 import schemas
 from constants import (
     MAX_BOTS_PER_USER,
+    MAX_BOTS_PER_REGULAR_USER,
     MAX_LIVE_BOTS_PER_USER,
     SYMBOL_PATTERN,
     VALID_TIMEFRAMES,
@@ -105,15 +106,21 @@ def create_bot(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """새 봇 설정 생성 (사용자당 최대 5개)"""
-    # 사용자당 봇 수 제한
+    """새 봇 설정 생성"""
+    # 사용자당 봇 수 제한 (일반 사용자 1개, 관리자 5개)
     bot_count = db.query(models.BotConfig).filter(
         models.BotConfig.user_id == current_user.id
     ).count()
-    if bot_count >= MAX_BOTS_PER_USER:
+    max_bots = MAX_BOTS_PER_USER if current_user.is_admin else MAX_BOTS_PER_REGULAR_USER
+    if bot_count >= max_bots:
+        if current_user.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"최대 {max_bots}개까지 봇을 생성할 수 있습니다.",
+            )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Maximum {MAX_BOTS_PER_USER} bots allowed per user.",
+            detail="모의투자 봇은 1개만 운영할 수 있습니다. 기존 봇을 삭제 후 새로 만들어주세요.",
         )
 
     # 실매매 봇: 법률 검토 완료 전까지 관리자만 허용

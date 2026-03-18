@@ -288,6 +288,10 @@ export default function DashboardPage() {
     const hasLiveBot = bots.some((b) => !b.paper_trading_mode && b.id !== editingBotId);
     const liveBotLimitReached = hasLiveBot;
 
+    // 일반 사용자 봇 1개 제한
+    const isAdmin = !!user?.is_admin;
+    const botLimitReached = !isAdmin && bots.length >= 1;
+
     // 업비트 보유 KRW 현금 잔고
     const availableKrw = balances.find((b) => b.currency === 'KRW')?.free;
 
@@ -349,7 +353,7 @@ export default function DashboardPage() {
                         <div className="w-1.5 h-1.5 rounded-full bg-secondary"></div>
                         <span className="font-medium text-gray-400">UPBIT 연결됨</span>
                     </div>
-                    <Button variant="primary" size="sm" onClick={openCreateModal}>
+                    <Button variant="primary" size="sm" onClick={openCreateModal} disabled={botLimitReached}>
                         <Plus className="w-4 h-4" />
                         새 봇 만들기
                     </Button>
