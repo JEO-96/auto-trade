@@ -245,6 +245,7 @@ export default function DashboardPage() {
                     strategy_name: formData.strategy_name,
                     paper_trading_mode: formData.paper_trading_mode,
                     allocated_capital: formData.allocated_capital,
+                    ...(formData.custom_strategy_id ? { custom_strategy_id: formData.custom_strategy_id } : {}),
                 });
             } else if (editingBotId !== null) {
                 await updateBot(editingBotId, {
@@ -254,6 +255,7 @@ export default function DashboardPage() {
                     strategy_name: formData.strategy_name,
                     paper_trading_mode: formData.paper_trading_mode,
                     allocated_capital: formData.allocated_capital,
+                    ...(formData.custom_strategy_id ? { custom_strategy_id: formData.custom_strategy_id } : {}),
                 });
             }
             setShowBotModal(false);

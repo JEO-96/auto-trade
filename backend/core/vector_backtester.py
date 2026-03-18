@@ -70,20 +70,23 @@ class VectorBacktester:
 
     def run(self, symbol="BTC/KRW", timeframe="1h", limit=1000,
             initial_capital=1000000.0, start_date=None, end_date=None,
-            db=None, task_id=None, fees=0.0005):
+            db=None, task_id=None, fees=0.0005, custom_params=None):
         return self._run_backtest(
             [symbol], timeframe=timeframe, limit=limit,
             initial_capital=initial_capital, start_date=start_date,
             end_date=end_date, db=db, task_id=task_id, fees=fees,
+            custom_params=custom_params,
         )
 
     def run_portfolio(self, symbols: list, timeframe="1h", limit=1000,
                       initial_capital=1000000.0, start_date=None,
-                      end_date=None, db=None, task_id=None, fees=0.0005):
+                      end_date=None, db=None, task_id=None, fees=0.0005,
+                      custom_params=None):
         return self._run_backtest(
             symbols, timeframe=timeframe, limit=limit,
             initial_capital=initial_capital, start_date=start_date,
             end_date=end_date, db=db, task_id=task_id, fees=fees,
+            custom_params=custom_params,
         )
 
     # ------------------------------------------------------------------
@@ -98,12 +101,45 @@ class VectorBacktester:
 
     def _run_backtest(self, symbols: list, timeframe="1h", limit=1000,
                       initial_capital=1000000.0, start_date=None,
-                      end_date=None, db=None, task_id=None, fees=0.0005):
+                      end_date=None, db=None, task_id=None, fees=0.0005,
+                      custom_params=None):
         """Core backtest execution for both single and multi-asset."""
         logger.info("--- [VectorBacktest] Symbols: %s ---", symbols)
 
         if not symbols:
             return {"status": "error", "message": "No symbols provided."}
+
+        # 커스텀 파라미터를 전략 인스턴스에 적용
+        if custom_params:
+            # 진입 신호 파라미터 (값 덮어쓰기)
+            param_map = {
+                'rsi_period': 'rsi_period',
+                'rsi_threshold': 'rsi_threshold',
+                'adx_threshold': 'adx_threshold',
+                'volume_multiplier': 'volume_multiplier',
+                'macd_fast': 'macd_fast',
+                'macd_slow': 'macd_slow',
+                'macd_signal': 'macd_signal',
+                'rsi_upper_limit': 'rsi_upper_limit',
+                'atr_period': 'atr_period',
+            }
+            for param_key, attr_name in param_map.items():
+                val = custom_params.get(param_key)
+                if val is not None and hasattr(self.strategy, attr_name):
+                    setattr(self.strategy, attr_name, val)
+
+            # 조건 비활성화: 해당 필터의 threshold를 극단값으로 설정하여 항상 통과
+            if custom_params.get('use_rsi_filter') is False:
+                self.strategy.rsi_threshold = 0.0  # RSI > 0 → 항상 통과
+                if hasattr(self.strategy, 'rsi_upper_limit'):
+                    self.strategy.rsi_upper_limit = 100.0
+            if custom_params.get('use_adx_filter') is False:
+                self.strategy.adx_threshold = 0.0  # ADX > 0 → 항상 통과
+            if custom_params.get('use_volume_filter') is False:
+                self.strategy.volume_multiplier = 0.0  # vol > 0 → 항상 통과
+            if custom_params.get('use_macd_filter') is False:
+                # MACD 필터 비활성화는 전략마다 다르지만 fast=slow로 설정하면 크로스가 무의미
+                self.strategy.macd_fast = self.strategy.macd_slow
 
         # 1. Fetch and align data
         ohlcv_data = {}
@@ -172,10 +208,23 @@ class VectorBacktester:
             f"Executing vectorbt simulation for {len(ohlcv_data)} assets...",
         )
 
-        # 3. Execute Vectorized Portfolio (per-strategy SL/TP)
-        sl_pct = getattr(self.strategy, 'backtest_sl_pct', 0.015)
-        tp_pct = getattr(self.strategy, 'backtest_tp_pct', 0.03)
-        use_trailing = getattr(self.strategy, 'backtest_trailing', False)
+        # 3. Execute Vectorized Portfolio (커스텀 파라미터 우선, 없으면 전략 기본값)
+        if custom_params and custom_params.get('trailing') is not None:
+            use_trailing = custom_params['trailing']
+        else:
+            use_trailing = getattr(self.strategy, 'backtest_trailing', False)
+
+        if custom_params and custom_params.get('sl_pct') is not None:
+            sl_pct = custom_params['sl_pct']
+        else:
+            sl_pct = getattr(self.strategy, 'backtest_sl_pct', 0.015)
+
+        if use_trailing:
+            tp_pct = None  # 트레일링 모드에서는 TP 없음
+        elif custom_params and custom_params.get('tp_pct') is not None:
+            tp_pct = custom_params['tp_pct']
+        else:
+            tp_pct = getattr(self.strategy, 'backtest_tp_pct', 0.03)
 
         pf_kwargs = dict(
             close=close_df,

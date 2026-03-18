@@ -11,3 +11,4 @@ export * from './keys';
 export * from './admin';
 export * from './community';
 export * from './settings';
+export * from './strategies';

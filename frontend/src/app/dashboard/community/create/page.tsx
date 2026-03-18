@@ -113,7 +113,7 @@ export default function CreatePostPage() {
                     >
                         <option value="discussion">자유 토론</option>
                         <option value="backtest_share">백테스트 공유</option>
-                        <option value="performance_share">수익률 공유</option>
+                        <option value="performance_share">모의 수익률 공유</option>
                         <option value="strategy_review">전략 리뷰</option>
                     </SelectInput>
 

@@ -50,6 +50,7 @@ class BotConfig(Base):
 
     exchange_name = Column(String, default="upbit")  # 거래소 선택 (upbit, bithumb)
     strategy_name = Column(String, default="james_pro_stable")
+    custom_strategy_id = Column(Integer, ForeignKey("user_strategies.id"), nullable=True)
 
     # James Momentum specific parameters
     rsi_period = Column(Integer, default=14)
@@ -59,6 +60,7 @@ class BotConfig(Base):
 
     owner = relationship("User", back_populates="bots")
     trade_logs = relationship("TradeLog", back_populates="bot")
+    custom_strategy = relationship("UserStrategy")
 
 class TradeLog(Base):
     __tablename__ = "trade_logs"
@@ -111,6 +113,7 @@ class BacktestHistory(Base):
     start_date = Column(String, nullable=True)  # YYYY-MM-DD
     end_date = Column(String, nullable=True)  # YYYY-MM-DD
     commission_rate = Column(Float, nullable=True)  # 수수료율 (소수)
+    custom_params = Column(String, nullable=True)  # 커스텀 튜닝 파라미터 JSON
     created_at = Column(DateTime, default=lambda: datetime.utcnow())
 
     owner = relationship("User")
@@ -195,6 +198,27 @@ class SystemSettings(Base):
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String, unique=True, nullable=False)
     value = Column(String, nullable=False)  # JSON string
+
+
+class UserStrategy(Base):
+    """사용자 커스텀 전략 (백테스트 파라미터 저장)"""
+    __tablename__ = "user_strategies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    name = Column(String, nullable=False)
+    base_strategy_name = Column(String, nullable=False)
+    custom_params = Column(String, nullable=False)  # JSON
+    backtest_history_id = Column(Integer, ForeignKey("backtest_history.id"), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    is_deleted = Column(Boolean, default=False)
+
+    owner = relationship("User")
+    source_backtest = relationship("BacktestHistory")
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'name', name='uq_user_strategy_name'),
+    )
 
 
 class ChatMessage(Base):

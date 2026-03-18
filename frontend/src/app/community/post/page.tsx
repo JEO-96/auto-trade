@@ -23,7 +23,7 @@ const getTimeframeLabel = (value: string) => {
 
 const POST_TYPE_BADGE: Record<PostType, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
     backtest_share: { label: '백테스트', variant: 'info' },
-    performance_share: { label: '수익률', variant: 'success' },
+    performance_share: { label: '모의 수익률', variant: 'success' },
     strategy_review: { label: '전략 리뷰', variant: 'warning' },
     discussion: { label: '토론', variant: 'info' },
 };

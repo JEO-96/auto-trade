@@ -8,6 +8,8 @@ export interface BotConfig {
     paper_trading_mode: boolean;
     allocated_capital: number;
     is_active: boolean;
+    custom_strategy_id?: number;
+    custom_strategy_name?: string;
     rsi_period: number;
     volume_ma_period: number;
     macd_fast?: number;
@@ -21,6 +23,7 @@ export interface BotCreateRequest {
     strategy_name?: string;
     paper_trading_mode?: boolean;
     allocated_capital?: number;
+    custom_strategy_id?: number;
 }
 
 export interface BotMultiCreateRequest {

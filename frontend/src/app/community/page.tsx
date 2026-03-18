@@ -24,14 +24,14 @@ const getTimeframeLabel = (value: string) => {
 const POST_TYPE_TABS: { label: string; value: PostType | 'all'; icon: React.ReactNode }[] = [
     { label: '전체', value: 'all', icon: <MessageSquare className="w-3.5 h-3.5" /> },
     { label: '백테스트', value: 'backtest_share', icon: <BarChart2 className="w-3.5 h-3.5" /> },
-    { label: '수익률', value: 'performance_share', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+    { label: '모의 수익률', value: 'performance_share', icon: <TrendingUp className="w-3.5 h-3.5" /> },
     { label: '전략 리뷰', value: 'strategy_review', icon: <Star className="w-3.5 h-3.5" /> },
     { label: '자유 토론', value: 'discussion', icon: <MessageCircle className="w-3.5 h-3.5" /> },
 ];
 
 const POST_TYPE_BADGE: Record<PostType, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
     backtest_share: { label: '백테스트', variant: 'info' },
-    performance_share: { label: '수익률', variant: 'success' },
+    performance_share: { label: '모의 수익률', variant: 'success' },
     strategy_review: { label: '전략 리뷰', variant: 'warning' },
     discussion: { label: '토론', variant: 'info' },
 };
@@ -90,7 +90,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
                 <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] space-y-2">
                     <div className="grid grid-cols-3 gap-3">
                         <MetricItem
-                            label="수익률"
+                            label="모의 수익률"
                             value={`${(((Number(post.backtest_data.final_capital) - Number(post.backtest_data.initial_capital)) / Number(post.backtest_data.initial_capital)) * 100).toFixed(1)}%`}
                             positive={(Number(post.backtest_data.final_capital) - Number(post.backtest_data.initial_capital)) > 0}
                         />
@@ -241,7 +241,7 @@ export default function PublicCommunityPage() {
             <header className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white mb-1">커뮤니티</h1>
-                    <p className="text-sm text-gray-500">전략 공유, 백테스트 결과, 수익률을 공유하세요</p>
+                    <p className="text-sm text-gray-500">전략 공유, 백테스트 결과, 모의투자 수익률을 공유하세요</p>
                 </div>
                 <div className="flex items-center gap-2">
                     {isAuthenticated ? (

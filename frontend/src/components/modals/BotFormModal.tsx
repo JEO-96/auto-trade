@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit3, AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { SelectInput } from '@/components/ui/Input';
 import ModalWrapper, { ModalHeader } from '@/components/ui/ModalWrapper';
 import { SYMBOLS, BOT_STRATEGIES, EXCHANGES, getStrategyTimeframe, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe } from '@/lib/constants';
+import { getUserStrategies } from '@/lib/api/strategies';
 import type { StrategyItem } from '@/lib/api/settings';
+import type { UserStrategy } from '@/types/backtest';
 
 export interface BotFormData {
     symbols: string[];
@@ -15,6 +17,7 @@ export interface BotFormData {
     strategy_name: string;
     paper_trading_mode: boolean;
     allocated_capital: number;
+    custom_strategy_id?: number;
 }
 
 export interface BotFormModalProps {
@@ -51,6 +54,13 @@ export default function BotFormModal({
 }: BotFormModalProps) {
     const liveDisabled = !isAdmin || liveBotLimitReached;
     const displayStrategies = strategies ?? BOT_STRATEGIES.map(s => ({ value: s.value, label: s.label, status: s.status }));
+
+    const [userStrategies, setUserStrategies] = useState<UserStrategy[]>([]);
+    useEffect(() => {
+        if (isOpen) {
+            getUserStrategies().then(setUserStrategies).catch(() => {});
+        }
+    }, [isOpen]);
 
     const [tfFilter, setTfFilter] = useState('all');
     const filteredStrategies = useMemo(
@@ -151,21 +161,41 @@ export default function BotFormModal({
                         </div>
                         <SelectInput
                             type="select"
-                            value={formData.strategy_name}
+                            value={formData.custom_strategy_id ? `custom_${formData.custom_strategy_id}` : formData.strategy_name}
                             onChange={(e) => {
-                                const newStrategy = e.target.value;
-                                const newTimeframe = getStrategyTimeframe(newStrategy);
-                                onFormChange({ ...formData, strategy_name: newStrategy, timeframe: newTimeframe });
+                                const val = e.target.value;
+                                if (val.startsWith('custom_')) {
+                                    const csId = Number(val.replace('custom_', ''));
+                                    const cs = userStrategies.find(s => s.id === csId);
+                                    if (cs) {
+                                        const newTimeframe = getStrategyTimeframe(cs.base_strategy_name);
+                                        onFormChange({ ...formData, strategy_name: cs.base_strategy_name, timeframe: newTimeframe, custom_strategy_id: csId });
+                                    }
+                                } else {
+                                    const newTimeframe = getStrategyTimeframe(val);
+                                    onFormChange({ ...formData, strategy_name: val, timeframe: newTimeframe, custom_strategy_id: undefined });
+                                }
                             }}
                         >
-                            {[
-                                ...filteredStrategies.filter(s => s.status === 'confirmed'),
-                                ...filteredStrategies.filter(s => s.status !== 'confirmed'),
-                            ].map((s) => (
-                                <option key={s.value} value={s.value}>
-                                    {s.status === 'confirmed' ? `✅ ${s.label}` : `🧪 ${s.label}`}
-                                </option>
-                            ))}
+                            {userStrategies.length > 0 && (
+                                <optgroup label="내 커스텀 전략">
+                                    {userStrategies.map((cs) => (
+                                        <option key={`custom_${cs.id}`} value={`custom_${cs.id}`}>
+                                            {cs.name}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            )}
+                            <optgroup label="기본 전략">
+                                {[
+                                    ...filteredStrategies.filter(s => s.status === 'confirmed'),
+                                    ...filteredStrategies.filter(s => s.status !== 'confirmed'),
+                                ].map((s) => (
+                                    <option key={s.value} value={s.value}>
+                                        {s.status === 'confirmed' ? `✅ ${s.label}` : `🧪 ${s.label}`}
+                                    </option>
+                                ))}
+                            </optgroup>
                         </SelectInput>
                     </div>
 

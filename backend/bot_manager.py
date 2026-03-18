@@ -60,6 +60,7 @@ def _load_bot_config(bot_config_id: int) -> Optional[dict]:
             "strategy_name": getattr(bot_config, 'strategy_name', 'james_pro_stable'),
             "exchange_name": getattr(bot_config, 'exchange_name', 'upbit'),
             "user_id": bot_config.user_id,
+            "custom_strategy_id": getattr(bot_config, 'custom_strategy_id', None),
         }
 
 
@@ -327,8 +328,26 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
     paper_trading: bool = cfg["paper_trading"]
     user_id: int = cfg["user_id"]
 
-    from core.strategy import get_strategy
-    strategy = get_strategy(cfg["strategy_name"])
+    from core.strategy import get_strategy, get_strategy_with_custom_params
+
+    # 커스텀 전략이면 파라미터 적용
+    custom_strategy_id = cfg.get("custom_strategy_id")
+    if custom_strategy_id:
+        import json
+        with database.get_db_session() as db_strat:
+            user_strat = db_strat.query(models.UserStrategy).filter(
+                models.UserStrategy.id == custom_strategy_id,
+                models.UserStrategy.is_deleted == False,
+            ).first()
+            if user_strat:
+                custom_params = json.loads(user_strat.custom_params) if user_strat.custom_params else {}
+                strategy = get_strategy_with_custom_params(user_strat.base_strategy_name, custom_params)
+                logger.info("[Bot %d] Using custom strategy '%s' (base: %s)", bot_config_id, user_strat.name, user_strat.base_strategy_name)
+            else:
+                strategy = get_strategy(cfg["strategy_name"])
+                logger.warning("[Bot %d] Custom strategy %d not found, using default", bot_config_id, custom_strategy_id)
+    else:
+        strategy = get_strategy(cfg["strategy_name"])
 
     api_key: Optional[str] = None
     api_secret: Optional[str] = None

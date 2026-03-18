@@ -117,6 +117,7 @@ class BotConfigCreate(BaseModel):
     strategy_name: str = "momentum_stable_1h"
     paper_trading_mode: bool = True
     allocated_capital: float = 1000000.0
+    custom_strategy_id: Optional[int] = None
     rsi_period: int = 14
     macd_fast: int = 12
     macd_slow: int = 26
@@ -146,6 +147,8 @@ class BotConfigResponse(BaseModel):
     is_active: bool
     paper_trading_mode: bool
     allocated_capital: float
+    custom_strategy_id: Optional[int] = None
+    custom_strategy_name: Optional[str] = None
     rsi_period: int
     macd_fast: int
     macd_slow: int
@@ -179,6 +182,26 @@ class BacktestRequest(BaseModel):
     end_date: Optional[str] = None    # YYYY-MM-DD
     initial_capital: float = 1000000.0
     commission_rate: float = 0.0005  # 수수료율 (기본값: 0.05%)
+    # 사용자 커스텀 튜닝 파라미터 (None이면 전략 기본값 사용)
+    custom_sl_pct: Optional[float] = None   # 손절률 (0.01~0.10)
+    custom_tp_pct: Optional[float] = None   # 익절률 (0.01~0.50)
+    custom_trailing: Optional[bool] = None  # 트레일링 스탑 모드
+    # 진입 신호 튜닝 파라미터
+    custom_rsi_period: Optional[int] = None         # RSI 기간 (7~30)
+    custom_rsi_threshold: Optional[float] = None    # RSI 진입 기준 (40~75)
+    custom_adx_threshold: Optional[float] = None    # ADX 기준 (10~35)
+    custom_volume_multiplier: Optional[float] = None  # 거래량 배수 (1.0~3.0)
+    # 추가 파라미터
+    custom_macd_fast: Optional[int] = None          # MACD 단기 (5~20)
+    custom_macd_slow: Optional[int] = None          # MACD 장기 (15~40)
+    custom_macd_signal: Optional[int] = None        # MACD 시그널 (5~15)
+    custom_rsi_upper_limit: Optional[float] = None  # RSI 상한선 (65~90)
+    custom_atr_period: Optional[int] = None         # ATR 기간 (7~30)
+    # 조건 활성화/비활성화 플래그 (None=전략 기본, False=비활성화)
+    use_rsi_filter: Optional[bool] = None
+    use_adx_filter: Optional[bool] = None
+    use_volume_filter: Optional[bool] = None
+    use_macd_filter: Optional[bool] = None
 
 class PortfolioBacktestRequest(BaseModel):
     symbols: List[str] = ["BTC/KRW"]
@@ -189,6 +212,22 @@ class PortfolioBacktestRequest(BaseModel):
     end_date: Optional[str] = None
     initial_capital: float = 1000000.0
     commission_rate: float = 0.0005  # 수수료율 (기본값: 0.05%)
+    custom_sl_pct: Optional[float] = None
+    custom_tp_pct: Optional[float] = None
+    custom_trailing: Optional[bool] = None
+    custom_rsi_period: Optional[int] = None
+    custom_rsi_threshold: Optional[float] = None
+    custom_adx_threshold: Optional[float] = None
+    custom_volume_multiplier: Optional[float] = None
+    custom_macd_fast: Optional[int] = None
+    custom_macd_slow: Optional[int] = None
+    custom_macd_signal: Optional[int] = None
+    custom_rsi_upper_limit: Optional[float] = None
+    custom_atr_period: Optional[int] = None
+    use_rsi_filter: Optional[bool] = None
+    use_adx_filter: Optional[bool] = None
+    use_volume_filter: Optional[bool] = None
+    use_macd_filter: Optional[bool] = None
 
 class BacktestTradeResponse(BaseModel):
     symbol: str
@@ -241,6 +280,7 @@ class BacktestHistoryResponse(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     commission_rate: Optional[float] = None
+    custom_params: Optional[dict] = None
     created_at: datetime
 
     class Config:
@@ -422,6 +462,26 @@ class ChatMessageResponse(BaseModel):
     user_id: int
     author_nickname: Optional[str] = None
     content: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# -------- User Strategy Schemas --------
+class UserStrategyCreate(BaseModel):
+    name: str
+    base_strategy_name: str
+    custom_params: dict
+    backtest_history_id: Optional[int] = None
+
+
+class UserStrategyResponse(BaseModel):
+    id: int
+    name: str
+    base_strategy_name: str
+    custom_params: dict
+    backtest_history_id: Optional[int] = None
     created_at: datetime
 
     class Config:

@@ -97,7 +97,7 @@ export default function LeaderboardPage() {
                     리더보드
                 </h1>
                 <p className="text-sm text-gray-500 mt-1">
-                    트레이더 수익률 순위와 전략별 성과를 확인하세요
+                    모의투자 수익률 순위와 전략별 성과를 확인하세요
                 </p>
             </div>
 
@@ -121,7 +121,7 @@ export default function LeaderboardPage() {
             {/* Leaderboard Table */}
             <div className="bg-surface/60 backdrop-blur-xl rounded-2xl border border-white/[0.04] overflow-hidden">
                 <div className="px-6 py-4 border-b border-white/[0.04]">
-                    <h2 className="text-base font-bold text-white">수익률 랭킹</h2>
+                    <h2 className="text-base font-bold text-white">모의투자 수익률 랭킹</h2>
                 </div>
 
                 {loading ? (
@@ -143,7 +143,7 @@ export default function LeaderboardPage() {
                                     <th className="px-4 py-3 text-left font-semibold">트레이더</th>
                                     <th className="px-4 py-3 text-left font-semibold">전략</th>
                                     <th className="px-4 py-3 text-right font-semibold">총 PnL</th>
-                                    <th className="px-4 py-3 text-right font-semibold">수익률</th>
+                                    <th className="px-4 py-3 text-right font-semibold">모의 수익률</th>
                                     <th className="px-4 py-3 text-right font-semibold">승률</th>
                                     <th className="px-4 py-3 text-right font-semibold">거래</th>
                                     <th className="px-4 py-3 text-center font-semibold">유형</th>
@@ -252,7 +252,7 @@ export default function LeaderboardPage() {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">평균 수익률</p>
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">평균 모의 수익률</p>
                                         <p className={`text-lg font-bold tabular-nums ${
                                             strategy.avg_return_rate >= 0 ? 'text-emerald-400' : 'text-red-400'
                                         }`}>
@@ -266,7 +266,7 @@ export default function LeaderboardPage() {
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">최고 수익률</p>
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">최고 모의 수익률</p>
                                         <p className={`text-sm font-bold tabular-nums ${
                                             strategy.best_return_rate >= 0 ? 'text-emerald-400' : 'text-red-400'
                                         }`}>

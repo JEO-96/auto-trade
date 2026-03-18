@@ -95,5 +95,58 @@ def get_strategy(name: str = DEFAULT_STRATEGY):
     return MomentumBreakoutBasicStrategy()
 
 
+def apply_custom_params(strategy, custom_params: dict):
+    """커스텀 파라미터를 전략 인스턴스에 적용"""
+    if not custom_params:
+        return
+
+    param_map = {
+        'rsi_period': 'rsi_period',
+        'rsi_threshold': 'rsi_threshold',
+        'adx_threshold': 'adx_threshold',
+        'volume_multiplier': 'volume_multiplier',
+        'macd_fast': 'macd_fast',
+        'macd_slow': 'macd_slow',
+        'macd_signal': 'macd_signal',
+        'rsi_upper_limit': 'rsi_upper_limit',
+        'atr_period': 'atr_period',
+    }
+    for param_key, attr_name in param_map.items():
+        val = custom_params.get(param_key)
+        if val is not None and hasattr(strategy, attr_name):
+            setattr(strategy, attr_name, val)
+
+    # SL/TP/Trailing
+    if custom_params.get('sl_pct') is not None:
+        strategy.backtest_sl_pct = custom_params['sl_pct']
+    if custom_params.get('tp_pct') is not None:
+        strategy.backtest_tp_pct = custom_params['tp_pct']
+    if custom_params.get('trailing') is not None:
+        strategy.use_trailing_stop = custom_params['trailing']
+        if custom_params['trailing']:
+            strategy.backtest_tp_pct = None
+
+    # 필터 토글
+    if custom_params.get('use_rsi_filter') is False:
+        strategy.rsi_threshold = 0.0
+        if hasattr(strategy, 'rsi_upper_limit'):
+            strategy.rsi_upper_limit = 100.0
+    if custom_params.get('use_adx_filter') is False:
+        strategy.adx_threshold = 0.0
+    if custom_params.get('use_volume_filter') is False:
+        strategy.volume_multiplier = 0.0
+    if custom_params.get('use_macd_filter') is False:
+        if hasattr(strategy, 'macd_fast') and hasattr(strategy, 'macd_slow'):
+            strategy.macd_fast = strategy.macd_slow
+
+
+def get_strategy_with_custom_params(name: str, custom_params: dict | None = None):
+    """커스텀 파라미터가 적용된 전략 인스턴스 반환"""
+    strategy = get_strategy(name)
+    if custom_params:
+        apply_custom_params(strategy, custom_params)
+    return strategy
+
+
 # Alias for backward compatibility
 MomentumBreakoutStrategy = MomentumBreakoutBasicStrategy

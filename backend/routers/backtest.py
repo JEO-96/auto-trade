@@ -13,6 +13,33 @@ import database
 
 logger = logging.getLogger(__name__)
 
+
+def _build_custom_params(req) -> dict | None:
+    """BacktestRequest에서 커스텀 튜닝 파라미터를 추출. 모두 None이면 None 반환."""
+    params: dict = {}
+    # 청산 파라미터
+    for key, attr in [('sl_pct', 'custom_sl_pct'), ('tp_pct', 'custom_tp_pct'), ('trailing', 'custom_trailing')]:
+        val = getattr(req, attr, None)
+        if val is not None:
+            params[key] = val
+    # 진입 신호 파라미터
+    for key, attr in [('rsi_period', 'custom_rsi_period'), ('rsi_threshold', 'custom_rsi_threshold'),
+                      ('adx_threshold', 'custom_adx_threshold'), ('volume_multiplier', 'custom_volume_multiplier'),
+                      ('macd_fast', 'custom_macd_fast'), ('macd_slow', 'custom_macd_slow'),
+                      ('macd_signal', 'custom_macd_signal'), ('rsi_upper_limit', 'custom_rsi_upper_limit'),
+                      ('atr_period', 'custom_atr_period')]:
+        val = getattr(req, attr, None)
+        if val is not None:
+            params[key] = val
+    # 조건 활성화/비활성화 플래그
+    for key, attr in [('use_rsi_filter', 'use_rsi_filter'), ('use_adx_filter', 'use_adx_filter'),
+                      ('use_volume_filter', 'use_volume_filter'), ('use_macd_filter', 'use_macd_filter')]:
+        val = getattr(req, attr, None)
+        if val is not None:
+            params[key] = val
+    return params if params else None
+
+
 router = APIRouter(prefix="/backtest", tags=["backtest"])
 
 
@@ -63,6 +90,7 @@ def _start_backtest(
     commission_rate: float,
     user_id: int,
     db: Session,
+    custom_params: dict | None = None,
 ) -> dict:
     """백테스트 태스크 생성 + DB 기록의 공통 로직."""
     tester = VectorBacktester(strategy_name=strategy_name)
@@ -75,6 +103,7 @@ def _start_backtest(
         start_date=start_date,
         end_date=end_date,
         fees=commission_rate,
+        custom_params=custom_params,
     )
     backtest_tasks[task_id]["user_id"] = user_id
     backtest_tasks[task_id]["commission_rate"] = commission_rate
@@ -89,6 +118,7 @@ def _start_backtest(
         start_date=start_date,
         end_date=end_date,
         commission_rate=commission_rate,
+        custom_params=json.dumps(custom_params) if custom_params else None,
     )
     db.add(history)
     db.commit()
@@ -101,12 +131,14 @@ def _start_backtest(
 @router.post("/", response_model=schemas.BacktestResponse)
 def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
+        custom_params = _build_custom_params(req)
         return _start_backtest(
             symbols=[req.symbol], is_portfolio=False,
             strategy_name=req.strategy_name, timeframe=req.timeframe,
             limit=req.limit, initial_capital=req.initial_capital,
             start_date=req.start_date, end_date=req.end_date,
             commission_rate=req.commission_rate, user_id=current_user.id, db=db,
+            custom_params=custom_params,
         )
     except Exception as e:
         logger.error("Backtest startup error: %s", e)
@@ -116,12 +148,14 @@ def run_backtest(req: schemas.BacktestRequest, current_user: models.User = Depen
 @router.post("/portfolio", response_model=schemas.BacktestResponse)
 def run_portfolio_backtest(req: schemas.PortfolioBacktestRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
+        custom_params = _build_custom_params(req)
         return _start_backtest(
             symbols=req.symbols, is_portfolio=True,
             strategy_name=req.strategy_name, timeframe=req.timeframe,
             limit=req.limit, initial_capital=req.initial_capital,
             start_date=req.start_date, end_date=req.end_date,
             commission_rate=req.commission_rate, user_id=current_user.id, db=db,
+            custom_params=custom_params,
         )
     except Exception as e:
         logger.error("Portfolio Backtest startup error: %s", e)
@@ -186,6 +220,7 @@ def get_backtest_history(
             start_date=h.start_date,
             end_date=h.end_date,
             commission_rate=h.commission_rate,
+            custom_params=safe_json_loads(h.custom_params) if h.custom_params else None,
             created_at=h.created_at,
         ))
     return results
@@ -218,6 +253,7 @@ def get_backtest_history_detail(
         start_date=history.start_date,
         end_date=history.end_date,
         commission_rate=history.commission_rate,
+        custom_params=safe_json_loads(history.custom_params) if history.custom_params else None,
         created_at=history.created_at,
         result_data=safe_json_loads(history.result_data),
     )
@@ -297,6 +333,7 @@ def share_backtest_to_community(
         "start_date": history.start_date,
         "end_date": history.end_date,
         "commission_rate": history.commission_rate,
+        "custom_params": safe_json_loads(history.custom_params) if history.custom_params else None,
     }
 
     post = models.CommunityPost(

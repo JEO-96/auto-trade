@@ -1,15 +1,16 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Pencil, Check, ArrowLeft } from 'lucide-react';
+import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Pencil, Check, ArrowLeft, Save } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
-import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel, getStrategyTimeframe, TIMEFRAME_LABEL_MAP, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe } from '@/lib/constants';
+import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel, getStrategyTimeframe, TIMEFRAME_LABEL_MAP, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe, STRATEGY_DEFAULTS } from '@/lib/constants';
 import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle } from '@/lib/api/backtest';
+import { createStrategyFromBacktest } from '@/lib/api/strategies';
 import { getBacktestSettings } from '@/lib/api/settings';
 import { useStrategies } from '@/lib/useStrategies';
 import { getErrorMessage, formatKRW } from '@/lib/utils';
@@ -39,6 +40,11 @@ export default function BacktestPage() {
     const [shareContent, setShareContent] = useState('');
     const [sharing, setSharing] = useState(false);
     const [shareSuccess, setShareSuccess] = useState(false);
+
+    // 내 전략으로 저장 모달
+    const [saveStrategyModal, setSaveStrategyModal] = useState<{ historyId: number; strategyName: string } | null>(null);
+    const [saveStrategyName, setSaveStrategyName] = useState('');
+    const [savingStrategy, setSavingStrategy] = useState(false);
 
     // 삭제 확인 모달
     const [deletingHistoryId, setDeletingHistoryId] = useState<number | null>(null);
@@ -119,6 +125,22 @@ export default function BacktestPage() {
         }
     };
 
+    const handleSaveStrategy = async () => {
+        if (!saveStrategyModal || !saveStrategyName.trim()) return;
+        setSavingStrategy(true);
+        try {
+            await createStrategyFromBacktest(saveStrategyModal.historyId, saveStrategyName.trim());
+            setSaveStrategyModal(null);
+            setSaveStrategyName('');
+            alert('전략이 저장되었습니다! 봇 생성 시 내 전략에서 선택할 수 있습니다.');
+        } catch (err: unknown) {
+            const msg = getErrorMessage(err);
+            alert(msg || '전략 저장에 실패했습니다.');
+        } finally {
+            setSavingStrategy(false);
+        }
+    };
+
     useEffect(() => {
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
@@ -189,6 +211,49 @@ export default function BacktestPage() {
         };
     });
 
+    // 파라미터 튜닝 상태
+    const [tuningEnabled, setTuningEnabled] = useState(false);
+    const [tuningTrailing, setTuningTrailing] = useState(false);
+    const [tuningSl, setTuningSl] = useState(1.5);  // % 단위
+    const [tuningTp, setTuningTp] = useState(3.0);  // % 단위
+    // 진입 신호 튜닝
+    const [tuningRsiPeriod, setTuningRsiPeriod] = useState(14);
+    const [tuningRsiThreshold, setTuningRsiThreshold] = useState(60);
+    const [tuningAdxThreshold, setTuningAdxThreshold] = useState(20);
+    const [tuningVolMultiplier, setTuningVolMultiplier] = useState(1.5);
+    const [tuningMacdFast, setTuningMacdFast] = useState(12);
+    const [tuningMacdSlow, setTuningMacdSlow] = useState(26);
+    const [tuningMacdSignal, setTuningMacdSignal] = useState(9);
+    const [tuningRsiUpperLimit, setTuningRsiUpperLimit] = useState(78);
+    const [tuningAtrPeriod, setTuningAtrPeriod] = useState(14);
+    // 조건 활성화 토글
+    const [useRsiFilter, setUseRsiFilter] = useState(true);
+    const [useAdxFilter, setUseAdxFilter] = useState(true);
+    const [useVolumeFilter, setUseVolumeFilter] = useState(true);
+    const [useMacdFilter, setUseMacdFilter] = useState(true);
+
+    const syncTuningDefaults = useCallback((strategyName: string) => {
+        const defaults = STRATEGY_DEFAULTS[strategyName];
+        if (defaults) {
+            setTuningTrailing(defaults.trailing);
+            setTuningSl(Math.round(defaults.sl * 10000) / 100);
+            setTuningTp(defaults.tp !== null ? Math.round(defaults.tp * 10000) / 100 : 5);
+            setTuningRsiPeriod(defaults.rsi_period);
+            setTuningRsiThreshold(defaults.rsi_threshold);
+            setTuningAdxThreshold(defaults.adx_threshold);
+            setTuningVolMultiplier(defaults.volume_multiplier);
+            setTuningMacdFast(defaults.macd_fast);
+            setTuningMacdSlow(defaults.macd_slow);
+            setTuningMacdSignal(defaults.macd_signal);
+            setTuningRsiUpperLimit(defaults.rsi_upper_limit);
+            setTuningAtrPeriod(defaults.atr_period);
+            setUseRsiFilter(true);
+            setUseAdxFilter(true);
+            setUseVolumeFilter(true);
+            setUseMacdFilter(true);
+        }
+    }, []);
+
     // 현재 전략에 허용된 전략/타임프레임 목록
     const allowedStrategies = useMemo(
         () => backtestStrategies.filter(s => s.value in strategyTimeframeMap),
@@ -198,15 +263,32 @@ export default function BacktestPage() {
         () => filterStrategiesByTimeframe(allowedStrategies, backtestTfFilter),
         [allowedStrategies, backtestTfFilter],
     );
-    // 전략 변경 시 타임프레임 자동 설정
+    // 타임프레임 탭 변경 시: 현재 전략이 필터에 없으면 첫 번째 전략으로 자동 선택
+    useEffect(() => {
+        if (filteredBacktestStrategies.length > 0 && !filteredBacktestStrategies.some(s => s.value === form.strategy_name)) {
+            const sorted = [
+                ...filteredBacktestStrategies.filter(s => s.status === 'confirmed'),
+                ...filteredBacktestStrategies.filter(s => s.status !== 'confirmed'),
+            ];
+            const first = sorted[0];
+            if (first) {
+                const tf = getStrategyTimeframe(first.value);
+                setForm(prev => ({ ...prev, strategy_name: first.value, timeframe: tf }));
+                syncTuningDefaults(first.value);
+            }
+        }
+    }, [filteredBacktestStrategies]);
+
+    // 전략 변경 시 타임프레임 자동 설정 + 튜닝 기본값 동기화
     const prevStrategyRef = useRef(form.strategy_name);
     useEffect(() => {
         if (prevStrategyRef.current !== form.strategy_name) {
             prevStrategyRef.current = form.strategy_name;
             const tf = getStrategyTimeframe(form.strategy_name);
             setForm(prev => prev.timeframe === tf ? prev : { ...prev, timeframe: tf });
+            syncTuningDefaults(form.strategy_name);
         }
-    }, [form.strategy_name]);
+    }, [form.strategy_name, syncTuningDefaults]);
 
     const toggleSymbol = (symbol: string) => {
         setForm(prev => {
@@ -270,7 +352,7 @@ export default function BacktestPage() {
         setProgressMessage('백테스트 작업을 시작합니다...');
 
         try {
-            const data = await runPortfolioBacktest({
+            const payload: Record<string, unknown> = {
                 symbols: form.symbols,
                 timeframe: form.timeframe,
                 strategy_name: form.strategy_name,
@@ -279,7 +361,29 @@ export default function BacktestPage() {
                 end_date: form.end_date || null,
                 initial_capital: Number(form.initial_capital),
                 commission_rate: form.commission_rate_pct / 100,
-            });
+            };
+            // 튜닝 파라미터 추가
+            if (tuningEnabled) {
+                payload.custom_sl_pct = tuningSl / 100;  // % → 소수
+                payload.custom_trailing = tuningTrailing;
+                if (!tuningTrailing) {
+                    payload.custom_tp_pct = tuningTp / 100;
+                }
+                payload.custom_rsi_period = tuningRsiPeriod;
+                payload.custom_rsi_threshold = tuningRsiThreshold;
+                payload.custom_adx_threshold = tuningAdxThreshold;
+                payload.custom_volume_multiplier = tuningVolMultiplier;
+                payload.custom_macd_fast = tuningMacdFast;
+                payload.custom_macd_slow = tuningMacdSlow;
+                payload.custom_macd_signal = tuningMacdSignal;
+                payload.custom_rsi_upper_limit = tuningRsiUpperLimit;
+                payload.custom_atr_period = tuningAtrPeriod;
+                payload.use_rsi_filter = useRsiFilter;
+                payload.use_adx_filter = useAdxFilter;
+                payload.use_volume_filter = useVolumeFilter;
+                payload.use_macd_filter = useMacdFilter;
+            }
+            const data = await runPortfolioBacktest(payload as unknown as Parameters<typeof runPortfolioBacktest>[0]);
 
             if (data.status === 'running' && data.task_id) {
                 pollStatus(data.task_id);
@@ -373,15 +477,26 @@ export default function BacktestPage() {
                                 </div>
                             )}
                         </div>
-                        <button
-                            onClick={() => {
-                                setShareModal({ historyId: viewingHistoryId! });
-                                setShareTitle(`${metaTitle} 백테스트 결과`);
-                            }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/20 shrink-0"
-                        >
-                            <Share2 className="w-3.5 h-3.5" /> 커뮤니티 공유
-                        </button>
+                        <div className="flex gap-2 shrink-0">
+                            <button
+                                onClick={() => {
+                                    setSaveStrategyModal({ historyId: viewingHistoryId!, strategyName: metaTitle || '' });
+                                    setSaveStrategyName(`${metaTitle || '커스텀'} 전략`);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-400 hover:bg-emerald-400/10 transition-colors border border-emerald-400/20"
+                            >
+                                <Save className="w-3.5 h-3.5" /> 내 전략 저장
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShareModal({ historyId: viewingHistoryId! });
+                                    setShareTitle(`${metaTitle} 백테스트 결과`);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/20"
+                            >
+                                <Share2 className="w-3.5 h-3.5" /> 커뮤니티 공유
+                            </button>
+                        </div>
                     </div>
                 </header>
 
@@ -553,6 +668,36 @@ export default function BacktestPage() {
                     </button>
                 </div>
             </header>
+
+            {/* 내 전략 저장 모달 */}
+            {saveStrategyModal && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setSaveStrategyModal(null)}>
+                    <div className="rounded-2xl p-6 w-full max-w-md mx-4 bg-[#0f172a] border border-white/[0.08] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-base font-bold text-white">내 전략으로 저장</h3>
+                            <button onClick={() => setSaveStrategyModal(null)} className="text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
+                        </div>
+                        <div className="space-y-3">
+                            <input
+                                type="text"
+                                placeholder="전략 이름 (예: 내 RSI 공격형)"
+                                value={saveStrategyName}
+                                onChange={(e) => setSaveStrategyName(e.target.value)}
+                                maxLength={50}
+                                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-emerald-400/50"
+                            />
+                            <p className="text-xs text-gray-500">저장된 전략은 봇 생성 시 선택할 수 있습니다. (최대 10개)</p>
+                            <div className="flex gap-2 justify-end">
+                                <Button onClick={handleSaveStrategy} loading={savingStrategy} disabled={!saveStrategyName.trim()} size="sm">
+                                    <Save className="w-3.5 h-3.5" /> 저장
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => setSaveStrategyModal(null)}>취소</Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body,
+            )}
 
             {/* 공유 모달 - Portal로 body에 직접 렌더링 */}
             {shareModal && typeof document !== 'undefined' && createPortal(
@@ -921,6 +1066,198 @@ export default function BacktestPage() {
                                 </p>
                             </div>
 
+                            {/* 파라미터 튜닝 */}
+                            <div className="border border-white/[0.06] rounded-xl overflow-hidden">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!tuningEnabled) syncTuningDefaults(form.strategy_name);
+                                        setTuningEnabled(!tuningEnabled);
+                                    }}
+                                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors"
+                                >
+                                    <span className="flex items-center gap-2 text-xs font-semibold text-gray-400">
+                                        <Settings className="w-3.5 h-3.5" />
+                                        파라미터 튜닝
+                                    </span>
+                                    <div className={`w-8 h-4.5 rounded-full transition-colors relative ${tuningEnabled ? 'bg-primary' : 'bg-white/10'}`}>
+                                        <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${tuningEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                    </div>
+                                </button>
+                                {tuningEnabled && (
+                                    <div className="px-4 pb-4 pt-2 space-y-4 border-t border-white/[0.06]">
+                                        {/* 청산 모드 */}
+                                        <div>
+                                            <label className="text-[10px] text-gray-500 font-medium mb-2 block uppercase tracking-wider">청산 모드</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTuningTrailing(false)}
+                                                    className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${!tuningTrailing ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-white/[0.02] text-gray-500 border border-white/[0.06] hover:text-white'}`}
+                                                >
+                                                    고정 SL/TP
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTuningTrailing(true)}
+                                                    className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${tuningTrailing ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-white/[0.02] text-gray-500 border border-white/[0.06] hover:text-white'}`}
+                                                >
+                                                    트레일링 스탑
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 손절률 */}
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <label className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+                                                    {tuningTrailing ? '트레일링 스탑' : '손절률 (SL)'}
+                                                </label>
+                                                <span className="text-xs font-bold text-red-400 font-mono">{tuningSl.toFixed(1)}%</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="0.5"
+                                                max="10"
+                                                step="0.5"
+                                                value={tuningSl}
+                                                onChange={(e) => setTuningSl(Number(e.target.value))}
+                                                className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-red-400 cursor-pointer"
+                                            />
+                                            <div className="flex justify-between text-[9px] text-gray-600 mt-0.5">
+                                                <span>0.5%</span>
+                                                <span>10%</span>
+                                            </div>
+                                        </div>
+
+                                        {/* 익절률 (트레일링 아닐 때만) */}
+                                        {!tuningTrailing && (
+                                            <div>
+                                                <div className="flex items-center justify-between mb-1.5">
+                                                    <label className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">익절률 (TP)</label>
+                                                    <span className="text-xs font-bold text-emerald-400 font-mono">{tuningTp.toFixed(1)}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="1"
+                                                    max="50"
+                                                    step="1"
+                                                    value={tuningTp}
+                                                    onChange={(e) => setTuningTp(Number(e.target.value))}
+                                                    className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-emerald-400 cursor-pointer"
+                                                />
+                                                <div className="flex justify-between text-[9px] text-gray-600 mt-0.5">
+                                                    <span>1%</span>
+                                                    <span>50%</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {tuningTrailing && (
+                                            <p className="text-[10px] text-gray-500 bg-white/[0.02] rounded-lg px-3 py-2">
+                                                트레일링 모드: 최고가 대비 {tuningSl.toFixed(1)}% 하락 시 청산. 익절 목표 없이 추세를 끝까지 추종합니다.
+                                            </p>
+                                        )}
+
+                                        {/* 진입 신호 조건 설정 */}
+                                        <div className="pt-3 border-t border-white/[0.06] space-y-3">
+                                            <label className="text-[10px] text-gray-500 font-medium block uppercase tracking-wider">진입 조건 설정</label>
+
+                                            {/* RSI 필터 */}
+                                            <div className={`rounded-lg border transition-colors ${useRsiFilter ? 'border-blue-500/20 bg-blue-500/[0.03]' : 'border-white/[0.04] bg-white/[0.01]'}`}>
+                                                <button type="button" onClick={() => setUseRsiFilter(!useRsiFilter)}
+                                                    className="w-full flex items-center justify-between px-3 py-2">
+                                                    <span className={`text-[11px] font-semibold ${useRsiFilter ? 'text-blue-400' : 'text-gray-600'}`}>RSI 필터</span>
+                                                    <div className={`w-7 h-4 rounded-full transition-colors relative ${useRsiFilter ? 'bg-blue-500' : 'bg-white/10'}`}>
+                                                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${useRsiFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                                                    </div>
+                                                </button>
+                                                {useRsiFilter && (
+                                                    <div className="px-3 pb-2.5 space-y-2">
+                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">기간</span><span className="text-[10px] font-bold text-blue-400 font-mono">{tuningRsiPeriod}</span></div>
+                                                            <input type="range" min="7" max="30" step="1" value={tuningRsiPeriod} onChange={(e) => setTuningRsiPeriod(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-blue-400 cursor-pointer" /></div>
+                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">진입 기준</span><span className="text-[10px] font-bold text-blue-400 font-mono">{tuningRsiThreshold}</span></div>
+                                                            <input type="range" min="30" max="80" step="1" value={tuningRsiThreshold} onChange={(e) => setTuningRsiThreshold(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-blue-400 cursor-pointer" /></div>
+                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">과매수 상한</span><span className="text-[10px] font-bold text-blue-400 font-mono">{tuningRsiUpperLimit}</span></div>
+                                                            <input type="range" min="65" max="95" step="1" value={tuningRsiUpperLimit} onChange={(e) => setTuningRsiUpperLimit(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-blue-400 cursor-pointer" /></div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* MACD 필터 */}
+                                            <div className={`rounded-lg border transition-colors ${useMacdFilter ? 'border-cyan-500/20 bg-cyan-500/[0.03]' : 'border-white/[0.04] bg-white/[0.01]'}`}>
+                                                <button type="button" onClick={() => setUseMacdFilter(!useMacdFilter)}
+                                                    className="w-full flex items-center justify-between px-3 py-2">
+                                                    <span className={`text-[11px] font-semibold ${useMacdFilter ? 'text-cyan-400' : 'text-gray-600'}`}>MACD 필터</span>
+                                                    <div className={`w-7 h-4 rounded-full transition-colors relative ${useMacdFilter ? 'bg-cyan-500' : 'bg-white/10'}`}>
+                                                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${useMacdFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                                                    </div>
+                                                </button>
+                                                {useMacdFilter && (
+                                                    <div className="px-3 pb-2.5 space-y-2">
+                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">단기 (Fast)</span><span className="text-[10px] font-bold text-cyan-400 font-mono">{tuningMacdFast}</span></div>
+                                                            <input type="range" min="5" max="20" step="1" value={tuningMacdFast} onChange={(e) => setTuningMacdFast(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-cyan-400 cursor-pointer" /></div>
+                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">장기 (Slow)</span><span className="text-[10px] font-bold text-cyan-400 font-mono">{tuningMacdSlow}</span></div>
+                                                            <input type="range" min="15" max="40" step="1" value={tuningMacdSlow} onChange={(e) => setTuningMacdSlow(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-cyan-400 cursor-pointer" /></div>
+                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">시그널</span><span className="text-[10px] font-bold text-cyan-400 font-mono">{tuningMacdSignal}</span></div>
+                                                            <input type="range" min="3" max="15" step="1" value={tuningMacdSignal} onChange={(e) => setTuningMacdSignal(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-cyan-400 cursor-pointer" /></div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* ADX 필터 */}
+                                            <div className={`rounded-lg border transition-colors ${useAdxFilter ? 'border-purple-500/20 bg-purple-500/[0.03]' : 'border-white/[0.04] bg-white/[0.01]'}`}>
+                                                <button type="button" onClick={() => setUseAdxFilter(!useAdxFilter)}
+                                                    className="w-full flex items-center justify-between px-3 py-2">
+                                                    <span className={`text-[11px] font-semibold ${useAdxFilter ? 'text-purple-400' : 'text-gray-600'}`}>ADX 추세 필터</span>
+                                                    <div className={`w-7 h-4 rounded-full transition-colors relative ${useAdxFilter ? 'bg-purple-500' : 'bg-white/10'}`}>
+                                                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${useAdxFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                                                    </div>
+                                                </button>
+                                                {useAdxFilter && (
+                                                    <div className="px-3 pb-2.5">
+                                                        <div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">추세 강도 기준</span><span className="text-[10px] font-bold text-purple-400 font-mono">{tuningAdxThreshold}</span></div>
+                                                        <input type="range" min="10" max="40" step="1" value={tuningAdxThreshold} onChange={(e) => setTuningAdxThreshold(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-purple-400 cursor-pointer" />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* 거래량 필터 */}
+                                            <div className={`rounded-lg border transition-colors ${useVolumeFilter ? 'border-amber-500/20 bg-amber-500/[0.03]' : 'border-white/[0.04] bg-white/[0.01]'}`}>
+                                                <button type="button" onClick={() => setUseVolumeFilter(!useVolumeFilter)}
+                                                    className="w-full flex items-center justify-between px-3 py-2">
+                                                    <span className={`text-[11px] font-semibold ${useVolumeFilter ? 'text-amber-400' : 'text-gray-600'}`}>거래량 필터</span>
+                                                    <div className={`w-7 h-4 rounded-full transition-colors relative ${useVolumeFilter ? 'bg-amber-500' : 'bg-white/10'}`}>
+                                                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${useVolumeFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                                                    </div>
+                                                </button>
+                                                {useVolumeFilter && (
+                                                    <div className="px-3 pb-2.5">
+                                                        <div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">평균 대비 배수</span><span className="text-[10px] font-bold text-amber-400 font-mono">{tuningVolMultiplier.toFixed(1)}x</span></div>
+                                                        <input type="range" min="0.5" max="3.0" step="0.1" value={tuningVolMultiplier} onChange={(e) => setTuningVolMultiplier(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-amber-400 cursor-pointer" />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* ATR 기간 */}
+                                            <div className="px-1">
+                                                <div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">ATR 변동성 기간</span><span className="text-[10px] font-bold text-gray-400 font-mono">{tuningAtrPeriod}</span></div>
+                                                <input type="range" min="7" max="30" step="1" value={tuningAtrPeriod} onChange={(e) => setTuningAtrPeriod(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-gray-400 cursor-pointer" />
+                                            </div>
+                                        </div>
+
+                                        {/* 기본값 초기화 */}
+                                        <button
+                                            type="button"
+                                            onClick={() => syncTuningDefaults(form.strategy_name)}
+                                            className="text-[10px] text-gray-500 hover:text-primary transition-colors underline underline-offset-2"
+                                        >
+                                            전략 기본값으로 초기화
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
                             <Button
                                 type="submit"
                                 variant="primary"
@@ -968,15 +1305,26 @@ export default function BacktestPage() {
                                     * 이 결과는 과거 데이터 시뮬레이션이며 실제 수익을 보장하지 않습니다.
                                 </p>
                                 {viewingHistoryId && (
-                                    <button
-                                        onClick={() => {
-                                            setShareModal({ historyId: viewingHistoryId });
-                                            setShareTitle('백테스트 결과 공유');
-                                        }}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/20"
-                                    >
-                                        <Share2 className="w-3.5 h-3.5" /> 커뮤니티 공유
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setSaveStrategyModal({ historyId: viewingHistoryId, strategyName: '' });
+                                                setSaveStrategyName('커스텀 전략');
+                                            }}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-400 hover:bg-emerald-400/10 transition-colors border border-emerald-400/20"
+                                        >
+                                            <Save className="w-3.5 h-3.5" /> 내 전략 저장
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShareModal({ historyId: viewingHistoryId });
+                                                setShareTitle('백테스트 결과 공유');
+                                            }}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary hover:bg-primary/10 transition-colors border border-primary/20"
+                                        >
+                                            <Share2 className="w-3.5 h-3.5" /> 커뮤니티 공유
+                                        </button>
+                                    </div>
                                 )}
                             </div>
 

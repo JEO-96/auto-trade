@@ -16,7 +16,7 @@ setup_error_monitoring()
 import bot_manager
 import database
 import models
-from routers import admin, auth, backtest, bots, community, keys
+from routers import admin, auth, backtest, bots, community, keys, strategies
 from routers import settings as settings_router
 from settings import settings
 
@@ -53,6 +53,7 @@ app.include_router(keys.router)
 app.include_router(backtest.router)
 app.include_router(admin.router)
 app.include_router(community.router)
+app.include_router(strategies.router)
 app.include_router(settings_router.router)
 
 logger = logging.getLogger(__name__)

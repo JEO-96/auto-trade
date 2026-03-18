@@ -14,6 +14,7 @@ import re
 MAX_BOTS_PER_USER: int = 5           # 관리자 최대 봇 수
 MAX_BOTS_PER_REGULAR_USER: int = 1   # 일반 사용자 최대 봇 수 (모의투자만)
 MAX_LIVE_BOTS_PER_USER: int = 1      # 실매매 봇은 관리자만 최대 1개
+MAX_USER_STRATEGIES: int = 10        # 사용자당 커스텀 전략 최대 수
 
 # ──────────────────────────────────────────────
 # 입력값 검증 (Validation)

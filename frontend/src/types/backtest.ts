@@ -38,6 +38,22 @@ export interface BacktestFormParams {
     start_date: string | null;
     end_date: string | null;
     commission_rate?: number;
+    custom_sl_pct?: number;
+    custom_tp_pct?: number;
+    custom_trailing?: boolean;
+    custom_rsi_period?: number;
+    custom_rsi_threshold?: number;
+    custom_adx_threshold?: number;
+    custom_volume_multiplier?: number;
+    custom_macd_fast?: number;
+    custom_macd_slow?: number;
+    custom_macd_signal?: number;
+    custom_rsi_upper_limit?: number;
+    custom_atr_period?: number;
+    use_rsi_filter?: boolean;
+    use_adx_filter?: boolean;
+    use_volume_filter?: boolean;
+    use_macd_filter?: boolean;
 }
 
 export interface BacktestTaskStatus {
@@ -60,6 +76,16 @@ export interface BacktestHistoryItem {
     start_date: string | null;
     end_date: string | null;
     commission_rate: number | null;
+    custom_params: Record<string, unknown> | null;
+    created_at: string;
+}
+
+export interface UserStrategy {
+    id: number;
+    name: string;
+    base_strategy_name: string;
+    custom_params: Record<string, unknown>;
+    backtest_history_id: number | null;
     created_at: string;
 }
 

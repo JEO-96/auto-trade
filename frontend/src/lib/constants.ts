@@ -181,3 +181,33 @@ export const CHART_COLORS = [
     '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
     '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#64748b',
 ] as const;
+
+/** 전략별 백테스트 기본 파라미터 */
+export const STRATEGY_DEFAULTS: Record<string, {
+    sl: number; tp: number | null; trailing: boolean;
+    rsi_period: number; rsi_threshold: number; adx_threshold: number; volume_multiplier: number;
+    macd_fast: number; macd_slow: number; macd_signal: number; rsi_upper_limit: number; atr_period: number;
+}> = {
+    // 트레일링 스탑 전략 (TP 없음)
+    'trend_rider_4h': { sl: 0.05, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 50, adx_threshold: 15, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'scalper_15m': { sl: 0.02, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 30, adx_threshold: 25, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'trend_follower_15m': { sl: 0.025, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 40, adx_threshold: 18, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    // 고정 SL/TP 전략
+    'momentum_basic_1h': { sl: 0.015, tp: 0.20, trailing: false, rsi_period: 14, rsi_threshold: 58, adx_threshold: 22, volume_multiplier: 1.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'momentum_basic_4h': { sl: 0.015, tp: 0.25, trailing: false, rsi_period: 14, rsi_threshold: 55, adx_threshold: 20, volume_multiplier: 1.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'momentum_basic_1d': { sl: 0.015, tp: 0.25, trailing: false, rsi_period: 14, rsi_threshold: 55, adx_threshold: 20, volume_multiplier: 1.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'momentum_stable_1h': { sl: 0.02, tp: 0.15, trailing: false, rsi_period: 14, rsi_threshold: 60, adx_threshold: 22, volume_multiplier: 1.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'momentum_stable_4h': { sl: 0.02, tp: 0.15, trailing: false, rsi_period: 14, rsi_threshold: 55, adx_threshold: 20, volume_multiplier: 1.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'momentum_stable_1d': { sl: 0.02, tp: 0.15, trailing: false, rsi_period: 14, rsi_threshold: 55, adx_threshold: 20, volume_multiplier: 1.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'momentum_aggressive_1h': { sl: 0.015, tp: 0.25, trailing: false, rsi_period: 14, rsi_threshold: 55, adx_threshold: 20, volume_multiplier: 1.3, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'momentum_aggressive_4h': { sl: 0.015, tp: 0.30, trailing: false, rsi_period: 14, rsi_threshold: 50, adx_threshold: 18, volume_multiplier: 1.3, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'momentum_aggressive_1d': { sl: 0.015, tp: 0.30, trailing: false, rsi_period: 14, rsi_threshold: 50, adx_threshold: 18, volume_multiplier: 1.3, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'multi_signal_1h': { sl: 0.02, tp: 0.15, trailing: false, rsi_period: 14, rsi_threshold: 60, adx_threshold: 28, volume_multiplier: 1.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'multi_signal_4h': { sl: 0.02, tp: 0.15, trailing: false, rsi_period: 14, rsi_threshold: 55, adx_threshold: 25, volume_multiplier: 1.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'multi_signal_1d': { sl: 0.02, tp: 0.15, trailing: false, rsi_period: 14, rsi_threshold: 55, adx_threshold: 25, volume_multiplier: 1.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'quick_swing_1h': { sl: 0.015, tp: 0.20, trailing: false, rsi_period: 14, rsi_threshold: 50, adx_threshold: 20, volume_multiplier: 1.2, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'wide_swing_1d': { sl: 0.03, tp: 0.20, trailing: false, rsi_period: 14, rsi_threshold: 50, adx_threshold: 18, volume_multiplier: 1.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'quick_swing_15m': { sl: 0.015, tp: 0.15, trailing: false, rsi_period: 14, rsi_threshold: 45, adx_threshold: 18, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'multi_signal_15m': { sl: 0.018, tp: 0.12, trailing: false, rsi_period: 14, rsi_threshold: 50, adx_threshold: 25, volume_multiplier: 1.2, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'signal_test_15m': { sl: 0.02, tp: 0.10, trailing: false, rsi_period: 14, rsi_threshold: 45, adx_threshold: 20, volume_multiplier: 1.2, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+};

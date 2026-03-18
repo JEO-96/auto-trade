@@ -150,6 +150,17 @@ def create_bot(
             detail="Allocated capital must be positive.",
         )
 
+    # 커스텀 전략 검증
+    custom_strategy_id = req.custom_strategy_id
+    if custom_strategy_id:
+        user_strategy = db.query(models.UserStrategy).filter(
+            models.UserStrategy.id == custom_strategy_id,
+            models.UserStrategy.user_id == current_user.id,
+            models.UserStrategy.is_deleted == False,
+        ).first()
+        if not user_strategy:
+            raise HTTPException(status_code=404, detail="커스텀 전략을 찾을 수 없습니다.")
+
     bot = models.BotConfig(
         user_id=current_user.id,
         symbol=req.symbol,
@@ -158,6 +169,7 @@ def create_bot(
         strategy_name=req.strategy_name,
         paper_trading_mode=req.paper_trading_mode,
         allocated_capital=req.allocated_capital,
+        custom_strategy_id=custom_strategy_id,
         rsi_period=req.rsi_period,
         macd_fast=req.macd_fast,
         macd_slow=req.macd_slow,
@@ -412,4 +424,17 @@ def get_bot_performance(
 
 @router.get("/list", response_model=list[schemas.BotConfigResponse])
 def list_user_bots(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(models.BotConfig).filter(models.BotConfig.user_id == current_user.id).all()
+    bots = db.query(models.BotConfig).filter(models.BotConfig.user_id == current_user.id).all()
+    results = []
+    for b in bots:
+        data = schemas.BotConfigResponse.model_validate(b)
+        # 커스텀 전략 이름 조회
+        if b.custom_strategy_id:
+            cs = db.query(models.UserStrategy).filter(
+                models.UserStrategy.id == b.custom_strategy_id,
+                models.UserStrategy.is_deleted == False,
+            ).first()
+            if cs:
+                data.custom_strategy_name = cs.name
+        results.append(data)
+    return results
