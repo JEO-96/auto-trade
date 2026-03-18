@@ -43,7 +43,7 @@ export default function Home() {
                     </h1>
 
                     <p className="text-base md:text-lg text-gray-400 max-w-xl mx-auto mb-10 leading-relaxed [text-wrap:pretty]">
-                        직접 백테스트하고, 신뢰할 수 있는 전략으로 자동매매하세요.<br className="hidden sm:block" />
+                        직접 백테스트하고, 신뢰할 수 있는 전략으로 모의투자하세요.<br className="hidden sm:block" />
                         베타 기간 중 무료로 모든 기능을 이용하세요.
                     </p>
 
@@ -73,14 +73,14 @@ export default function Home() {
                             bgClass: 'bg-secondary/10 border-secondary/10',
                             textClass: 'text-secondary',
                             title: '베타 무료 이용',
-                            desc: '현재 베타 테스트 기간으로 모든 기능을 무료로 이용할 수 있습니다. 정식 출시 후 합리적인 구독 요금제를 제공할 예정입니다.'
+                            desc: '베타 기간 중 무료로 모든 기능을 이용하세요.'
                         },
                         {
                             icon: <ShieldCheck className="w-5 h-5" />,
                             bgClass: 'bg-accent/10 border-accent/10',
                             textClass: 'text-accent',
-                            title: '24시간 365일 자동매매',
-                            desc: 'ATR 기반 동적 손절/익절과 다양한 전략으로 24시간 시장을 자동 모니터링하고 매매합니다.'
+                            title: '24시간 365일 모니터링',
+                            desc: 'ATR 기반 동적 손절/익절과 다양한 전략으로 24시간 시장을 모니터링하고 알림을 제공합니다.'
                         }
                     ].map((feature) => (
                         <div key={feature.title} className="glass-panel glass-panel-hover p-8 rounded-2xl flex flex-col items-start">

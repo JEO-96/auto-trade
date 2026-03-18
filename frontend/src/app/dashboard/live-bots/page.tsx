@@ -60,7 +60,7 @@ export default function LiveBotsPage() {
                     실시간 봇 현황
                 </h1>
                 <p className="text-sm text-gray-500">
-                    현재 플랫폼에서 실행 중인 모든 자동매매 봇을 확인할 수 있습니다.
+                    현재 플랫폼에서 실행 중인 모든 모의투자 봇을 확인할 수 있습니다.
                 </p>
             </header>
 

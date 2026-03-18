@@ -41,8 +41,8 @@ export default function LoginPage() {
                     </h1>
 
                     <p className="text-gray-400 leading-relaxed text-sm">
-                        전략을 직접 검증하고 신뢰할 수 있는 자동매매를 경험하세요.
-                        수익이 날 때만 수수료를 내는 공정한 플랫폼입니다.
+                        전략을 직접 검증하고 모의투자로 실력을 키워보세요.
+                        베타 기간 중 무료로 모든 기능을 이용할 수 있습니다.
                     </p>
 
                     <div className="mt-10 grid grid-cols-2 gap-4">

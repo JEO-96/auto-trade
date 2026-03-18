@@ -23,7 +23,7 @@ export default function TermsPage() {
 
                     <section>
                         <h2 className="text-base font-semibold text-white mb-3">제1조 (목적)</h2>
-                        <p>본 약관은 Backtested(이하 "서비스")가 제공하는 자동 매매 알고리즘 서비스의 이용 조건 및 절차, 이용자와 서비스 제공자의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.</p>
+                        <p>본 약관은 Backtested(이하 &quot;서비스&quot;)가 제공하는 모의투자 시뮬레이션 및 백테스팅 서비스의 이용 조건 및 절차, 이용자와 서비스 제공자의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.</p>
                     </section>
 
                     <section>
@@ -43,10 +43,10 @@ export default function TermsPage() {
                         <h2 className="text-base font-semibold text-white mb-3">제3조 (서비스 제공자의 면책)</h2>
                         <p className="mb-3">서비스 제공자는 다음 각 호의 사유로 발생한 손해에 대해 책임을 지지 않습니다.</p>
                         <ul className="space-y-2 list-disc list-inside">
-                            <li>알고리즘의 오작동, 버그, 또는 예상치 못한 시장 상황으로 인한 손실</li>
-                            <li>거래소 API 장애, 네트워크 오류, 서버 점검으로 인한 미체결 또는 지연 체결</li>
-                            <li>이용자가 제공한 잘못된 API 키 또는 설정으로 인한 손실</li>
-                            <li>거래소의 정책 변경, 상장 폐지, 거래 정지로 인한 손실</li>
+                            <li>본 서비스는 모의투자 시뮬레이션을 제공하며, 실제 자산 거래를 수행하지 않습니다.</li>
+                            <li>모의투자 결과를 기반으로 이용자가 직접 수행한 실제 투자로 인한 손실</li>
+                            <li>알고리즘의 오작동, 버그, 또는 예상치 못한 시장 상황에 의한 시뮬레이션 오류</li>
+                            <li>네트워크 오류, 서버 점검으로 인한 서비스 중단</li>
                             <li>천재지변, 해킹 등 불가항력적 사유로 인한 손실</li>
                             <li>이용자의 귀책사유로 발생한 손해</li>
                         </ul>
@@ -56,17 +56,17 @@ export default function TermsPage() {
                         <h2 className="text-base font-semibold text-white mb-3">제4조 (서비스 이용 자격)</h2>
                         <ul className="space-y-2 list-disc list-inside">
                             <li>본 서비스는 카카오 계정으로 가입한 이용자에게 제공됩니다.</li>
-                            <li>이용자는 가상자산 투자에 관한 충분한 지식과 경험을 보유하고 있어야 합니다.</li>
-                            <li>이용자는 본인의 재정 상황을 고려하여 스스로 감당할 수 있는 금액으로만 투자해야 합니다.</li>
+                            <li>이용자는 본 서비스가 모의투자 시뮬레이션임을 이해하고 있어야 합니다.</li>
+                            <li>모의투자 결과를 실제 투자에 활용할 경우, 모든 책임은 이용자 본인에게 있습니다.</li>
                         </ul>
                     </section>
 
                     <section>
-                        <h2 className="text-base font-semibold text-white mb-3">제5조 (API 키 보안)</h2>
+                        <h2 className="text-base font-semibold text-white mb-3">제5조 (서비스 범위)</h2>
                         <ul className="space-y-2 list-disc list-inside">
-                            <li>이용자는 거래소 API 키를 등록할 때, 출금 권한이 없는 API 키만 사용할 것을 강력히 권고합니다.</li>
-                            <li>API 키의 유출로 인한 피해는 이용자 본인이 책임집니다.</li>
-                            <li>서비스 제공자는 이용자의 API 키를 보안 조치를 적용하여 저장하며, 제3자에게 제공하지 않습니다.</li>
+                            <li>본 서비스는 모의투자(가상매매) 시뮬레이션, 백테스팅, 커뮤니티 기능을 제공합니다.</li>
+                            <li>본 서비스는 이용자의 거래소 API 키를 수집하지 않으며, 이용자의 실제 자산에 접근하지 않습니다.</li>
+                            <li>모의투자 결과는 실제 시장 데이터를 기반으로 하나, 실제 거래 결과와 다를 수 있습니다.</li>
                         </ul>
                     </section>
 

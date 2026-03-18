@@ -392,7 +392,7 @@ export default function DashboardPage() {
                     <EmptyState
                         icon={<Settings2 className="w-12 h-12" />}
                         title="등록된 봇이 없습니다"
-                        description="새 봇을 만들어 자동 매매를 시작하세요."
+                        description="새 봇을 만들어 모의투자를 시작하세요."
                     />
                     <div className="mt-6">
                         <Button variant="primary" size="md" onClick={openCreateModal}>

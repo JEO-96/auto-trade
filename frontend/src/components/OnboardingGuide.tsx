@@ -58,7 +58,7 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
             id: 'bot',
             icon: <Bot className="w-5 h-5" />,
             title: '봇 생성',
-            description: '검증된 전략으로 자동 매매를 시작하세요.',
+            description: '검증된 전략으로 모의투자를 시작하세요.',
             href: '/dashboard',
             completed: hasBots,
         },

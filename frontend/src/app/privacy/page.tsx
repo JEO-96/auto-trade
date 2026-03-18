@@ -17,7 +17,7 @@ export default function PrivacyPage() {
                 </Link>
 
                 <h1 className="text-2xl font-bold text-white mb-2">개인정보처리방침</h1>
-                <p className="text-xs text-gray-500 mb-10">최종 업데이트: 2025년 8월</p>
+                <p className="text-xs text-gray-500 mb-10">최종 업데이트: 2026년 3월</p>
 
                 <div className="space-y-8 text-sm text-gray-400 leading-relaxed">
 
@@ -26,8 +26,8 @@ export default function PrivacyPage() {
                         <p className="mb-3">Backtested(이하 &quot;서비스&quot;) 제공을 위해 다음의 목적으로 개인정보를 처리합니다.</p>
                         <ul className="space-y-2 list-disc list-inside">
                             <li><strong className="text-gray-400">회원가입 및 관리:</strong> 본인 식별, 서비스 이용 자격 확인, 부정 이용 방지</li>
-                            <li><strong className="text-gray-400">서비스 제공:</strong> 자동매매 봇 운영, 백테스트 실행, 커뮤니티 기능 제공</li>
-                            <li><strong className="text-gray-400">결제 처리:</strong> 구독 결제 및 결제 내역 관리</li>
+                            <li><strong className="text-gray-400">서비스 제공:</strong> 모의투자 봇 운영, 백테스트 실행, 커뮤니티 기능 제공</li>
+                            <li><strong className="text-gray-400">알림 서비스:</strong> 텔레그램을 통한 매매 신호 및 봇 상태 알림</li>
                             <li><strong className="text-gray-400">고객 지원:</strong> 문의 응대, 공지사항 전달</li>
                         </ul>
                     </section>
@@ -50,14 +50,9 @@ export default function PrivacyPage() {
                                         <td className="py-2">카카오 OAuth</td>
                                     </tr>
                                     <tr className="border-b border-white/[0.04]">
-                                        <td className="py-2 pr-4">서비스 이용</td>
-                                        <td className="py-2 pr-4">거래소 API 키 (암호화 저장)</td>
+                                        <td className="py-2 pr-4">알림 연동</td>
+                                        <td className="py-2 pr-4">텔레그램 Chat ID</td>
                                         <td className="py-2">이용자 직접 입력</td>
-                                    </tr>
-                                    <tr className="border-b border-white/[0.04]">
-                                        <td className="py-2 pr-4">결제</td>
-                                        <td className="py-2 pr-4">결제 수단 정보, 결제 내역</td>
-                                        <td className="py-2">토스페이먼츠 PG</td>
                                     </tr>
                                     <tr>
                                         <td className="py-2 pr-4">자동 수집</td>
@@ -73,8 +68,7 @@ export default function PrivacyPage() {
                         <h2 className="text-base font-semibold text-white mb-3">제3조 (개인정보의 보유 및 이용 기간)</h2>
                         <ul className="space-y-2 list-disc list-inside">
                             <li><strong className="text-gray-400">회원 정보:</strong> 회원 탈퇴 시까지 (탈퇴 후 즉시 파기)</li>
-                            <li><strong className="text-gray-400">거래 기록:</strong> 전자상거래법에 따라 5년 보관</li>
-                            <li><strong className="text-gray-400">결제 기록:</strong> 전자상거래법에 따라 5년 보관</li>
+                            <li><strong className="text-gray-400">모의투자 기록:</strong> 서비스 이용 기간 동안 보관</li>
                             <li><strong className="text-gray-400">접속 로그:</strong> 통신비밀보호법에 따라 3개월 보관</li>
                         </ul>
                     </section>
@@ -100,10 +94,6 @@ export default function PrivacyPage() {
                                 </thead>
                                 <tbody className="text-gray-400">
                                     <tr className="border-b border-white/[0.04]">
-                                        <td className="py-2 pr-4">토스페이먼츠</td>
-                                        <td className="py-2">결제 처리</td>
-                                    </tr>
-                                    <tr className="border-b border-white/[0.04]">
                                         <td className="py-2 pr-4">Amazon Web Services (AWS)</td>
                                         <td className="py-2">데이터 저장 및 서버 호스팅</td>
                                     </tr>
@@ -119,10 +109,9 @@ export default function PrivacyPage() {
                     <section>
                         <h2 className="text-base font-semibold text-white mb-3">제6조 (개인정보의 안전성 확보 조치)</h2>
                         <ul className="space-y-2 list-disc list-inside">
-                            <li>거래소 API 키는 Fernet 대칭키 암호화를 적용하여 저장합니다.</li>
-                            <li>비밀번호는 bcrypt 해시 처리하여 저장합니다.</li>
                             <li>모든 통신은 SSL/TLS(HTTPS)로 암호화됩니다.</li>
                             <li>JWT 기반 인증으로 무단 접근을 방지합니다.</li>
+                            <li>카카오 OAuth 토큰은 암호화하여 저장합니다.</li>
                         </ul>
                     </section>
 

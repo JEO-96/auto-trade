@@ -27,7 +27,7 @@ export default function RiskDisclaimerModal({ onConfirm, onCancel }: RiskDisclai
                 {/* Body */}
                 <div className="p-6 space-y-4">
                     <p className="text-xs text-gray-400 leading-relaxed">
-                        자동 매매 엔진을 가동하기 전, 아래 내용을 반드시 확인하고 동의해 주세요.
+                        모의투자 봇을 가동하기 전, 아래 내용을 반드시 확인하고 동의해 주세요.
                     </p>
 
                     <div className="space-y-3">
