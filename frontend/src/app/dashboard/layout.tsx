@@ -68,7 +68,9 @@ export default function DashboardLayout({
                     {/* Navigation */}
                     <nav aria-label="대시보드 메뉴" className="flex-1 px-3 py-4 space-y-0.5">
                         <NavItem href="/dashboard" icon={<LayoutDashboard className="w-[18px] h-[18px]" />} label="대시보드" />
-                        <NavItem href="/dashboard/keys" icon={<Key className="w-[18px] h-[18px]" />} label="API 설정" />
+                        {user?.is_admin && (
+                            <NavItem href="/dashboard/keys" icon={<Key className="w-[18px] h-[18px]" />} label="API 설정" />
+                        )}
                         <NavItem href="/dashboard/backtest" icon={<BarChart2 className="w-[18px] h-[18px]" />} label="백테스팅" />
                         <NavItem href="/dashboard/performance" icon={<TrendingUp className="w-[18px] h-[18px]" />} label="성과 분석" />
                         <NavItem href="/dashboard/live-bots" icon={<Radio className="w-[18px] h-[18px]" />} label="실시간 봇 현황" />

@@ -137,15 +137,18 @@ export default function DashboardPage() {
     // Initial load
     useEffect(() => {
         fetchBots();
-        fetchBalance();
-        // Onboarding: check keys & backtest history
-        getKeys()
-            .then(keys => setHasKeys(keys.length > 0))
-            .catch(() => {});
+        if (user?.is_admin) {
+            fetchBalance();
+            getKeys()
+                .then(keys => setHasKeys(keys.length > 0))
+                .catch(() => {});
+        } else {
+            setHasKeys(true); // 일반 사용자는 온보딩에서 API 키 단계 스킵
+        }
         getBacktestHistory(1, 1)
             .then(history => setHasBacktests(history.length > 0))
             .catch(() => {});
-    }, [fetchBots, fetchBalance]);
+    }, [fetchBots, fetchBalance, user?.is_admin]);
 
     // Fetch logs when selected bot changes
     useEffect(() => {
@@ -373,6 +376,7 @@ export default function DashboardPage() {
                 activeBotCount={activeBotCount}
                 balances={balances}
                 onAssetDetailClick={() => setShowAssetDetail(true)}
+                isAdmin={isAdmin}
             />
 
             {/* Asset Detail Modal */}

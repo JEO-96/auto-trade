@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 import models, schemas
-from dependencies import get_db, get_current_user
+from dependencies import get_db, get_current_user, get_admin_user
 from crypto_utils import encrypt_key, decrypt_key, mask_api_key, fetch_exchange_balance
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/keys", tags=["keys"])
 
 
 @router.post("/", response_model=schemas.ExchangeKeyResponse)
-def add_exchange_key(key_data: schemas.ExchangeKeyCreate, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+def add_exchange_key(key_data: schemas.ExchangeKeyCreate, current_user: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
     existing_key = db.query(models.ExchangeKey).filter(
         models.ExchangeKey.user_id == current_user.id,
         models.ExchangeKey.exchange_name == key_data.exchange_name
@@ -38,7 +38,7 @@ def add_exchange_key(key_data: schemas.ExchangeKeyCreate, current_user: models.U
     return {"id": db_key.id, "exchange_name": db_key.exchange_name, "api_key_preview": mask_api_key(key_data.api_key)}
 
 @router.get("/", response_model=list[schemas.ExchangeKeyResponse])
-def get_exchange_keys(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_exchange_keys(current_user: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
     keys = db.query(models.ExchangeKey).filter(models.ExchangeKey.user_id == current_user.id).all()
     results = []
     for k in keys:
@@ -57,7 +57,7 @@ def get_exchange_keys(current_user: models.User = Depends(get_current_user), db:
 @router.delete("/{key_id}")
 def delete_exchange_key(
     key_id: int,
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
     key = db.query(models.ExchangeKey).filter(
@@ -77,7 +77,7 @@ def delete_exchange_key(
 @router.get("/balance", response_model=schemas.BalanceResponse)
 async def get_exchange_balance(
     exchange_name: str = Query("upbit", description="거래소 이름 (upbit, bithumb)"),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
     """Fetch the current user's exchange account balances via ccxt."""
