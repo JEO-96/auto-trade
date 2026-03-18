@@ -38,20 +38,17 @@ const DialogContent = forwardRef<
         <DialogPrimitive.Content
             ref={ref}
             className={cn(
-                'fixed left-[50%] top-[50%] z-50 w-full translate-x-[-50%] translate-y-[-50%] px-4',
-                'max-h-[90vh]',
+                'fixed inset-0 z-50 flex items-center justify-center px-4 py-4',
                 maxWidth,
                 'data-[state=open]:animate-in data-[state=closed]:animate-out',
                 'data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0',
                 'data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95',
-                'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
-                'data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
                 'duration-200',
                 className
             )}
             {...props}
         >
-            <div className="bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className={cn('w-full bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl overflow-y-auto max-h-[calc(100vh-2rem)]', maxWidth)}>
                 {children}
             </div>
         </DialogPrimitive.Content>
