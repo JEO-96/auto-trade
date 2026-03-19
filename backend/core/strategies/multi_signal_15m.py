@@ -51,6 +51,12 @@ class MultiSignal15mStrategy(BaseStrategy):
         self.risk_adx_threshold = 35
         self.risk_high_multiplier = 1.5
 
+        # 텔레그램 체크리스트 필터
+        self.filter_close_gt_ema200 = True
+        self.filter_ema50_gt_ema200 = True
+        self.filter_di_positive = True
+        self.filter_rsi_max = 76
+
     def apply_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         df = super().apply_indicators(df)
         ema100 = df.ta.ema(length=100)

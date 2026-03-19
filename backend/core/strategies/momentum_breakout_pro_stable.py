@@ -32,6 +32,9 @@ class MomentumBreakoutProStableStrategy(BaseStrategy):
         # Wick filter ratio
         self.wick_filter_ratio = 0.8
 
+        # 텔레그램 체크리스트 필터
+        self.filter_close_gt_ema200 = True
+
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 200:
             return False

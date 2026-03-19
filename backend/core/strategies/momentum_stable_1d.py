@@ -48,6 +48,12 @@ class MomentumStable1dStrategy(BaseStrategy):
         # 최근 N봉 최고가 돌파 조건
         self.breakout_lookback = 2
 
+        # 텔레그램 체크리스트 필터
+        self.filter_close_gt_ema200 = True
+        self.filter_ema50_gt_ema200 = True
+        self.filter_di_positive = True
+        self.filter_rsi_max = 78
+
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 200:
             return False

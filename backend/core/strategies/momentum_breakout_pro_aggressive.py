@@ -33,6 +33,9 @@ class MomentumBreakoutProAggressiveStrategy(BaseStrategy):
         self.risk_adx_threshold = 35
         self.risk_high_multiplier = 2.0
 
+        # 텔레그램 체크리스트 필터
+        self.filter_close_gt_ema200 = True
+
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 200:
             return False

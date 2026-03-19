@@ -43,6 +43,11 @@ class MomentumStable4hStrategy(BaseStrategy):
         # 위크 필터
         self.wick_filter_ratio = 0.9
 
+        # 텔레그램 체크리스트 필터
+        self.filter_close_gt_ema200 = True
+        self.filter_ema50_gt_ema200 = True
+        self.filter_rsi_max = 76
+
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 200:
             return False

@@ -38,6 +38,14 @@ class TrendRider4hStrategy(BaseStrategy):
         self.backtest_tp_pct = None   # TP 없음
         self.backtest_trailing = True  # 트레일링 모드 활성화
 
+        # 텔레그램 체크리스트 필터
+        self.filter_ema20_gt_ema50 = True
+        self.filter_close_gt_ema20 = True
+        self.filter_macd_gt_signal = True
+        self.filter_rsi_max = 75
+        self.filter_adx_min = 15
+        self.filter_volume_min = 1.0
+
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 50:
             return False

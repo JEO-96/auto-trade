@@ -46,6 +46,10 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
         self.risk_high_multiplier = 2.5
         self.risk_default_multiplier = 1.2
 
+        # 텔레그램 체크리스트 필터
+        self.filter_close_gt_ema200 = True
+        self.filter_close_gt_ema100 = True
+
     def apply_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         """Elite adds EMA_100 on top of the standard indicator set."""
         df = super().apply_indicators(df)

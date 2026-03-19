@@ -46,6 +46,12 @@ class MultiSignal1dStrategy(BaseStrategy):
         self.backtest_tp_pct = 0.05   # 5% TP
         self.risk_default_multiplier = 1.2
 
+        # 텔레그램 체크리스트 필터
+        self.filter_close_gt_ema200 = True
+        self.filter_ema50_gt_ema200 = True
+        self.filter_di_positive = True
+        self.filter_rsi_max = 75
+
     def apply_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         df = super().apply_indicators(df)
         ema100 = df.ta.ema(length=100)

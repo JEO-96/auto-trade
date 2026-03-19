@@ -42,6 +42,14 @@ class TrendFollower15mStrategy(BaseStrategy):
         self.rsi_upper = 68
         self.ema_proximity_pct = 0.002  # EMA_20 근접 판단 기준 (0.2%)
 
+        # 텔레그램 체크리스트 필터
+        self.filter_triple_ema = True
+        self.filter_close_gt_ema20 = True
+        self.filter_di_positive = True
+        self.filter_macd_gt_signal = True
+        self.filter_rsi_max = 68
+        self.filter_adx_min = 25
+
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 200:
             return False

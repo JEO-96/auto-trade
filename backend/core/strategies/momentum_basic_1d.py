@@ -54,6 +54,12 @@ class MomentumBasic1DStrategy(BaseStrategy):
         # RSI 과열 상한
         self.rsi_upper_limit = 80.0
 
+        # 텔레그램 체크리스트 필터
+        self.filter_close_gt_ema200 = True
+        self.filter_ema50_gt_ema200 = True
+        self.filter_di_positive = True
+        self.filter_rsi_max = 80
+
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         # EMA_200 계산에 충분한 데이터 필요
         if current_idx < 200:

@@ -48,6 +48,20 @@ class BaseStrategy(ABC):
         self.backtest_sl_pct: float | None = 0.015   # 1.5% default
         self.backtest_tp_pct: float | None = 0.03    # 3.0% default
 
+        # ── Filter condition flags (텔레그램 체크리스트용) ──
+        # 서브클래스 __init__에서 실제 진입 필터에 맞게 설정
+        self.filter_close_gt_ema200: bool = False
+        self.filter_ema50_gt_ema200: bool = False
+        self.filter_ema20_gt_ema50: bool = False
+        self.filter_close_gt_ema20: bool = False
+        self.filter_close_gt_ema100: bool = False
+        self.filter_triple_ema: bool = False      # EMA20 > EMA50 > EMA200
+        self.filter_di_positive: bool = False
+        self.filter_macd_gt_signal: bool = False
+        self.filter_rsi_max: float | None = None   # RSI < value
+        self.filter_adx_min: float | None = None   # ADX > value
+        self.filter_volume_min: float | None = None  # volume > avg * value
+
     # ------------------------------------------------------------------
     # Column name helpers
     # ------------------------------------------------------------------
@@ -129,6 +143,83 @@ class BaseStrategy(ABC):
             df[self.dmn_col] = adx_df[f'DMN{adx_suffix}']
 
         return df
+
+    # ------------------------------------------------------------------
+    # Telegram condition checklist
+    # ------------------------------------------------------------------
+    def get_entry_conditions(
+        self, df: pd.DataFrame, current_idx: int, curr_price: float
+    ) -> list[tuple[str, bool]]:
+        """Return list of (label, is_met) tuples for Telegram feedback.
+
+        Built automatically from ``filter_*`` flags set in subclass __init__.
+        Override in subclass for fully custom conditions.
+        """
+        current = df.iloc[current_idx]
+        conditions: list[tuple[str, bool]] = []
+
+        def _val(col: str):
+            v = current.get(col)
+            if v is None or (isinstance(v, float) and pd.isna(v)):
+                return None
+            return v
+
+        if self.filter_close_gt_ema200:
+            ema200 = _val('EMA_200')
+            if ema200 is not None:
+                conditions.append(("가격>EMA200", curr_price > ema200))
+
+        if self.filter_ema50_gt_ema200:
+            ema50, ema200 = _val('EMA_50'), _val('EMA_200')
+            if ema50 is not None and ema200 is not None:
+                conditions.append(("골든크로스(EMA50>200)", ema50 > ema200))
+
+        if self.filter_triple_ema:
+            ema20, ema50, ema200 = _val('EMA_20'), _val('EMA_50'), _val('EMA_200')
+            if all(v is not None for v in (ema20, ema50, ema200)):
+                conditions.append(("EMA정배열(20>50>200)", ema20 > ema50 > ema200))
+        elif self.filter_ema20_gt_ema50:
+            ema20, ema50 = _val('EMA_20'), _val('EMA_50')
+            if ema20 is not None and ema50 is not None:
+                conditions.append(("EMA정배열(20>50)", ema20 > ema50))
+
+        if self.filter_close_gt_ema100:
+            ema100 = _val('EMA_100')
+            if ema100 is not None:
+                conditions.append(("가격>EMA100", curr_price > ema100))
+
+        if self.filter_close_gt_ema20:
+            ema20 = _val('EMA_20')
+            if ema20 is not None:
+                conditions.append(("가격>EMA20", curr_price > ema20))
+
+        if self.filter_di_positive:
+            dmp, dmn = _val(self.dmp_col), _val(self.dmn_col)
+            if dmp is not None and dmn is not None:
+                conditions.append((f"DI+>DI- ({dmp:.1f}/{dmn:.1f})", dmp > dmn))
+
+        if self.filter_rsi_max is not None:
+            rsi = _val(self.rsi_col)
+            if rsi is not None:
+                conditions.append((f"RSI<{self.filter_rsi_max} (현재 {rsi:.1f})", rsi < self.filter_rsi_max))
+
+        if self.filter_adx_min is not None:
+            adx = _val(self.adx_col)
+            if adx is not None:
+                conditions.append((f"ADX>{self.filter_adx_min} (현재 {adx:.1f})", adx > self.filter_adx_min))
+
+        if self.filter_macd_gt_signal:
+            macd, macds = _val(self.macd_col), _val(self.macds_col)
+            if macd is not None and macds is not None:
+                conditions.append(("MACD>시그널", macd > macds))
+
+        if self.filter_volume_min is not None:
+            vol, vol_ma = _val('volume'), _val(self.vol_ma_col)
+            if vol is not None and vol_ma is not None and vol_ma > 0:
+                ratio = vol / vol_ma
+                conditions.append((f"거래량>{self.filter_volume_min}x (현재 {ratio:.1f}x)", vol >= vol_ma * self.filter_volume_min))
+
+        return conditions
 
     # ------------------------------------------------------------------
     # Abstract methods

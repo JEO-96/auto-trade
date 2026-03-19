@@ -51,6 +51,9 @@ class MomentumAggressive4hStrategy(BaseStrategy):
         self.risk_adx_threshold = 35
         self.risk_high_multiplier = 1.8
 
+        # 텔레그램 체크리스트 필터
+        self.filter_close_gt_ema200 = True
+
     @property
     def macdh_col(self) -> str:
         """MACD 히스토그램 컬럼명."""

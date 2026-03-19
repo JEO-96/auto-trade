@@ -592,36 +592,10 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                         vol_str = f"{vol_ratio:.1f}x" if vol_ratio and not pd.isna(vol_ratio) else "N/A"
                         adx_str = f"{adx_val:.1f}" if adx_val is not None and not pd.isna(adx_val) else "N/A"
 
-                        # 진입 조건 충족 여부 체크리스트
+                        # 진입 조건 충족 여부 체크리스트 (전략별 실제 필터 기반)
                         conditions: list[str] = []
-                        # 추세 필터
-                        if ema_200 is not None and not pd.isna(ema_200):
-                            above_ema200 = curr_price > ema_200
-                            conditions.append(f"  {'✅' if above_ema200 else '❌'} 가격>EMA200")
-                        if ema_50 is not None and ema_200 is not None and not pd.isna(ema_50) and not pd.isna(ema_200):
-                            golden_cross = ema_50 > ema_200
-                            conditions.append(f"  {'✅' if golden_cross else '❌'} 골든크로스(EMA50>200)")
-                        # 방향성
-                        if dmp_val is not None and dmn_val is not None and not pd.isna(dmp_val) and not pd.isna(dmn_val):
-                            di_positive = dmp_val > dmn_val
-                            conditions.append(f"  {'✅' if di_positive else '❌'} DI+>DI- ({dmp_val:.1f}/{dmn_val:.1f})")
-                        # RSI
-                        rsi_threshold = getattr(strategy, 'rsi_threshold', 60)
-                        if rsi_val is not None and not pd.isna(rsi_val):
-                            rsi_ok = rsi_val > rsi_threshold
-                            conditions.append(f"  {'✅' if rsi_ok else '❌'} RSI>{rsi_threshold} (현재 {rsi_val:.1f})")
-                        # ADX
-                        adx_threshold = getattr(strategy, 'adx_threshold', getattr(strategy, 'breakout_adx_min', 20))
-                        if adx_val is not None and not pd.isna(adx_val):
-                            adx_ok = adx_val > adx_threshold
-                            conditions.append(f"  {'✅' if adx_ok else '❌'} ADX>{adx_threshold} (현재 {adx_val:.1f})")
-                        # MACD
-                        macd_ok = macd_val is not None and macds_val is not None and not pd.isna(macd_val) and not pd.isna(macds_val) and macd_val > macds_val
-                        conditions.append(f"  {'✅' if macd_ok else '❌'} MACD>시그널 ({macd_str})")
-                        # 거래량
-                        vol_multiplier = getattr(strategy, 'volume_multiplier', 1.0)
-                        vol_ok = vol_ratio >= vol_multiplier if vol_ratio else False
-                        conditions.append(f"  {'✅' if vol_ok else '❌'} 거래량>{vol_multiplier}x (현재 {vol_str})")
+                        for label, is_met in strategy.get_entry_conditions(df, current_idx, curr_price):
+                            conditions.append(f"  {'✅' if is_met else '❌'} {label}")
 
                         conditions_str = "\n".join(conditions)
                         signal_details.append(
