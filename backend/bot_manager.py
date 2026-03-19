@@ -648,8 +648,10 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                     and _should_send_feedback(user_id, timeframe, last_feedback_ts)
                 )
                 if should_send_now or should_send_scheduled:
-                    last_feedback_candle_close = nearest_close
-                    last_feedback_ts = datetime.now().timestamp()
+                    if should_send_scheduled:
+                        # 정기 스케줄 전송일 때만 타이머 업데이트 (복구 즉시 전송은 제외)
+                        last_feedback_candle_close = nearest_close
+                        last_feedback_ts = datetime.now().timestamp()
                     first_tick_after_recovery = False
 
                     feedback_msg = _build_tick_feedback(
