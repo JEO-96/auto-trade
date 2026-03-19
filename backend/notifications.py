@@ -9,12 +9,14 @@ async def send_telegram_message(
     message: str,
     user_id: int | None = None,
     chat_id: str | None = None,
+    use_html: bool = False,
 ) -> bool:
     """
     텔레그램 봇으로 메시지 전송.
     - chat_id 직접 지정: 해당 chat_id로 전송
     - user_id 지정: DB에서 해당 유저의 telegram_chat_id 조회 후 전송
     - 둘 다 없으면: 관리자 chat_id(settings)로 폴백
+    - use_html: True이면 parse_mode=HTML (메시지에 <b>, <pre> 등 사용 시)
     """
     token = settings.telegram_bot_token
     if not token:
@@ -48,11 +50,12 @@ async def send_telegram_message(
         return False
 
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {
+    payload: dict = {
         "chat_id": target_chat_id,
         "text": message,
-        "parse_mode": "HTML",
     }
+    if use_html:
+        payload["parse_mode"] = "HTML"
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:

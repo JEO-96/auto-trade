@@ -125,6 +125,6 @@ class TelegramErrorHandler(logging.Handler):
         """실제 텔레그램 메시지 전송."""
         try:
             from notifications import send_telegram_message
-            await send_telegram_message(message)
+            await send_telegram_message(message, use_html=True)
         except Exception:
             pass
