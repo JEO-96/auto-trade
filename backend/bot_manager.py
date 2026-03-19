@@ -430,6 +430,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
     consecutive_errors: int = 0
     last_feedback_candle_close: int = -1  # 마지막으로 피드백을 보낸 캔들 마감 시각(분)
     last_feedback_ts: float = 0.0  # 마지막 피드백 전송 unix timestamp
+    first_tick_after_recovery: bool = is_recovery  # 복구 후 첫 tick에서 즉시 분석 전송
 
     # 봇 시작 알림
     mode_label = "🧪 모의투자" if paper_trading else "💵 실매매"
@@ -450,7 +451,28 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
         except Exception:
             symbol_price_lines.append(f"  {sym}: 조회 실패")
 
-    if not is_recovery:
+    if is_recovery:
+        # 서버 재시작 복구: 알림 전송 + 첫 tick에서 즉시 분석 결과 전송
+        pos_lines: list[str] = []
+        for sym, pos in active_positions.items():
+            pos_lines.append(f"  {sym}: 진입가 {pos['entry_price']:,.0f}")
+        pos_section = ""
+        if pos_lines:
+            pos_section = f"\n📦 보유 포지션 복구\n" + "\n".join(pos_lines)
+        _send_bot_status_notification(user_id, (
+            f"🔄 봇 자동 복구 완료\n"
+            f"{'─' * 24}\n"
+            f"모드: {mode_label}\n"
+            f"전략: {strategy_label}\n"
+            f"타임프레임: {timeframe}봉\n"
+            f"거래소: {exchange_label}\n"
+            f"{capital_line}"
+            f"{pos_section}\n"
+            f"{'─' * 24}\n"
+            f"📊 종목 현재가\n"
+            + "\n".join(symbol_price_lines)
+        ))
+    else:
         _send_bot_status_notification(user_id, (
             f"🟢 봇 가동 시작\n"
             f"{'─' * 24}\n"
@@ -616,13 +638,19 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                 )
 
                 # 캔들 마감 시점에 피드백 전송 (사용자 알림 주기 설정 반영)
+                # 복구 후 첫 tick에서는 캔들 마감 체크 없이 즉시 전송
                 nearest_close = _get_nearest_candle_close(timeframe)
-                if (signal_details
-                        and _is_candle_close_time(timeframe)
-                        and nearest_close != last_feedback_candle_close
-                        and _should_send_feedback(user_id, timeframe, last_feedback_ts)):
+                should_send_now = first_tick_after_recovery and signal_details
+                should_send_scheduled = (
+                    signal_details
+                    and _is_candle_close_time(timeframe)
+                    and nearest_close != last_feedback_candle_close
+                    and _should_send_feedback(user_id, timeframe, last_feedback_ts)
+                )
+                if should_send_now or should_send_scheduled:
                     last_feedback_candle_close = nearest_close
                     last_feedback_ts = datetime.now().timestamp()
+                    first_tick_after_recovery = False
 
                     feedback_msg = _build_tick_feedback(
                         signal_details, paper_trading, strategy_name, timeframe, total_equity,
