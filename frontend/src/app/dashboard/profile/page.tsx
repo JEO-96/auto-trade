@@ -15,14 +15,8 @@ import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal
 import { useAuth } from '@/contexts/AuthContext';
 import type { NotificationSettings } from '@/types/user';
 import { formatDate } from '@/lib/utils';
+import { POST_TYPE_BADGE } from '@/lib/constants';
 import type { CommunityPost, PostType } from '@/types/community';
-
-const POST_TYPE_BADGE: Record<PostType, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
-    backtest_share: { label: '백테스트', variant: 'info' },
-    performance_share: { label: '수익률', variant: 'success' },
-    strategy_review: { label: '전략 리뷰', variant: 'warning' },
-    discussion: { label: '토론', variant: 'info' },
-};
 
 export default function ProfilePage() {
     const { user, refreshUser, logout } = useAuth();

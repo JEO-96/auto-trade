@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ModalWrapper from '@/components/ui/ModalWrapper';
@@ -13,6 +14,7 @@ export interface ConfirmationModalProps {
     onCancel: () => void;
     loading?: boolean;
     variant?: 'warning' | 'danger';
+    icon?: React.ReactNode;
 }
 
 export default function ConfirmationModal({
@@ -24,6 +26,7 @@ export default function ConfirmationModal({
     onCancel,
     loading = false,
     variant = 'warning',
+    icon,
 }: ConfirmationModalProps) {
     const iconColor = variant === 'danger' ? 'text-red-400' : 'text-amber-400';
     const iconBg = variant === 'danger' ? 'bg-red-500/10 border-red-500/20' : 'bg-amber-500/10 border-amber-500/20';
@@ -34,7 +37,7 @@ export default function ConfirmationModal({
             <div className="p-6">
                 <div className="flex items-center gap-3 mb-4">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${iconBg}`}>
-                        <AlertTriangle className={`w-5 h-5 ${iconColor}`} />
+                        {icon || <AlertTriangle className={`w-5 h-5 ${iconColor}`} />}
                     </div>
                     <h3 className="text-base font-bold text-white">{title}</h3>
                 </div>

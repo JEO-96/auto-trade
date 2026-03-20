@@ -178,6 +178,14 @@ export function filterStrategiesByTimeframe<T extends { value: string }>(
     return strategies.filter(s => getStrategyTimeframe(s.value) === timeframe);
 }
 
+/** 게시글 타입별 뱃지 설정 */
+export const POST_TYPE_BADGE: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
+    backtest_share: { label: '백테스트', variant: 'info' },
+    performance_share: { label: '모의 수익률', variant: 'success' },
+    strategy_review: { label: '전략 리뷰', variant: 'warning' },
+    discussion: { label: '토론', variant: 'info' },
+};
+
 /** 차트 컬러 팔레트 (도넛차트, 자산 분포 등) */
 export const CHART_COLORS = [
     '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',

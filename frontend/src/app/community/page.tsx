@@ -13,13 +13,8 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import { getPosts, toggleLike } from '@/lib/api/community';
 import { useAuth } from '@/contexts/AuthContext';
-import { BOT_TIMEFRAMES, getStrategyLabel } from '@/lib/constants';
+import { getStrategyLabel, POST_TYPE_BADGE, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
 import type { CommunityPost, PostType } from '@/types/community';
-
-const getTimeframeLabel = (value: string) => {
-    const found = BOT_TIMEFRAMES.find(t => t.value === value);
-    return found ? found.label : value;
-};
 
 const POST_TYPE_TABS: { label: string; value: PostType | 'all'; icon: React.ReactNode }[] = [
     { label: '전체', value: 'all', icon: <MessageSquare className="w-3.5 h-3.5" /> },
@@ -29,12 +24,6 @@ const POST_TYPE_TABS: { label: string; value: PostType | 'all'; icon: React.Reac
     { label: '자유 토론', value: 'discussion', icon: <MessageCircle className="w-3.5 h-3.5" /> },
 ];
 
-const POST_TYPE_BADGE: Record<PostType, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
-    backtest_share: { label: '백테스트', variant: 'info' },
-    performance_share: { label: '모의 수익률', variant: 'success' },
-    strategy_review: { label: '전략 리뷰', variant: 'warning' },
-    discussion: { label: '토론', variant: 'info' },
-};
 
 function StarRating({ rating }: { rating: number }) {
     return (
@@ -66,7 +55,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
                         )}
                         {post.timeframe && (
                             <span className="text-[10px] text-gray-500 font-medium">
-                                {getTimeframeLabel(post.timeframe)}
+                                {TIMEFRAME_LABEL_MAP[post.timeframe] || post.timeframe}
                             </span>
                         )}
                     </div>
@@ -103,7 +92,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
                                 <span>{String(post.backtest_data.start_date)} ~ {String(post.backtest_data.end_date)}</span>
                             )}
                             {post.backtest_data.timeframe && (
-                                <span>{getTimeframeLabel(String(post.backtest_data.timeframe))}</span>
+                                <span>{TIMEFRAME_LABEL_MAP[String(post.backtest_data.timeframe)] || post.backtest_data.timeframe}</span>
                             )}
                             {post.backtest_data.commission_rate != null && (
                                 <span>수수료 {(Number(post.backtest_data.commission_rate) * 100).toFixed(2)}%</span>

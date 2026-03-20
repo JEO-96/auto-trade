@@ -62,7 +62,7 @@ export default function PerformancePage() {
         }
     }, [selectedBotId, loadPerformance]);
 
-    const formatKRW = (value: number) => {
+    const formatAxisKRW = (value: number) => {
         if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
         if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
         return value.toLocaleString();
@@ -181,7 +181,7 @@ export default function PerformancePage() {
                                     />
                                     <YAxis
                                         tick={{ fill: '#6b7280', fontSize: 11 }}
-                                        tickFormatter={formatKRW}
+                                        tickFormatter={formatAxisKRW}
                                         axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
                                     />
                                     <Tooltip
@@ -225,7 +225,7 @@ export default function PerformancePage() {
                                     />
                                     <YAxis
                                         tick={{ fill: '#6b7280', fontSize: 11 }}
-                                        tickFormatter={formatKRW}
+                                        tickFormatter={formatAxisKRW}
                                         axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
                                     />
                                     <Tooltip

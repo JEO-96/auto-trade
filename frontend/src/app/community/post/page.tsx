@@ -13,20 +13,9 @@ import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal
 import { getPost, toggleLike, getComments, createComment, deleteComment, deletePost } from '@/lib/api/community';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDateTime } from '@/lib/utils';
-import { BOT_TIMEFRAMES, getStrategyLabel } from '@/lib/constants';
+import { getStrategyLabel, POST_TYPE_BADGE, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
 import type { CommunityPost, PostComment, PostType } from '@/types/community';
 
-const getTimeframeLabel = (value: string) => {
-    const found = BOT_TIMEFRAMES.find(t => t.value === value);
-    return found ? found.label : value;
-};
-
-const POST_TYPE_BADGE: Record<PostType, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' }> = {
-    backtest_share: { label: '백테스트', variant: 'info' },
-    performance_share: { label: '모의 수익률', variant: 'success' },
-    strategy_review: { label: '전략 리뷰', variant: 'warning' },
-    discussion: { label: '토론', variant: 'info' },
-};
 
 function StarDisplay({ rating }: { rating: number }) {
     return (
@@ -174,7 +163,7 @@ export default function PublicPostDetailPage() {
                         <span className="text-[11px] text-gray-500 font-medium">{getStrategyLabel(post.strategy_name)}</span>
                     )}
                     {post.timeframe && (
-                        <span className="text-[11px] text-gray-500 font-medium">{getTimeframeLabel(post.timeframe)}</span>
+                        <span className="text-[11px] text-gray-500 font-medium">{TIMEFRAME_LABEL_MAP[post.timeframe] || post.timeframe}</span>
                     )}
                 </div>
 
@@ -220,7 +209,7 @@ export default function PublicPostDetailPage() {
                                 <span>전략: <span className="text-gray-400 font-medium">{getStrategyLabel(String(post.backtest_data.strategy_name))}</span></span>
                             )}
                             {post.backtest_data.timeframe && (
-                                <span>주기: <span className="text-gray-400 font-medium">{getTimeframeLabel(String(post.backtest_data.timeframe))}</span></span>
+                                <span>주기: <span className="text-gray-400 font-medium">{TIMEFRAME_LABEL_MAP[String(post.backtest_data.timeframe)] || post.backtest_data.timeframe}</span></span>
                             )}
                             {post.backtest_data.start_date && post.backtest_data.end_date && (
                                 <span>기간: <span className="text-gray-400 font-medium">{String(post.backtest_data.start_date)} ~ {String(post.backtest_data.end_date)}</span></span>

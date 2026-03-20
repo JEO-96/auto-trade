@@ -15,6 +15,7 @@ import { getBacktestSettings } from '@/lib/api/settings';
 import { useStrategies } from '@/lib/useStrategies';
 import { getErrorMessage, formatKRW } from '@/lib/utils';
 import BacktestComparisonChart from '@/components/BacktestComparisonChart';
+import ParameterTuningPanel, { TuningState, DEFAULT_TUNING_STATE } from '@/components/backtest/ParameterTuningPanel';
 import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryItem } from '@/types/backtest';
 
 export default function BacktestPage() {
@@ -212,45 +213,33 @@ export default function BacktestPage() {
     });
 
     // 파라미터 튜닝 상태
-    const [tuningEnabled, setTuningEnabled] = useState(false);
-    const [tuningTrailing, setTuningTrailing] = useState(false);
-    const [tuningSl, setTuningSl] = useState(1.5);  // % 단위
-    const [tuningTp, setTuningTp] = useState(3.0);  // % 단위
-    // 진입 신호 튜닝
-    const [tuningRsiPeriod, setTuningRsiPeriod] = useState(14);
-    const [tuningRsiThreshold, setTuningRsiThreshold] = useState(60);
-    const [tuningAdxThreshold, setTuningAdxThreshold] = useState(20);
-    const [tuningVolMultiplier, setTuningVolMultiplier] = useState(1.5);
-    const [tuningMacdFast, setTuningMacdFast] = useState(12);
-    const [tuningMacdSlow, setTuningMacdSlow] = useState(26);
-    const [tuningMacdSignal, setTuningMacdSignal] = useState(9);
-    const [tuningRsiUpperLimit, setTuningRsiUpperLimit] = useState(78);
-    const [tuningAtrPeriod, setTuningAtrPeriod] = useState(14);
-    // 조건 활성화 토글
-    const [useRsiFilter, setUseRsiFilter] = useState(true);
-    const [useAdxFilter, setUseAdxFilter] = useState(true);
-    const [useVolumeFilter, setUseVolumeFilter] = useState(true);
-    const [useMacdFilter, setUseMacdFilter] = useState(true);
+    const [tuning, setTuning] = useState<TuningState>({ ...DEFAULT_TUNING_STATE });
+    const updateTuning = useCallback((patch: Partial<TuningState>) => {
+        setTuning(prev => ({ ...prev, ...patch }));
+    }, []);
 
     const syncTuningDefaults = useCallback((strategyName: string) => {
         const defaults = STRATEGY_DEFAULTS[strategyName];
         if (defaults) {
-            setTuningTrailing(defaults.trailing);
-            setTuningSl(Math.round(defaults.sl * 10000) / 100);
-            setTuningTp(defaults.tp !== null ? Math.round(defaults.tp * 10000) / 100 : 5);
-            setTuningRsiPeriod(defaults.rsi_period);
-            setTuningRsiThreshold(defaults.rsi_threshold);
-            setTuningAdxThreshold(defaults.adx_threshold);
-            setTuningVolMultiplier(defaults.volume_multiplier);
-            setTuningMacdFast(defaults.macd_fast);
-            setTuningMacdSlow(defaults.macd_slow);
-            setTuningMacdSignal(defaults.macd_signal);
-            setTuningRsiUpperLimit(defaults.rsi_upper_limit);
-            setTuningAtrPeriod(defaults.atr_period);
-            setUseRsiFilter(true);
-            setUseAdxFilter(true);
-            setUseVolumeFilter(true);
-            setUseMacdFilter(true);
+            setTuning(prev => ({
+                ...prev,
+                trailing: defaults.trailing,
+                sl: Math.round(defaults.sl * 10000) / 100,
+                tp: defaults.tp !== null ? Math.round(defaults.tp * 10000) / 100 : 5,
+                rsiPeriod: defaults.rsi_period,
+                rsiThreshold: defaults.rsi_threshold,
+                adxThreshold: defaults.adx_threshold,
+                volMultiplier: defaults.volume_multiplier,
+                macdFast: defaults.macd_fast,
+                macdSlow: defaults.macd_slow,
+                macdSignal: defaults.macd_signal,
+                rsiUpperLimit: defaults.rsi_upper_limit,
+                atrPeriod: defaults.atr_period,
+                useRsiFilter: true,
+                useAdxFilter: true,
+                useVolumeFilter: true,
+                useMacdFilter: true,
+            }));
         }
     }, []);
 
@@ -363,25 +352,25 @@ export default function BacktestPage() {
                 commission_rate: form.commission_rate_pct / 100,
             };
             // 튜닝 파라미터 추가
-            if (tuningEnabled) {
-                payload.custom_sl_pct = tuningSl / 100;  // % → 소수
-                payload.custom_trailing = tuningTrailing;
-                if (!tuningTrailing) {
-                    payload.custom_tp_pct = tuningTp / 100;
+            if (tuning.enabled) {
+                payload.custom_sl_pct = tuning.sl / 100;  // % → 소수
+                payload.custom_trailing = tuning.trailing;
+                if (!tuning.trailing) {
+                    payload.custom_tp_pct = tuning.tp / 100;
                 }
-                payload.custom_rsi_period = tuningRsiPeriod;
-                payload.custom_rsi_threshold = tuningRsiThreshold;
-                payload.custom_adx_threshold = tuningAdxThreshold;
-                payload.custom_volume_multiplier = tuningVolMultiplier;
-                payload.custom_macd_fast = tuningMacdFast;
-                payload.custom_macd_slow = tuningMacdSlow;
-                payload.custom_macd_signal = tuningMacdSignal;
-                payload.custom_rsi_upper_limit = tuningRsiUpperLimit;
-                payload.custom_atr_period = tuningAtrPeriod;
-                payload.use_rsi_filter = useRsiFilter;
-                payload.use_adx_filter = useAdxFilter;
-                payload.use_volume_filter = useVolumeFilter;
-                payload.use_macd_filter = useMacdFilter;
+                payload.custom_rsi_period = tuning.rsiPeriod;
+                payload.custom_rsi_threshold = tuning.rsiThreshold;
+                payload.custom_adx_threshold = tuning.adxThreshold;
+                payload.custom_volume_multiplier = tuning.volMultiplier;
+                payload.custom_macd_fast = tuning.macdFast;
+                payload.custom_macd_slow = tuning.macdSlow;
+                payload.custom_macd_signal = tuning.macdSignal;
+                payload.custom_rsi_upper_limit = tuning.rsiUpperLimit;
+                payload.custom_atr_period = tuning.atrPeriod;
+                payload.use_rsi_filter = tuning.useRsiFilter;
+                payload.use_adx_filter = tuning.useAdxFilter;
+                payload.use_volume_filter = tuning.useVolumeFilter;
+                payload.use_macd_filter = tuning.useMacdFilter;
             }
             const data = await runPortfolioBacktest(payload as unknown as Parameters<typeof runPortfolioBacktest>[0]);
 
@@ -1067,196 +1056,12 @@ export default function BacktestPage() {
                             </div>
 
                             {/* 파라미터 튜닝 */}
-                            <div className="border border-white/[0.06] rounded-xl overflow-hidden">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (!tuningEnabled) syncTuningDefaults(form.strategy_name);
-                                        setTuningEnabled(!tuningEnabled);
-                                    }}
-                                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors"
-                                >
-                                    <span className="flex items-center gap-2 text-xs font-semibold text-gray-400">
-                                        <Settings className="w-3.5 h-3.5" />
-                                        파라미터 튜닝
-                                    </span>
-                                    <div className={`w-8 h-4.5 rounded-full transition-colors relative ${tuningEnabled ? 'bg-primary' : 'bg-white/10'}`}>
-                                        <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${tuningEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                                    </div>
-                                </button>
-                                {tuningEnabled && (
-                                    <div className="px-4 pb-4 pt-2 space-y-4 border-t border-white/[0.06]">
-                                        {/* 청산 모드 */}
-                                        <div>
-                                            <label className="text-[10px] text-gray-500 font-medium mb-2 block uppercase tracking-wider">청산 모드</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setTuningTrailing(false)}
-                                                    className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${!tuningTrailing ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-white/[0.02] text-gray-500 border border-white/[0.06] hover:text-white'}`}
-                                                >
-                                                    고정 SL/TP
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setTuningTrailing(true)}
-                                                    className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${tuningTrailing ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-white/[0.02] text-gray-500 border border-white/[0.06] hover:text-white'}`}
-                                                >
-                                                    트레일링 스탑
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* 손절률 */}
-                                        <div>
-                                            <div className="flex items-center justify-between mb-1.5">
-                                                <label className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
-                                                    {tuningTrailing ? '트레일링 스탑' : '손절률 (SL)'}
-                                                </label>
-                                                <span className="text-xs font-bold text-red-400 font-mono">{tuningSl.toFixed(1)}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0.5"
-                                                max="10"
-                                                step="0.5"
-                                                value={tuningSl}
-                                                onChange={(e) => setTuningSl(Number(e.target.value))}
-                                                className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-red-400 cursor-pointer"
-                                            />
-                                            <div className="flex justify-between text-[9px] text-gray-600 mt-0.5">
-                                                <span>0.5%</span>
-                                                <span>10%</span>
-                                            </div>
-                                        </div>
-
-                                        {/* 익절률 (트레일링 아닐 때만) */}
-                                        {!tuningTrailing && (
-                                            <div>
-                                                <div className="flex items-center justify-between mb-1.5">
-                                                    <label className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">익절률 (TP)</label>
-                                                    <span className="text-xs font-bold text-emerald-400 font-mono">{tuningTp.toFixed(1)}%</span>
-                                                </div>
-                                                <input
-                                                    type="range"
-                                                    min="1"
-                                                    max="50"
-                                                    step="1"
-                                                    value={tuningTp}
-                                                    onChange={(e) => setTuningTp(Number(e.target.value))}
-                                                    className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-emerald-400 cursor-pointer"
-                                                />
-                                                <div className="flex justify-between text-[9px] text-gray-600 mt-0.5">
-                                                    <span>1%</span>
-                                                    <span>50%</span>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {tuningTrailing && (
-                                            <p className="text-[10px] text-gray-500 bg-white/[0.02] rounded-lg px-3 py-2">
-                                                트레일링 모드: 최고가 대비 {tuningSl.toFixed(1)}% 하락 시 청산. 익절 목표 없이 추세를 끝까지 추종합니다.
-                                            </p>
-                                        )}
-
-                                        {/* 진입 신호 조건 설정 */}
-                                        <div className="pt-3 border-t border-white/[0.06] space-y-3">
-                                            <label className="text-[10px] text-gray-500 font-medium block uppercase tracking-wider">진입 조건 설정</label>
-
-                                            {/* RSI 필터 */}
-                                            <div className={`rounded-lg border transition-colors ${useRsiFilter ? 'border-blue-500/20 bg-blue-500/[0.03]' : 'border-white/[0.04] bg-white/[0.01]'}`}>
-                                                <button type="button" onClick={() => setUseRsiFilter(!useRsiFilter)}
-                                                    className="w-full flex items-center justify-between px-3 py-2">
-                                                    <span className={`text-[11px] font-semibold ${useRsiFilter ? 'text-blue-400' : 'text-gray-600'}`}>RSI 필터</span>
-                                                    <div className={`w-7 h-4 rounded-full transition-colors relative ${useRsiFilter ? 'bg-blue-500' : 'bg-white/10'}`}>
-                                                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${useRsiFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
-                                                    </div>
-                                                </button>
-                                                {useRsiFilter && (
-                                                    <div className="px-3 pb-2.5 space-y-2">
-                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">기간</span><span className="text-[10px] font-bold text-blue-400 font-mono">{tuningRsiPeriod}</span></div>
-                                                            <input type="range" min="7" max="30" step="1" value={tuningRsiPeriod} onChange={(e) => setTuningRsiPeriod(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-blue-400 cursor-pointer" /></div>
-                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">진입 기준</span><span className="text-[10px] font-bold text-blue-400 font-mono">{tuningRsiThreshold}</span></div>
-                                                            <input type="range" min="30" max="80" step="1" value={tuningRsiThreshold} onChange={(e) => setTuningRsiThreshold(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-blue-400 cursor-pointer" /></div>
-                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">과매수 상한</span><span className="text-[10px] font-bold text-blue-400 font-mono">{tuningRsiUpperLimit}</span></div>
-                                                            <input type="range" min="65" max="95" step="1" value={tuningRsiUpperLimit} onChange={(e) => setTuningRsiUpperLimit(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-blue-400 cursor-pointer" /></div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* MACD 필터 */}
-                                            <div className={`rounded-lg border transition-colors ${useMacdFilter ? 'border-cyan-500/20 bg-cyan-500/[0.03]' : 'border-white/[0.04] bg-white/[0.01]'}`}>
-                                                <button type="button" onClick={() => setUseMacdFilter(!useMacdFilter)}
-                                                    className="w-full flex items-center justify-between px-3 py-2">
-                                                    <span className={`text-[11px] font-semibold ${useMacdFilter ? 'text-cyan-400' : 'text-gray-600'}`}>MACD 필터</span>
-                                                    <div className={`w-7 h-4 rounded-full transition-colors relative ${useMacdFilter ? 'bg-cyan-500' : 'bg-white/10'}`}>
-                                                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${useMacdFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
-                                                    </div>
-                                                </button>
-                                                {useMacdFilter && (
-                                                    <div className="px-3 pb-2.5 space-y-2">
-                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">단기 (Fast)</span><span className="text-[10px] font-bold text-cyan-400 font-mono">{tuningMacdFast}</span></div>
-                                                            <input type="range" min="5" max="20" step="1" value={tuningMacdFast} onChange={(e) => setTuningMacdFast(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-cyan-400 cursor-pointer" /></div>
-                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">장기 (Slow)</span><span className="text-[10px] font-bold text-cyan-400 font-mono">{tuningMacdSlow}</span></div>
-                                                            <input type="range" min="15" max="40" step="1" value={tuningMacdSlow} onChange={(e) => setTuningMacdSlow(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-cyan-400 cursor-pointer" /></div>
-                                                        <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">시그널</span><span className="text-[10px] font-bold text-cyan-400 font-mono">{tuningMacdSignal}</span></div>
-                                                            <input type="range" min="3" max="15" step="1" value={tuningMacdSignal} onChange={(e) => setTuningMacdSignal(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-cyan-400 cursor-pointer" /></div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* ADX 필터 */}
-                                            <div className={`rounded-lg border transition-colors ${useAdxFilter ? 'border-purple-500/20 bg-purple-500/[0.03]' : 'border-white/[0.04] bg-white/[0.01]'}`}>
-                                                <button type="button" onClick={() => setUseAdxFilter(!useAdxFilter)}
-                                                    className="w-full flex items-center justify-between px-3 py-2">
-                                                    <span className={`text-[11px] font-semibold ${useAdxFilter ? 'text-purple-400' : 'text-gray-600'}`}>ADX 추세 필터</span>
-                                                    <div className={`w-7 h-4 rounded-full transition-colors relative ${useAdxFilter ? 'bg-purple-500' : 'bg-white/10'}`}>
-                                                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${useAdxFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
-                                                    </div>
-                                                </button>
-                                                {useAdxFilter && (
-                                                    <div className="px-3 pb-2.5">
-                                                        <div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">추세 강도 기준</span><span className="text-[10px] font-bold text-purple-400 font-mono">{tuningAdxThreshold}</span></div>
-                                                        <input type="range" min="10" max="40" step="1" value={tuningAdxThreshold} onChange={(e) => setTuningAdxThreshold(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-purple-400 cursor-pointer" />
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* 거래량 필터 */}
-                                            <div className={`rounded-lg border transition-colors ${useVolumeFilter ? 'border-amber-500/20 bg-amber-500/[0.03]' : 'border-white/[0.04] bg-white/[0.01]'}`}>
-                                                <button type="button" onClick={() => setUseVolumeFilter(!useVolumeFilter)}
-                                                    className="w-full flex items-center justify-between px-3 py-2">
-                                                    <span className={`text-[11px] font-semibold ${useVolumeFilter ? 'text-amber-400' : 'text-gray-600'}`}>거래량 필터</span>
-                                                    <div className={`w-7 h-4 rounded-full transition-colors relative ${useVolumeFilter ? 'bg-amber-500' : 'bg-white/10'}`}>
-                                                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${useVolumeFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
-                                                    </div>
-                                                </button>
-                                                {useVolumeFilter && (
-                                                    <div className="px-3 pb-2.5">
-                                                        <div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">평균 대비 배수</span><span className="text-[10px] font-bold text-amber-400 font-mono">{tuningVolMultiplier.toFixed(1)}x</span></div>
-                                                        <input type="range" min="0.5" max="3.0" step="0.1" value={tuningVolMultiplier} onChange={(e) => setTuningVolMultiplier(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-amber-400 cursor-pointer" />
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* ATR 기간 */}
-                                            <div className="px-1">
-                                                <div className="flex justify-between mb-0.5"><span className="text-[9px] text-gray-500">ATR 변동성 기간</span><span className="text-[10px] font-bold text-gray-400 font-mono">{tuningAtrPeriod}</span></div>
-                                                <input type="range" min="7" max="30" step="1" value={tuningAtrPeriod} onChange={(e) => setTuningAtrPeriod(Number(e.target.value))} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-gray-400 cursor-pointer" />
-                                            </div>
-                                        </div>
-
-                                        {/* 기본값 초기화 */}
-                                        <button
-                                            type="button"
-                                            onClick={() => syncTuningDefaults(form.strategy_name)}
-                                            className="text-[10px] text-gray-500 hover:text-primary transition-colors underline underline-offset-2"
-                                        >
-                                            전략 기본값으로 초기화
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                            <ParameterTuningPanel
+                                state={tuning}
+                                onChange={updateTuning}
+                                onSyncDefaults={syncTuningDefaults}
+                                strategyName={form.strategy_name}
+                            />
 
                             <Button
                                 type="submit"

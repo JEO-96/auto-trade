@@ -15,6 +15,17 @@ from constants import (
     STOP_LOSS_COOLDOWN_SECONDS,
     STRATEGY_LABELS,
 )
+from feedback_formatter import (
+    format_sell_notification,
+    format_buy_notification,
+    format_tick_feedback,
+    format_bot_start_notification,
+    format_bot_stop_notification,
+    format_bot_error_stop,
+    format_bot_fatal_error,
+    format_holding_signal,
+    format_waiting_signal,
+)
 from core.data_fetcher import DataFetcher
 from core.execution import ExecutionEngine
 from notifications import send_trade_notification, send_bot_status_notification
@@ -107,17 +118,7 @@ def _process_symbol_exit(
 
     cost_basis: float = pos['entry_price'] * pos['position_amount']
     pnl_pct: float = (pnl / cost_basis * 100) if cost_basis > 0 else 0.0
-    pnl_emoji = "🟢" if pnl >= 0 else "🔴"
-    reason_kr = {"Stop Loss": "🛑 손절", "Take Profit": "🎯 익절"}.get(reason, reason)
-    trade_mode = "모의" if paper_trading else "실매매"
-    msg = (
-        f"📉 매도 체결 [{trade_mode}]\n"
-        f"{'─' * 24}\n"
-        f"종목: {symbol}\n"
-        f"체결가: {actual_price:,.0f} KRW\n"
-        f"{pnl_emoji} 손익: {pnl_pct:+.2f}% ({pnl:+,.0f} KRW)\n"
-        f"사유: {reason_kr}"
-    )
+    msg = format_sell_notification(symbol, actual_price, pnl_pct, pnl, reason, paper_trading)
     _send_trade_notification(user_id, msg)
 
     return liquid_capital, True
@@ -181,18 +182,7 @@ def _process_symbol_entry(
         'take_profit': tp,
     }
     save_trade_log(bot_config_id, symbol, "BUY", entry_price, qty, "Portfolio Entry")
-
-    sl_pct = abs((sl - entry_price) / entry_price * 100) if entry_price > 0 else 0
-    tp_pct = abs((tp - entry_price) / entry_price * 100) if entry_price > 0 else 0
-    msg = (
-        f"📈 매수 체결\n"
-        f"{'─' * 24}\n"
-        f"종목: {symbol}\n"
-        f"체결가: {entry_price:,.0f} KRW\n"
-        f"수량: {qty:.4f}\n"
-        f"🛑 손절: {sl:,.0f} (-{sl_pct:.1f}%)\n"
-        f"🎯 익절: {tp:,.0f} (+{tp_pct:.1f}%)"
-    )
+    msg = format_buy_notification(symbol, entry_price, qty, sl, tp)
     _send_trade_notification(user_id, msg)
 
     return liquid_capital, position
@@ -299,19 +289,8 @@ def _build_tick_feedback(
     exchange_name: str = "upbit",
 ) -> str:
     """매 tick 텔레그램 정기 피드백 메시지 생성."""
-    mode_label = "🧪 모의투자" if paper_trading else "💵 실매매"
-    now_str = datetime.now().strftime("%m/%d %H:%M")
-    strategy_label = STRATEGY_LABELS.get(strategy_name, strategy_name)
-    exchange_label = EXCHANGE_LABELS.get(exchange_name, exchange_name)
-
-    asset_line = f"💰 봇 자산: {total_equity:,.0f} KRW"
-
-    return (
-        f"{mode_label} · {strategy_label}\n"
-        f"⏰ {now_str} | {timeframe}봉 분석 완료\n"
-        f"{asset_line}\n"
-        f"{'─' * 24}\n"
-        + f"\n{'─' * 24}\n".join(signal_details)
+    return format_tick_feedback(
+        signal_details, paper_trading, strategy_name, timeframe, total_equity, exchange_name,
     )
 
 
@@ -433,13 +412,9 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
     first_tick_after_recovery: bool = is_recovery  # 복구 후 첫 tick에서 즉시 분석 전송
 
     # 봇 시작 알림
-    mode_label = "🧪 모의투자" if paper_trading else "💵 실매매"
     strategy_label = STRATEGY_LABELS.get(strategy_name, strategy_name)
     exchange_name: str = init.get("exchange_name", "upbit") or "upbit"
-    exchange_label = EXCHANGE_LABELS.get(exchange_name, exchange_name)
     symbols_str = ", ".join(symbols)
-
-    capital_line = f"💰 투입 자본: {liquid_capital:,.0f} KRW"
 
     # 종목별 현재가 조회
     symbol_price_lines: list[str] = []
@@ -451,40 +426,14 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
         except Exception:
             symbol_price_lines.append(f"  {sym}: 조회 실패")
 
+    pos_lines: list[str] = []
     if is_recovery:
-        # 서버 재시작 복구: 알림 전송 + 첫 tick에서 즉시 분석 결과 전송
-        pos_lines: list[str] = []
         for sym, pos in active_positions.items():
             pos_lines.append(f"  {sym}: 진입가 {pos['entry_price']:,.0f}")
-        pos_section = ""
-        if pos_lines:
-            pos_section = f"\n📦 보유 포지션 복구\n" + "\n".join(pos_lines)
-        _send_bot_status_notification(user_id, (
-            f"🔄 봇 자동 복구 완료\n"
-            f"{'─' * 24}\n"
-            f"모드: {mode_label}\n"
-            f"전략: {strategy_label}\n"
-            f"타임프레임: {timeframe}봉\n"
-            f"거래소: {exchange_label}\n"
-            f"{capital_line}"
-            f"{pos_section}\n"
-            f"{'─' * 24}\n"
-            f"📊 종목 현재가\n"
-            + "\n".join(symbol_price_lines)
-        ))
-    else:
-        _send_bot_status_notification(user_id, (
-            f"🟢 봇 가동 시작\n"
-            f"{'─' * 24}\n"
-            f"모드: {mode_label}\n"
-            f"전략: {strategy_label}\n"
-            f"타임프레임: {timeframe}봉\n"
-            f"거래소: {exchange_label}\n"
-            f"{capital_line}\n"
-            f"{'─' * 24}\n"
-            f"📊 종목 현재가\n"
-            + "\n".join(symbol_price_lines)
-        ))
+    _send_bot_status_notification(user_id, format_bot_start_notification(
+        paper_trading, strategy_name, timeframe, exchange_name,
+        liquid_capital, symbol_price_lines, is_recovery, pos_lines or None,
+    ))
 
     try:
         while True:
@@ -578,16 +527,12 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                             pnl_pct = ((curr_price - pos['entry_price']) / pos['entry_price'] * 100) if pos['entry_price'] > 0 else 0
                             sl_dist = ((curr_price - pos['stop_loss']) / curr_price * 100) if curr_price > 0 else 0
                             tp_dist = ((pos['take_profit'] - curr_price) / curr_price * 100) if curr_price > 0 else 0
-                            pnl_emoji = "🟢" if pnl_pct >= 0 else "🔴"
                             rsi_str = f"{rsi_val:.1f}" if rsi_val is not None and not pd.isna(rsi_val) else "N/A"
                             macd_str = "상승" if (macd_val is not None and macds_val is not None and not pd.isna(macd_val) and not pd.isna(macds_val) and macd_val > macds_val) else "하락"
                             vol_str = f"{vol_ratio:.1f}x" if vol_ratio and not pd.isna(vol_ratio) else "N/A"
-                            signal_details.append(
-                                f"📊 {symbol}\n"
-                                f"  보유중 | 현재가: {curr_price:,.0f}\n"
-                                f"  {pnl_emoji} 손익: {pnl_pct:+.2f}% | SL까지: {sl_dist:.1f}% | TP까지: {tp_dist:.1f}%\n"
-                                f"  RSI: {rsi_str} | MACD: {macd_str} | 거래량: {vol_str}"
-                            )
+                            signal_details.append(format_holding_signal(
+                                symbol, curr_price, pnl_pct, sl_dist, tp_dist, rsi_str, macd_str, vol_str,
+                            ))
                     else:
                         # C. Entry Check (포지션 수 제한 + 쿨다운 체크)
                         entry_skipped_reason = None
@@ -606,15 +551,6 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                                 cooldown_until.pop(symbol, None)
 
                         # 미보유 상태 피드백 (진입 조건 상세 포함)
-                        status_str = "⚡매수 신호!" if has_buy_signal else "대기중"
-                        if entry_skipped_reason and has_buy_signal:
-                            status_str = f"⚡신호 있으나 {entry_skipped_reason}"
-                        rsi_str = f"{rsi_val:.1f}" if rsi_val is not None and not pd.isna(rsi_val) else "N/A"
-                        macd_str = "상승" if (macd_val is not None and macds_val is not None and not pd.isna(macd_val) and not pd.isna(macds_val) and macd_val > macds_val) else "하락"
-                        vol_str = f"{vol_ratio:.1f}x" if vol_ratio and not pd.isna(vol_ratio) else "N/A"
-                        adx_str = f"{adx_val:.1f}" if adx_val is not None and not pd.isna(adx_val) else "N/A"
-
-                        # 진입 조건 충족 여부 체크리스트 (전략별 실제 필터 기반)
                         conditions: list[str] = []
                         for label, is_met in strategy.get_entry_conditions(df, current_idx, curr_price):
                             if is_met is None:
@@ -622,12 +558,9 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                             else:
                                 conditions.append(f"  {'✅' if is_met else '❌'} {label}")
 
-                        conditions_str = "\n".join(conditions)
-                        signal_details.append(
-                            f"{'🟢' if has_buy_signal else '⚪'} {symbol}\n"
-                            f"  {status_str} | 현재가: {curr_price:,.0f}\n"
-                            f"{conditions_str}"
-                        )
+                        signal_details.append(format_waiting_signal(
+                            symbol, curr_price, has_buy_signal, entry_skipped_reason, conditions,
+                        ))
 
                 # 매 tick마다 포지션 상태를 DB에 저장
                 save_positions_to_db(bot_config_id, active_positions)
@@ -673,7 +606,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                     logger.error("[Bot %d] Too many consecutive errors. Stopping bot.", bot_config_id)
                     # 에러로 중단해도 포지션은 DB에 저장
                     save_positions_to_db(bot_config_id, active_positions)
-                    _send_bot_status_notification(user_id, f"🔴 봇 자동 종료\n{'─' * 24}\n전략: {strategy_label} · {timeframe}봉\n사유: 연속 오류 {MAX_CONSECUTIVE_ERRORS}회 발생\n포지션은 DB에 보존됩니다.")
+                    _send_bot_status_notification(user_id, format_bot_error_stop(strategy_label, timeframe, MAX_CONSECUTIVE_ERRORS))
                     break
             finally:
                 current_db.close()
@@ -716,21 +649,14 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
             save_positions_to_db(bot_config_id, active_positions)
 
             # 종료 알림 (청산 내역 포함)
-            close_section = ""
-            if closed_details:
-                close_section = f"\n📉 포지션 청산\n" + "\n".join(closed_details)
-            _send_bot_status_notification(user_id, (
-                f"🔴 봇 정상 종료\n"
-                f"{'─' * 24}\n"
-                f"전략: {strategy_label} · {timeframe}봉\n"
-                f"종목: {symbols_str}"
-                f"{close_section}"
+            _send_bot_status_notification(user_id, format_bot_stop_notification(
+                strategy_label, timeframe, symbols_str, closed_details or None,
             ))
         raise
     except Exception as e:
         logger.error("[Bot %d] Fatal error in bot loop: %s", bot_config_id, e)
         logger.debug(traceback.format_exc())
-        _send_bot_status_notification(user_id, f"🔴 봇 비정상 종료\n{'─' * 24}\n전략: {strategy_label} · {timeframe}봉\n오류: {str(e)[:100]}\n포지션은 DB에 보존됩니다.")
+        _send_bot_status_notification(user_id, format_bot_fatal_error(strategy_label, timeframe, str(e)))
     finally:
         # Clean up from active_bots so status correctly reports Stopped
         active_bots.pop(bot_config_id, None)
