@@ -5,7 +5,7 @@ import { Plus, Edit3, AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { SelectInput } from '@/components/ui/Input';
 import ModalWrapper, { ModalHeader } from '@/components/ui/ModalWrapper';
-import { SYMBOLS, BOT_STRATEGIES, EXCHANGES, getStrategyTimeframe, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe } from '@/lib/constants';
+import { SYMBOLS, BOT_STRATEGIES, EXCHANGES, getStrategyTimeframe, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
 import { getUserStrategies } from '@/lib/api/strategies';
 import type { StrategyItem } from '@/lib/api/settings';
 import type { UserStrategy } from '@/types/backtest';
@@ -194,6 +194,15 @@ export default function BotFormModal({
                                 </option>
                             ))}
                         </SelectInput>
+                    </div>
+
+                    {/* 캔들 주기 (자동 설정) */}
+                    <div>
+                        <label className="text-xs text-gray-500 font-medium mb-1.5 block">캔들 주기</label>
+                        <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 flex items-center gap-2">
+                            <span className="text-sm font-semibold text-primary">{TIMEFRAME_LABEL_MAP[formData.timeframe] || formData.timeframe}</span>
+                            <span className="text-[10px] text-gray-500">(전략에 의해 자동 설정)</span>
+                        </div>
                     </div>
 
                     {/* Trading mode toggle */}
