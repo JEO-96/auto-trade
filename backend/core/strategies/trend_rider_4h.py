@@ -130,6 +130,49 @@ class TrendRider4hStrategy(BaseStrategy):
 
         return signal_rsi_bounce or signal_macd_cross or signal_ema_bounce
 
+    def get_trigger_signals(
+        self, df: pd.DataFrame, current_idx: int, curr_price: float
+    ) -> list[tuple[str, bool]]:
+        if current_idx < 1:
+            return []
+
+        current = df.iloc[current_idx]
+        prev = df.iloc[current_idx - 1]
+
+        def _val(row, col):
+            v = row.get(col)
+            if v is None or (isinstance(v, float) and pd.isna(v)):
+                return None
+            return v
+
+        triggers: list[tuple[str, bool]] = []
+
+        # 신호 1: RSI 눌림목 반등
+        rsi_curr = _val(current, self.rsi_col)
+        rsi_prev = _val(prev, self.rsi_col)
+        if rsi_curr is not None and rsi_prev is not None:
+            is_met = rsi_prev < 50 and rsi_curr > rsi_prev
+            triggers.append((f"RSI눌림목 (이전:{rsi_prev:.1f} 현재:{rsi_curr:.1f})", bool(is_met)))
+
+        # 신호 2: MACD 골든크로스
+        macd_curr = _val(current, self.macd_col)
+        macds_curr = _val(current, self.macds_col)
+        macd_prev = _val(prev, self.macd_col)
+        macds_prev = _val(prev, self.macds_col)
+        if all(v is not None for v in (macd_curr, macds_curr, macd_prev, macds_prev)):
+            is_met = macd_prev <= macds_prev and macd_curr > macds_curr
+            triggers.append(("MACD 골든크로스", bool(is_met)))
+
+        # 신호 3: EMA_20 바운스
+        prev_close = _val(prev, 'close')
+        prev_ema20 = _val(prev, 'EMA_20')
+        curr_ema20 = _val(current, 'EMA_20')
+        if prev_close is not None and prev_ema20 is not None and curr_ema20 is not None:
+            is_met = prev_close < prev_ema20 and curr_price > curr_ema20
+            triggers.append(("EMA20 바운스", bool(is_met)))
+
+        return triggers
+
     def calculate_exit_levels(self, df: pd.DataFrame, entry_idx: int, entry_price: float):
         atr = self._get_atr_or_fallback(df, entry_idx, entry_price)
 

@@ -102,6 +102,40 @@ class TrendFollower15mStrategy(BaseStrategy):
 
         return ema20_proximity or prev_below_ema
 
+    def get_trigger_signals(
+        self, df: pd.DataFrame, current_idx: int, curr_price: float
+    ) -> list[tuple[str, bool]]:
+        if current_idx < 1:
+            return []
+
+        current = df.iloc[current_idx]
+        prev = df.iloc[current_idx - 1]
+
+        def _val(row, col):
+            v = row.get(col)
+            if v is None or (isinstance(v, float) and pd.isna(v)):
+                return None
+            return v
+
+        triggers: list[tuple[str, bool]] = []
+
+        prev_ema20 = _val(prev, 'EMA_20')
+        prev_low = _val(prev, 'low')
+        prev_close = _val(prev, 'close')
+
+        # 신호 1: EMA_20 근접 반등 (저가가 EMA_20에 근접)
+        if prev_low is not None and prev_ema20 is not None and prev_ema20 > 0:
+            proximity = abs(prev_low - prev_ema20) / prev_ema20
+            is_met = proximity < self.ema_proximity_pct
+            triggers.append((f"EMA20 근접 (거리:{proximity*100:.2f}%)", bool(is_met)))
+
+        # 신호 2: 이전 봉 종가 < EMA_20 (EMA_20 아래에서 반등)
+        if prev_close is not None and prev_ema20 is not None:
+            is_met = prev_close < prev_ema20
+            triggers.append(("이전봉 EMA20 하회 반등", bool(is_met)))
+
+        return triggers
+
     def calculate_exit_levels(
         self, df: pd.DataFrame, entry_idx: int, entry_price: float
     ) -> tuple:

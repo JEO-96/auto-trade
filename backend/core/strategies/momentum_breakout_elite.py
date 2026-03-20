@@ -117,6 +117,74 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
 
         return breakout or trend_rider or bull_pullback
 
+    def get_trigger_signals(
+        self, df: pd.DataFrame, current_idx: int, curr_price: float
+    ) -> list[tuple[str, bool]]:
+        if current_idx < 1:
+            return []
+
+        current = df.iloc[current_idx]
+        prev = df.iloc[current_idx - 1]
+
+        def _val(row, col):
+            v = row.get(col)
+            if v is None or (isinstance(v, float) and pd.isna(v)):
+                return None
+            return v
+
+        triggers: list[tuple[str, bool]] = []
+
+        rsi_val = _val(current, self.rsi_col)
+        adx_val = _val(current, self.adx_col)
+        dmp_val = _val(current, self.dmp_col)
+        dmn_val = _val(current, self.dmn_col)
+        macd_val = _val(current, self.macd_col)
+        macds_val = _val(current, self.macds_col)
+        vol_avg = _val(current, self.vol_ma_col)
+        ema_200 = _val(current, 'EMA_200')
+        ema_100 = _val(current, 'EMA_100')
+        ema_50 = _val(current, 'EMA_50')
+        ema_20 = _val(current, 'EMA_20')
+        vol = _val(current, 'volume')
+
+        # 신호 1: CORE BREAKOUT
+        if all(v is not None for v in (rsi_val, macd_val, macds_val, vol, vol_avg, ema_100)) and vol_avg > 0:
+            is_met = (
+                rsi_val > self.rsi_threshold
+                and macd_val > macds_val
+                and vol > vol_avg * self.volume_multiplier
+                and curr_price > ema_100
+            )
+            triggers.append(("코어 브레이크아웃 (RSI/MACD/볼륨/EMA100)", bool(is_met)))
+
+        # 신호 2: TREND RIDER
+        if all(v is not None for v in (adx_val, dmp_val, dmn_val, rsi_val, ema_20)):
+            prev_ema20 = _val(prev, 'EMA_20')
+            prev_close = _val(prev, 'close')
+            if prev_ema20 is not None and prev_close is not None:
+                is_met = (
+                    adx_val > self.trend_rider_adx_min
+                    and dmp_val > dmn_val
+                    and curr_price > ema_20
+                    and prev_close < prev_ema20
+                    and rsi_val > self.trend_rider_rsi_min
+                )
+                triggers.append(("트렌드 라이더 (ADX/DI+/EMA20 반등)", bool(is_met)))
+
+        # 신호 3: BULL PULLBACK
+        if all(v is not None for v in (ema_200, ema_50, rsi_val)):
+            prev_low = _val(prev, 'low')
+            if prev_low is not None:
+                is_met = (
+                    curr_price > ema_200
+                    and prev_low < ema_50
+                    and curr_price > ema_50
+                    and rsi_val > self.pullback_rsi_min
+                )
+                triggers.append(("불 풀백 (EMA50 반등/RSI)", bool(is_met)))
+
+        return triggers
+
     def calculate_exit_levels(self, df: pd.DataFrame, entry_idx: int, entry_price: float):
         atr = self._get_atr_or_fallback(df, entry_idx, entry_price)
         # Tight Stop Loss for high Reward/Risk ratio

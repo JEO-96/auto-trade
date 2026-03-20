@@ -219,7 +219,23 @@ class BaseStrategy(ABC):
                 ratio = vol / vol_ma
                 conditions.append((f"거래량>{self.filter_volume_min}x (현재 {ratio:.1f}x)", vol >= vol_ma * self.filter_volume_min))
 
+        # 트리거 신호 추가 (서브클래스에서 override)
+        triggers = self.get_trigger_signals(df, current_idx, curr_price)
+        if triggers:
+            conditions.append(("── 트리거 (1개 충족 필요) ──", None))
+            conditions.extend(triggers)
+
         return conditions
+
+    def get_trigger_signals(
+        self, df: pd.DataFrame, current_idx: int, curr_price: float
+    ) -> list[tuple[str, bool]]:
+        """Return trigger signal conditions for Telegram feedback.
+
+        Override in subclass to show OR-type entry triggers.
+        Each tuple is (label, is_met). At least one must be True for entry.
+        """
+        return []
 
     # ------------------------------------------------------------------
     # Abstract methods

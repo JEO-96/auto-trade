@@ -116,6 +116,58 @@ class MomentumAggressive4hStrategy(BaseStrategy):
 
         return breakout or pullback
 
+    def get_trigger_signals(
+        self, df: pd.DataFrame, current_idx: int, curr_price: float
+    ) -> list[tuple[str, bool]]:
+        if current_idx < 1:
+            return []
+
+        current = df.iloc[current_idx]
+        prev = df.iloc[current_idx - 1]
+
+        def _val(row, col):
+            v = row.get(col)
+            if v is None or (isinstance(v, float) and pd.isna(v)):
+                return None
+            return v
+
+        triggers: list[tuple[str, bool]] = []
+
+        # 신호 1: 브레이크아웃 (MACD 히스토그램 > 0 AND 증가)
+        rsi = _val(current, self.rsi_col)
+        adx = _val(current, self.adx_col)
+        macdh = _val(current, self.macdh_col)
+        prev_macdh = _val(prev, self.macdh_col)
+        vol = _val(current, 'volume')
+        vol_ma = _val(current, self.vol_ma_col)
+        if all(v is not None for v in (rsi, adx, macdh, vol, vol_ma)) and vol_ma > 0:
+            hist_positive = macdh > 0
+            hist_increasing = prev_macdh is not None and macdh > prev_macdh
+            is_met = (
+                rsi > self.rsi_threshold
+                and adx > self.adx_threshold
+                and hist_positive
+                and hist_increasing
+                and vol > vol_ma * self.volume_multiplier
+            )
+            triggers.append(("브레이크아웃 (RSI/ADX/MACDh증가/볼륨)", bool(is_met)))
+
+        # 신호 2: 풀백 진입
+        prev_ema20 = _val(prev, 'EMA_20')
+        curr_ema20 = _val(current, 'EMA_20')
+        ema50 = _val(current, 'EMA_50')
+        prev_close = _val(prev, 'close')
+        if all(v is not None for v in (adx, ema50, prev_ema20, prev_close, curr_ema20)):
+            is_met = (
+                adx > self.pullback_adx_threshold
+                and curr_price > ema50
+                and prev_close < prev_ema20
+                and curr_price > curr_ema20
+            )
+            triggers.append(("풀백 진입 (ADX/EMA50/EMA20 반등)", bool(is_met)))
+
+        return triggers
+
     def calculate_exit_levels(
         self, df: pd.DataFrame, entry_idx: int, entry_price: float
     ) -> tuple:

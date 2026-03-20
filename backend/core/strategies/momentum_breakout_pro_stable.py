@@ -83,6 +83,53 @@ class MomentumBreakoutProStableStrategy(BaseStrategy):
             return True
         return False
 
+    def get_trigger_signals(
+        self, df: pd.DataFrame, current_idx: int, curr_price: float
+    ) -> list[tuple[str, bool]]:
+        if current_idx < 1:
+            return []
+
+        current = df.iloc[current_idx]
+        prev = df.iloc[current_idx - 1]
+
+        def _val(row, col):
+            v = row.get(col)
+            if v is None or (isinstance(v, float) and pd.isna(v)):
+                return None
+            return v
+
+        triggers: list[tuple[str, bool]] = []
+
+        # 신호 1: 브레이크아웃
+        rsi = _val(current, self.rsi_col)
+        adx = _val(current, self.adx_col)
+        macd = _val(current, self.macd_col)
+        macds = _val(current, self.macds_col)
+        vol = _val(current, 'volume')
+        vol_ma = _val(current, self.vol_ma_col)
+        if all(v is not None for v in (rsi, adx, macd, macds, vol, vol_ma)) and vol_ma > 0:
+            is_met = (
+                rsi > self.rsi_threshold
+                and adx > self.adx_threshold
+                and macd > macds
+                and vol > vol_ma * self.volume_multiplier
+            )
+            triggers.append(("브레이크아웃 (RSI/ADX/MACD/볼륨)", bool(is_met)))
+
+        # 신호 2: 풀백 진입
+        prev_ema20 = _val(prev, 'EMA_20')
+        curr_ema20 = _val(current, 'EMA_20')
+        prev_close = _val(prev, 'close')
+        if all(v is not None for v in (adx, prev_ema20, prev_close, curr_ema20)):
+            is_met = (
+                adx > self.pullback_adx_threshold
+                and prev_close < prev_ema20
+                and curr_price > curr_ema20
+            )
+            triggers.append(("풀백 진입 (ADX/EMA20 반등)", bool(is_met)))
+
+        return triggers
+
     def calculate_exit_levels(self, df: pd.DataFrame, entry_idx: int, entry_price: float):
         atr = self._get_atr_or_fallback(df, entry_idx, entry_price)
         stop_loss = entry_price - (atr * self.atr_sl_multiplier)

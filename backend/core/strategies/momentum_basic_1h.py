@@ -121,6 +121,58 @@ class MomentumBasic1hStrategy(BaseStrategy):
 
         return True
 
+    def get_trigger_signals(
+        self, df: pd.DataFrame, current_idx: int, curr_price: float
+    ) -> list[tuple[str, bool]]:
+        if current_idx < 1:
+            return []
+
+        current = df.iloc[current_idx]
+        prev = df.iloc[current_idx - 1]
+
+        def _val(row, col):
+            v = row.get(col)
+            if v is None or (isinstance(v, float) and pd.isna(v)):
+                return None
+            return v
+
+        triggers: list[tuple[str, bool]] = []
+
+        # 신호 1: 모멘텀 브레이크아웃
+        rsi_curr = _val(current, self.rsi_col)
+        rsi_prev = _val(prev, self.rsi_col)
+        adx = _val(current, self.adx_col)
+        macd = _val(current, self.macd_col)
+        macds = _val(current, self.macds_col)
+        vol = _val(current, 'volume')
+        vol_ma = _val(current, self.vol_ma_col)
+        if all(v is not None for v in (rsi_curr, rsi_prev, adx, macd, macds, vol, vol_ma)) and vol_ma > 0:
+            rsi_cross_up = (rsi_prev <= self.rsi_threshold) and (rsi_curr > self.rsi_threshold)
+            rsi_momentum = rsi_curr - rsi_prev > 5
+            is_met = (
+                (rsi_cross_up or (rsi_curr > self.rsi_threshold and rsi_momentum))
+                and adx > self.adx_threshold
+                and macd > macds
+                and vol > vol_ma * self.volume_multiplier
+            )
+            triggers.append((f"브레이크아웃 (RSI:{rsi_curr:.1f} ADX:{adx:.1f})", bool(is_met)))
+
+        # 신호 2: 풀백 진입
+        prev_ema20 = _val(prev, 'EMA_20')
+        curr_ema20 = _val(current, 'EMA_20')
+        prev_close = _val(prev, 'close')
+        if all(v is not None for v in (adx, prev_ema20, prev_close, curr_ema20, macd, macds, vol, vol_ma)):
+            is_met = (
+                adx > self.pullback_adx_threshold
+                and prev_close < prev_ema20
+                and curr_price > curr_ema20
+                and macd > macds
+                and vol > vol_ma
+            )
+            triggers.append(("풀백 진입 (EMA20 반등/MACD/볼륨)", bool(is_met)))
+
+        return triggers
+
     def calculate_exit_levels(
         self, df: pd.DataFrame, entry_idx: int, entry_price: float
     ) -> tuple:

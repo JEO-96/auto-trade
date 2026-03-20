@@ -617,7 +617,10 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                         # 진입 조건 충족 여부 체크리스트 (전략별 실제 필터 기반)
                         conditions: list[str] = []
                         for label, is_met in strategy.get_entry_conditions(df, current_idx, curr_price):
-                            conditions.append(f"  {'✅' if is_met else '❌'} {label}")
+                            if is_met is None:
+                                conditions.append(f"  {label}")
+                            else:
+                                conditions.append(f"  {'✅' if is_met else '❌'} {label}")
 
                         conditions_str = "\n".join(conditions)
                         signal_details.append(
