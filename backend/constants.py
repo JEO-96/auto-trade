@@ -126,7 +126,7 @@ STRATEGY_LABELS: dict[str, str] = {
 # status: "confirmed" = 검증 완료 확정 전략, "testing" = 테스트 중인 전략
 STRATEGY_DEFINITIONS: list[dict] = [
     {"value": "trend_rider_4h_v1", "label": "트렌드 라이더 (4시간)", "is_public": True, "status": "confirmed"},
-    {"value": "trend_rider_4h_v2", "label": "트렌드 라이더 튜닝 (4시간)", "is_public": False, "status": "testing"},
+    {"value": "trend_rider_4h_v2", "label": "트렌드 라이더 튜닝 (4시간)", "is_public": True, "status": "testing"},
     {"value": "momentum_basic_1h", "label": "모멘텀 기본 (1시간)", "is_public": True, "status": "testing"},
     {"value": "momentum_basic_4h", "label": "모멘텀 기본 (4시간)", "is_public": True, "status": "testing"},
     {"value": "momentum_basic_1d", "label": "모멘텀 기본 (1일)", "is_public": True, "status": "testing"},

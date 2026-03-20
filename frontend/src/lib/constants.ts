@@ -117,7 +117,7 @@ export function getStrategyLabel(strategyName: string): string {
 /** 전략 이름 → 고정 타임프레임 매핑 (자동 생성) */
 const STRATEGY_TIMEFRAME_MAP: Record<string, string> = Object.fromEntries(
     BOT_STRATEGIES.map(s => {
-        const match = s.value.match(/_(\d+[mhd])$/);
+        const match = s.value.match(/_(\d+[mhd])(?:_v\d+)?$/);
         return [s.value, match ? match[1] : '1d'];
     }),
 );
@@ -131,7 +131,7 @@ export function getStrategyTimeframe(strategyName: string): string {
     if (STRATEGY_TIMEFRAME_MAP[strategyName]) {
         return STRATEGY_TIMEFRAME_MAP[strategyName];
     }
-    const match = strategyName.match(/_(\d+[mhd])$/);
+    const match = strategyName.match(/_(\d+[mhd])(?:_v\d+)?$/);
     return match ? match[1] : '1d';
 }
 
