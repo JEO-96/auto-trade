@@ -81,7 +81,7 @@ export function SelectInput({
                 id={selectId}
                 className={cn(
                     inputStyles,
-                    'appearance-none cursor-pointer font-medium [&>option]:bg-[#1e293b] [&>option]:text-white',
+                    'appearance-none cursor-pointer font-medium [color-scheme:dark] [&>option]:bg-[#1e293b] [&>option]:text-white',
                     error && 'border-red-500/40',
                     className
                 )}
