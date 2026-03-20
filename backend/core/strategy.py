@@ -18,7 +18,8 @@ from core.strategies.multi_signal_4h import MultiSignal4hStrategy
 from core.strategies.multi_signal_1d import MultiSignal1dStrategy
 
 from core.strategies.quick_swing_1h import QuickSwing1hStrategy
-from core.strategies.trend_rider_4h import TrendRider4hStrategy
+from core.strategies.trend_rider_4h_v1 import TrendRider4hV1Strategy
+from core.strategies.trend_rider_4h_v2 import TrendRider4hV2Strategy
 from core.strategies.wide_swing_1d import WideSwing1dStrategy
 
 # 15분봉 전략
@@ -42,9 +43,9 @@ STRATEGY_MAP = {
     "momentum_breakout_elite": MultiSignal1dStrategy,
     "james_pro_elite": MultiSignal1dStrategy,
     "momentum_elite": MultiSignal1dStrategy,
-    "steady_compounder": TrendRider4hStrategy,
-    "steady_compounder_v1": TrendRider4hStrategy,
-    "steady_compounder_4h": TrendRider4hStrategy,
+    "steady_compounder": TrendRider4hV1Strategy,
+    "steady_compounder_v1": TrendRider4hV1Strategy,
+    "steady_compounder_4h": TrendRider4hV1Strategy,
 
     # 15개 타임프레임 최적화 전략 (5 base × 3 TF)
     "momentum_basic_1h": MomentumBasic1hStrategy,
@@ -69,7 +70,9 @@ STRATEGY_MAP = {
 
     "steady_compounder_1h": QuickSwing1hStrategy,
     "quick_swing_1h": QuickSwing1hStrategy,
-    "trend_rider_4h": TrendRider4hStrategy,
+    "trend_rider_4h": TrendRider4hV1Strategy,      # DB 하위 호환 alias
+    "trend_rider_4h_v1": TrendRider4hV1Strategy,
+    "trend_rider_4h_v2": TrendRider4hV2Strategy,
     "steady_compounder_1d": WideSwing1dStrategy,
     "wide_swing_1d": WideSwing1dStrategy,
 

@@ -4,9 +4,11 @@ from core import config
 from core.strategies.base import BaseStrategy
 
 
-class TrendRider4hStrategy(BaseStrategy):
+class TrendRider4hV2Strategy(BaseStrategy):
     """
-    Trend Rider 4h - 4시간봉 추세 추종 전략
+    Trend Rider 4h V2 - 4시간봉 추세 추종 전략 (튜닝 버전)
+
+    V1 기반 복사본. 이 파일에서 튜닝 작업 진행.
 
     트레일링 스탑으로 추세를 끝까지 타는 전략.
     TP 없이 고점 대비 5% 하락 시 청산 (추세 추종).
@@ -34,7 +36,7 @@ class TrendRider4hStrategy(BaseStrategy):
         self.trailing_stop_multiplier = 2.0  # 트레일링: ATR 2.0배 (유지)
 
         # 트레일링 스탑 모드: 고점 대비 5% 하락 시 청산, TP 없음 (추세 추종)
-        self.backtest_sl_pct = 0.05   # 고점 대비 5% 트레일링 스탑
+        self.backtest_sl_pct = 0.05   # 고정 대비 5% 트레일링 스탑
         self.backtest_tp_pct = None   # TP 없음
         self.backtest_trailing = True  # 트레일링 모드 활성화
 
