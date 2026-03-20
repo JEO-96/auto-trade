@@ -20,6 +20,7 @@ from core.strategies.multi_signal_1d import MultiSignal1dStrategy
 from core.strategies.quick_swing_1h import QuickSwing1hStrategy
 from core.strategies.trend_rider_4h_v1 import TrendRider4hV1Strategy
 from core.strategies.trend_rider_4h_v2 import TrendRider4hV2Strategy
+from core.strategies.trend_rider_4h_v3 import TrendRider4hV3Strategy
 from core.strategies.wide_swing_1d import WideSwing1dStrategy
 
 # 15분봉 전략
@@ -73,6 +74,7 @@ STRATEGY_MAP = {
     "trend_rider_4h": TrendRider4hV1Strategy,      # DB 하위 호환 alias
     "trend_rider_4h_v1": TrendRider4hV1Strategy,
     "trend_rider_4h_v2": TrendRider4hV2Strategy,
+    "trend_rider_4h_v3": TrendRider4hV3Strategy,
     "steady_compounder_1d": WideSwing1dStrategy,
     "wide_swing_1d": WideSwing1dStrategy,
 

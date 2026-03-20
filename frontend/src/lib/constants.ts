@@ -8,6 +8,7 @@ export const EXCHANGES = [
 export const BOT_STRATEGIES = [
     { value: 'trend_rider_4h_v1', label: '트렌드 라이더 V1 (4시간)', status: 'confirmed' as const },
     { value: 'trend_rider_4h_v2', label: '트렌드 라이더 V2 (4시간)', status: 'confirmed' as const },
+    { value: 'trend_rider_4h_v3', label: '트렌드 라이더 V3 (4시간)', status: 'testing' as const },
     { value: 'momentum_basic_1h', label: '모멘텀 기본 (1시간)', status: 'testing' as const },
     { value: 'momentum_basic_4h', label: '모멘텀 기본 (4시간)', status: 'testing' as const },
     { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)', status: 'testing' as const },
@@ -33,6 +34,7 @@ export const BOT_STRATEGIES = [
 export const STRATEGIES = [
     { value: 'trend_rider_4h_v1', label: '트렌드 라이더 V1 (4시간)', status: 'confirmed' as const },
     { value: 'trend_rider_4h_v2', label: '트렌드 라이더 V2 (4시간)', status: 'confirmed' as const },
+    { value: 'trend_rider_4h_v3', label: '트렌드 라이더 V3 (4시간)', status: 'testing' as const },
     { value: 'momentum_basic_1h', label: '모멘텀 기본 (1시간)', status: 'testing' as const },
     { value: 'momentum_basic_4h', label: '모멘텀 기본 (4시간)', status: 'testing' as const },
     { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)', status: 'testing' as const },
@@ -202,6 +204,7 @@ export const STRATEGY_DEFAULTS: Record<string, {
     'trend_rider_4h': { sl: 0.05, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 50, adx_threshold: 15, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },  // legacy alias
     'trend_rider_4h_v1': { sl: 0.05, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 50, adx_threshold: 15, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
     'trend_rider_4h_v2': { sl: 0.05, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 50, adx_threshold: 15, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'trend_rider_4h_v3': { sl: 0.035, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 55, adx_threshold: 12, volume_multiplier: 0.8, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
     'scalper_15m': { sl: 0.02, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 30, adx_threshold: 25, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
     'trend_follower_15m': { sl: 0.025, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 40, adx_threshold: 18, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
     // 고정 SL/TP 전략

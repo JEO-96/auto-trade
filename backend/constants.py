@@ -108,6 +108,7 @@ STRATEGY_LABELS: dict[str, str] = {
     'trend_rider_4h': '트렌드 라이더 (4시간)',
     'trend_rider_4h_v1': '트렌드 라이더 V1 (4시간)',
     'trend_rider_4h_v2': '트렌드 라이더 V2 (4시간)',
+    'trend_rider_4h_v3': '트렌드 라이더 V3 (4시간)',
     'steady_compounder_1d': '와이드 스윙 (1일)',
     'wide_swing_1d': '와이드 스윙 (1일)',
     # 15분봉 전략
@@ -127,6 +128,7 @@ STRATEGY_LABELS: dict[str, str] = {
 STRATEGY_DEFINITIONS: list[dict] = [
     {"value": "trend_rider_4h_v1", "label": "트렌드 라이더 V1 (4시간)", "is_public": True, "status": "confirmed"},
     {"value": "trend_rider_4h_v2", "label": "트렌드 라이더 V2 (4시간)", "is_public": True, "status": "confirmed"},
+    {"value": "trend_rider_4h_v3", "label": "트렌드 라이더 V3 (4시간)", "is_public": True, "status": "testing"},
     {"value": "momentum_basic_1h", "label": "모멘텀 기본 (1시간)", "is_public": True, "status": "testing"},
     {"value": "momentum_basic_4h", "label": "모멘텀 기본 (4시간)", "is_public": True, "status": "testing"},
     {"value": "momentum_basic_1d", "label": "모멘텀 기본 (1일)", "is_public": True, "status": "testing"},
