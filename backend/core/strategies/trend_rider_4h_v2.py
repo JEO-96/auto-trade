@@ -20,10 +20,11 @@ class TrendRider4hV2Strategy(BaseStrategy):
 
     공통 필터:
     - EMA 정배열 (EMA_20 > EMA_50)
-    - MACD > Signal
+    - 가격 > EMA_20
     - RSI < 75 (과열 제외)
-    - ADX > 15 (횡보장 제외)
-    - 거래량 > 평균
+    - ADX > 10 (약한 추세도 허용)
+    - MACD > Signal 제거 (V1 대비 완화)
+    - 거래량 필터 제거 (V1 대비 완화)
     """
 
     def __init__(self):
@@ -40,13 +41,13 @@ class TrendRider4hV2Strategy(BaseStrategy):
         self.backtest_tp_pct = None   # TP 없음
         self.backtest_trailing = True  # 트레일링 모드 활성화
 
-        # 텔레그램 체크리스트 필터
+        # 텔레그램 체크리스트 필터 (V1 대비 완화)
         self.filter_ema20_gt_ema50 = True
         self.filter_close_gt_ema20 = True
-        self.filter_macd_gt_signal = True
+        self.filter_macd_gt_signal = False   # MACD 필터 제거
         self.filter_rsi_max = 75
-        self.filter_adx_min = 15
-        self.filter_volume_min = 1.0
+        self.filter_adx_min = 10             # ADX 15 → 10
+        self.filter_volume_min = 0           # 거래량 필터 제거
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:
         if current_idx < 50:
@@ -76,30 +77,30 @@ class TrendRider4hV2Strategy(BaseStrategy):
         prev_macd = prev.get(self.macd_col)
         prev_macds = prev.get(self.macds_col)
 
-        # ========== 공통 필터 (반드시 통과해야 함) ==========
+        # ========== 공통 필터 (설정에 따라 ON/OFF 가능) ==========
 
-        # 1. EMA 정배열: EMA_20 > EMA_50 (상승 추세)
+        # 1. EMA 정배열: EMA_20 > EMA_50 (상승 추세) — 항상 필수
         if current['EMA_20'] <= current['EMA_50']:
             return False
 
         # 2. 가격이 EMA_20 위 (추세 안에 있음)
-        if current['close'] < current['EMA_20']:
+        if self.filter_close_gt_ema20 and current['close'] < current['EMA_20']:
             return False
 
         # 3. MACD가 시그널 위 (상승 모멘텀)
-        if macd_val <= macds_val:
+        if self.filter_macd_gt_signal and macd_val <= macds_val:
             return False
 
-        # 4. RSI 과열 아님 (75 유지)
-        if rsi_curr > 75:
+        # 4. RSI 과열 제외
+        if rsi_curr > self.filter_rsi_max:
             return False
 
-        # 5. ADX > 15 (가벼운 추세 필터, 횡보장 제외)
-        if current[self.adx_col] < 15:
+        # 5. ADX 추세 필터 (0이면 비활성)
+        if self.filter_adx_min > 0 and current[self.adx_col] < self.filter_adx_min:
             return False
 
-        # 6. 거래량 평균 이상
-        if current['volume'] < current[self.vol_ma_col]:
+        # 6. 거래량 필터 (0이면 비활성)
+        if self.filter_volume_min > 0 and current['volume'] < current[self.vol_ma_col] * self.filter_volume_min:
             return False
 
         # ========== 진입 신호 (하나만 충족하면 됨) ==========

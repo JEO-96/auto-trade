@@ -29,6 +29,8 @@ DEFAULT_STRATEGY_TIMEFRAMES: dict[str, list[str]] = {
     "multi_signal_1d": ["1d"],
     "quick_swing_1h": ["1h"],
     "trend_rider_4h": ["4h"],
+    "trend_rider_4h_v1": ["4h"],
+    "trend_rider_4h_v2": ["4h"],
     "wide_swing_1d": ["1d"],
     "scalper_15m": ["15m"],
     "quick_swing_15m": ["15m"],
