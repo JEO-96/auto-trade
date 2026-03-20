@@ -6,8 +6,8 @@ export const EXCHANGES = [
 ] as const;
 
 export const BOT_STRATEGIES = [
-    { value: 'trend_rider_4h_v1', label: '트렌드 라이더 (4시간)', status: 'confirmed' as const },
-    { value: 'trend_rider_4h_v2', label: '트렌드 라이더 튜닝 (4시간)', status: 'testing' as const },
+    { value: 'trend_rider_4h_v1', label: '트렌드 라이더 V1 (4시간)', status: 'confirmed' as const },
+    { value: 'trend_rider_4h_v2', label: '트렌드 라이더 V2 (4시간)', status: 'confirmed' as const },
     { value: 'momentum_basic_1h', label: '모멘텀 기본 (1시간)', status: 'testing' as const },
     { value: 'momentum_basic_4h', label: '모멘텀 기본 (4시간)', status: 'testing' as const },
     { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)', status: 'testing' as const },
@@ -31,8 +31,8 @@ export const BOT_STRATEGIES = [
 
 /** 백테스트 전용 전략 */
 export const STRATEGIES = [
-    { value: 'trend_rider_4h_v1', label: '트렌드 라이더 (4시간)', status: 'confirmed' as const },
-    { value: 'trend_rider_4h_v2', label: '트렌드 라이더 튜닝 (4시간)', status: 'testing' as const },
+    { value: 'trend_rider_4h_v1', label: '트렌드 라이더 V1 (4시간)', status: 'confirmed' as const },
+    { value: 'trend_rider_4h_v2', label: '트렌드 라이더 V2 (4시간)', status: 'confirmed' as const },
     { value: 'momentum_basic_1h', label: '모멘텀 기본 (1시간)', status: 'testing' as const },
     { value: 'momentum_basic_4h', label: '모멘텀 기본 (4시간)', status: 'testing' as const },
     { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)', status: 'testing' as const },
