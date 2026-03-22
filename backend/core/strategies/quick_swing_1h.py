@@ -179,8 +179,8 @@ class QuickSwing1hStrategy(BaseStrategy):
             curr_above = curr_price > curr_ema20
             is_met = prev_below and curr_above
             triggers.append(("🔹 EMA20 바운스", bool(is_met)))
-            triggers.append((f"    이전종가<EMA20: {prev_close:,.0f} vs {prev_ema20:,.0f}", bool(prev_below)))
-            triggers.append((f"    현재가>EMA20: {curr_price:,.0f} vs {curr_ema20:,.0f}", bool(curr_above)))
+            triggers.append((f"    이전종가<EMA20: {prev_close:,.0f} / {prev_ema20:,.0f}", bool(prev_below)))
+            triggers.append((f"    현재가>EMA20: {curr_price:,.0f} / {curr_ema20:,.0f}", bool(curr_above)))
 
         return triggers
 

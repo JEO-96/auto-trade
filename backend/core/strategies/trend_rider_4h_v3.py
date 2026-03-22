@@ -268,8 +268,8 @@ class TrendRider4hV3Strategy(BaseStrategy):
             curr_above = curr_price > curr_ema20
             is_met = prev_below and curr_above
             triggers.append(("🔹 EMA20 바운스", bool(is_met)))
-            triggers.append((f"    이전종가<EMA20: {prev_close:,.0f} vs {prev_ema20:,.0f}", bool(prev_below)))
-            triggers.append((f"    현재가>EMA20: {curr_price:,.0f} vs {curr_ema20:,.0f}", bool(curr_above)))
+            triggers.append((f"    이전종가<EMA20: {prev_close:,.0f} / {prev_ema20:,.0f}", bool(prev_below)))
+            triggers.append((f"    현재가>EMA20: {curr_price:,.0f} / {curr_ema20:,.0f}", bool(curr_above)))
 
         # 신호 4: 볼린저 밴드 하단 반등
         bb_lower = _val(current, 'BB_LOWER')
@@ -280,8 +280,8 @@ class TrendRider4hV3Strategy(BaseStrategy):
             curr_above_bb = curr_price > bb_lower
             is_met = prev_near_bb and curr_above_bb
             triggers.append(("🔹 BB 하단 반등", bool(is_met)))
-            triggers.append((f"    이전종가≤BB하단*1.01: {prev_close_val:,.0f} vs {prev_bb_lower * 1.01:,.0f}", bool(prev_near_bb)))
-            triggers.append((f"    현재가>BB하단: {curr_price:,.0f} vs {bb_lower:,.0f}", bool(curr_above_bb)))
+            triggers.append((f"    이전종가≤BB하단*1.01: {prev_close_val:,.0f} / {prev_bb_lower * 1.01:,.0f}", bool(prev_near_bb)))
+            triggers.append((f"    현재가>BB하단: {curr_price:,.0f} / {bb_lower:,.0f}", bool(curr_above_bb)))
 
         # 신호 5: 스토캐스틱 골든크로스
         stoch_k = _val(current, 'STOCH_K')
