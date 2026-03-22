@@ -149,7 +149,7 @@ class MomentumAggressive1hStrategy(BaseStrategy):
             is_met = adx_ok and price_gt_ema50 and bounce_ok
             triggers.append(("🔹 풀백 진입", bool(is_met)))
             triggers.append((f"    ADX>{self.pullback_adx_threshold}: 현재 {adx:.1f}", bool(adx_ok)))
-            triggers.append((f"    가격>EMA50: {curr_price:,.0f} / {ema50:,.0f}", bool(price_gt_ema50)))
+            triggers.append((f"    가격 {curr_price:,.0f} {'>' if price_gt_ema50 else '≤'} EMA50 {ema50:,.0f}", bool(price_gt_ema50)))
             triggers.append((f"    EMA20 반등: 이전종가{'<' if prev_close < prev_ema20 else '≥'}EMA20, 현재가{'>' if curr_price > curr_ema20 else '≤'}EMA20", bool(bounce_ok)))
 
         return triggers

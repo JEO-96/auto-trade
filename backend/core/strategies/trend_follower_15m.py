@@ -129,13 +129,13 @@ class TrendFollower15mStrategy(BaseStrategy):
             is_met = proximity < self.ema_proximity_pct
             triggers.append(("🔹 EMA20 근접 반등", bool(is_met)))
             triggers.append((f"    저가-EMA20 거리<{self.ema_proximity_pct*100:.1f}%: 현재 {proximity*100:.2f}%", bool(is_met)))
-            triggers.append((f"    이전저가: {prev_low:,.0f} / EMA20: {prev_ema20:,.0f}", bool(is_met)))
+            triggers.append((f"    이전저가 {prev_low:,.0f} ↔ EMA20 {prev_ema20:,.0f}", bool(is_met)))
 
         # 신호 2: 이전 봉 EMA20 하회 반등
         if prev_close is not None and prev_ema20 is not None:
             is_met = prev_close < prev_ema20
             triggers.append(("🔹 이전봉 EMA20 하회 반등", bool(is_met)))
-            triggers.append((f"    이전종가<EMA20: {prev_close:,.0f} / {prev_ema20:,.0f}", bool(is_met)))
+            triggers.append((f"    이전종가 {prev_close:,.0f} {'<' if is_met else '≥'} EMA20 {prev_ema20:,.0f}", bool(is_met)))
 
         return triggers
 

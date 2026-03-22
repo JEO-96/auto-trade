@@ -179,7 +179,7 @@ class MultiSignal4hStrategy(BaseStrategy):
             triggers.append((f"    RSI>{self.rsi_threshold}: 현재 {rsi_val:.1f}", bool(rsi_ok)))
             triggers.append((f"    MACD>시그널: {macd_val:.1f}/{macds_val:.1f}", bool(macd_ok)))
             triggers.append((f"    거래량>{self.volume_multiplier}x: 현재 {vol_ratio:.1f}x", bool(vol_ok)))
-            triggers.append((f"    가격>EMA100: {curr_price:,.0f} / {ema_100:,.0f}", bool(ema_ok)))
+            triggers.append((f"    가격 {curr_price:,.0f} {'>' if ema_ok else '≤'} EMA100 {ema_100:,.0f}", bool(ema_ok)))
 
         # 신호 2: TREND RIDER
         prev_ema20 = _val(prev, 'EMA_20')

@@ -182,8 +182,8 @@ class Scalper15mStrategy(BaseStrategy):
             curr_above = curr_price > curr_ema20
             is_met = prev_below and curr_above
             triggers.append(("🔹 EMA20 바운스", bool(is_met)))
-            triggers.append((f"    이전종가<EMA20: {prev_close:,.0f} / {prev_ema20:,.0f}", bool(prev_below)))
-            triggers.append((f"    현재가>EMA20: {curr_price:,.0f} / {curr_ema20:,.0f}", bool(curr_above)))
+            triggers.append((f"    이전종가 {prev_close:,.0f} {'<' if prev_below else '≥'} EMA20 {prev_ema20:,.0f}", bool(prev_below)))
+            triggers.append((f"    현재가 {curr_price:,.0f} {'>' if curr_above else '≤'} EMA20 {curr_ema20:,.0f}", bool(curr_above)))
 
         return triggers
 
