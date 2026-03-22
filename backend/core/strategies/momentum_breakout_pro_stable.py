@@ -130,7 +130,7 @@ class MomentumBreakoutProStableStrategy(BaseStrategy):
             is_met = adx_ok and bounce_ok
             triggers.append(("🔹 풀백 진입", bool(is_met)))
             triggers.append((f"    ADX>{self.pullback_adx_threshold}: 현재 {adx:.1f}", bool(adx_ok)))
-            triggers.append((f"    EMA20 반등: 이전종가{'<' if prev_close < prev_ema20 else '≥'}EMA20, 현재가{'>' if curr_price > curr_ema20 else '≤'}EMA20", bool(bounce_ok)))
+            triggers.append((f"    EMA20 반등: 이전종가<EMA20 & 현재가>EMA20 필요", bool(bounce_ok)))
 
         return triggers
 

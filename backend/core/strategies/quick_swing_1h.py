@@ -154,8 +154,8 @@ class QuickSwing1hStrategy(BaseStrategy):
             curr_rising = rsi_curr > rsi_prev
             is_met = prev_below and curr_rising
             triggers.append(("🔹 RSI 눌림목 반등", bool(is_met)))
-            triggers.append((f"    이전RSI<50: {rsi_prev:.1f}", bool(prev_below)))
-            triggers.append((f"    RSI 상승: {rsi_prev:.1f}→{rsi_curr:.1f}", bool(curr_rising)))
+            triggers.append((f"    이전RSI<50: {rsi_prev:.1f}(이전RSI) {'<' if prev_below else '≥'} 50", bool(prev_below)))
+            triggers.append((f"    RSI상승: {rsi_prev:.1f}(이전)→{rsi_curr:.1f}(현재) ({'↑' if curr_rising else '↓'})", bool(curr_rising)))
 
         # 신호 2: MACD 골든크로스
         macd_curr = _val(current, self.macd_col)
@@ -167,8 +167,8 @@ class QuickSwing1hStrategy(BaseStrategy):
             curr_above = macd_curr > macds_curr
             is_met = prev_below and curr_above
             triggers.append(("🔹 MACD 골든크로스", bool(is_met)))
-            triggers.append((f"    이전: MACD {macd_prev:.2f} {'≤' if prev_below else '>'} 시그널 {macds_prev:.2f}", bool(prev_below)))
-            triggers.append((f"    현재: MACD {macd_curr:.2f} {'>' if curr_above else '≤'} 시그널 {macds_curr:.2f}", bool(curr_above)))
+            triggers.append((f"    이전MACD≤시그널: {macd_prev:,.0f}(이전MACD) {'≤' if prev_below else '>'} {macds_prev:,.0f}(시그널)", bool(prev_below)))
+            triggers.append((f"    현재MACD>시그널: {macd_curr:,.0f}(현재MACD) {'>' if curr_above else '≤'} {macds_curr:,.0f}(시그널)", bool(curr_above)))
 
         # 신호 3: EMA_20 바운스
         prev_close = _val(prev, 'close')
@@ -179,8 +179,8 @@ class QuickSwing1hStrategy(BaseStrategy):
             curr_above = curr_price > curr_ema20
             is_met = prev_below and curr_above
             triggers.append(("🔹 EMA20 바운스", bool(is_met)))
-            triggers.append((f"    이전종가 {prev_close:,.0f} {'<' if prev_below else '≥'} EMA20 {prev_ema20:,.0f}", bool(prev_below)))
-            triggers.append((f"    현재가 {curr_price:,.0f} {'>' if curr_above else '≤'} EMA20 {curr_ema20:,.0f}", bool(curr_above)))
+            triggers.append((f"    이전종가<EMA20: {prev_close:,.0f}(이전종가) {'<' if prev_below else '≥'} {prev_ema20:,.0f}(EMA20)", bool(prev_below)))
+            triggers.append((f"    현재가>EMA20: {curr_price:,.0f}(현재가) {'>' if curr_above else '≤'} {curr_ema20:,.0f}(EMA20)", bool(curr_above)))
 
         return triggers
 

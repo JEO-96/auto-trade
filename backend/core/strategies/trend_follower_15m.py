@@ -135,7 +135,7 @@ class TrendFollower15mStrategy(BaseStrategy):
         if prev_close is not None and prev_ema20 is not None:
             is_met = prev_close < prev_ema20
             triggers.append(("🔹 이전봉 EMA20 하회 반등", bool(is_met)))
-            triggers.append((f"    이전종가 {prev_close:,.0f} {'<' if is_met else '≥'} EMA20 {prev_ema20:,.0f}", bool(is_met)))
+            triggers.append((f"    이전종가<EMA20: {prev_close:,.0f}(이전종가) {'<' if prev_below else '≥'} {prev_ema20:,.0f}(EMA20)", bool(is_met)))
 
         return triggers
 

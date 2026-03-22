@@ -205,37 +205,6 @@ _TIMEFRAME_MINUTES: dict[str, int] = {
     '12h': 720, '1d': 1440, '1w': 10080,
 }
 
-def _get_nearest_candle_close(timeframe: str) -> int:
-    """현재 시각에서 가장 가까운 캔들 마감 시각(분)을 반환.
-    tolerance 범위 내에서 마감 전/후 모두 같은 값을 반환하여 중복 알림 방지.
-    예: 1h봉, 4:58 → 300(=5시), 5:01 → 300(=5시)
-    """
-    interval = _TIMEFRAME_MINUTES.get(timeframe, 0)
-    if interval <= 0:
-        return -1
-    now = datetime.now()
-    minutes_since_midnight = now.hour * 60 + now.minute
-    # 가장 가까운 마감 시각 = interval의 배수 중 현재 시각에 가장 가까운 것
-    lower = (minutes_since_midnight // interval) * interval
-    upper = lower + interval
-    if (minutes_since_midnight - lower) <= (upper - minutes_since_midnight):
-        return lower
-    return upper
-
-
-def _is_candle_close_time(timeframe: str, tolerance_minutes: int = 2) -> bool:
-    """현재 시각이 캔들 마감 시점 근처(±tolerance)인지 확인.
-    예: 4h봉이면 0시, 4시, 8시, 12시, 16시, 20시 (KST) 전후 2분."""
-    interval = _TIMEFRAME_MINUTES.get(timeframe, 0)
-    if interval <= 0:
-        return True  # 알 수 없는 타임프레임이면 항상 전송
-
-    now = datetime.now()
-    minutes_since_midnight = now.hour * 60 + now.minute
-    # 자정(00:00) 기준으로 캔들 마감 시각은 interval의 배수
-    remainder = minutes_since_midnight % interval
-    # remainder가 0 근처이거나 interval 근처이면 마감 시점
-    return remainder <= tolerance_minutes or (interval - remainder) <= tolerance_minutes
 
 
 # 사용자별 알림 주기 설정 → 분 단위 매핑
@@ -407,7 +376,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
     cooldown_until: dict[str, datetime] = init["cooldown_until"]
 
     consecutive_errors: int = 0
-    last_feedback_candle_close: int = -1  # 마지막으로 피드백을 보낸 캔들 마감 시각(분)
+    last_feedback_candle_ts: object = None  # 마지막으로 피드백을 보낸 캔들의 타임스탬프
     last_feedback_ts: float = 0.0  # 마지막 피드백 전송 unix timestamp
     first_tick_after_recovery: bool = is_recovery  # 복구 후 첫 tick에서 즉시 분석 전송
 
@@ -447,6 +416,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
             try:
                 signal_details: list[str] = []
                 trade_occurred: bool = False  # 이번 tick에서 매매 발생 여부
+                latest_closed_candle_ts: object = None  # 이번 tick의 마지막 마감 캔들 타임스탬프
 
                 # First pass: Fetch data for all symbols and update equity
                 for symbol in symbols:
@@ -481,6 +451,11 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                     # need current_idx >= 1 to access prev candle
                     if current_idx < 1:
                         continue
+
+                    # 마지막 마감 캔들 타임스탬프 추적 (새 캔들 마감 감지용)
+                    candle_ts = df.index[current_idx] if hasattr(df.index, '__getitem__') else None
+                    if candle_ts is not None and latest_closed_candle_ts is None:
+                        latest_closed_candle_ts = candle_ts
 
                     # 신호 분석 (텔레그램 피드백용)
                     has_buy_signal = strategy.check_buy_signal(df, current_idx)
@@ -576,20 +551,21 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                     list(active_positions.keys()),
                 )
 
-                # 캔들 마감 시점에 매매가 없었을 때만 분석 피드백 전송
-                # 매매가 발생했으면 이미 체결 알림이 갔으므로 중복 전송 안 함
-                nearest_close = _get_nearest_candle_close(timeframe)
+                # 새 캔들 마감 감지: 마지막 마감 캔들 타임스탬프가 바뀌었으면 새 봉 생성
+                new_candle_closed = (
+                    latest_closed_candle_ts is not None
+                    and latest_closed_candle_ts != last_feedback_candle_ts
+                )
                 should_send_now = first_tick_after_recovery and signal_details
                 should_send_scheduled = (
                     signal_details
                     and not trade_occurred
-                    and _is_candle_close_time(timeframe)
-                    and nearest_close != last_feedback_candle_close
+                    and new_candle_closed
                     and _should_send_feedback(user_id, timeframe, last_feedback_ts)
                 )
                 if should_send_now or should_send_scheduled:
                     if should_send_scheduled:
-                        last_feedback_candle_close = nearest_close
+                        last_feedback_candle_ts = latest_closed_candle_ts
                         last_feedback_ts = datetime.now().timestamp()
                     first_tick_after_recovery = False
 

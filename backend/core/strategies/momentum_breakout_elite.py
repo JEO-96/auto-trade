@@ -159,7 +159,7 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
             triggers.append((f"    RSI>{self.rsi_threshold}: 현재 {rsi_val:.1f}", bool(rsi_ok)))
             triggers.append((f"    MACD>시그널: {macd_val:.1f}/{macds_val:.1f}", bool(macd_ok)))
             triggers.append((f"    거래량>{self.volume_multiplier}x: 현재 {vol_ratio:.1f}x", bool(vol_ok)))
-            triggers.append((f"    가격 {curr_price:,.0f} {'>' if ema_ok else '≤'} EMA100 {ema_100:,.0f}", bool(ema_ok)))
+            triggers.append((f"    가격>EMA100: {curr_price:,.0f}(현재가) {'>' if ema_ok else '≤'} {ema_100:,.0f}(EMA100)", bool(ema_ok)))
 
         # 신호 2: TREND RIDER (ADX/DI+>DI-/EMA20 bounce/RSI)
         if all(v is not None for v in (adx_val, dmp_val, dmn_val, rsi_val, ema_20)):
@@ -174,7 +174,7 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
                 triggers.append(("🔹 트렌드 라이더", bool(is_met)))
                 triggers.append((f"    ADX>{self.trend_rider_adx_min}: 현재 {adx_val:.1f}", bool(adx_ok)))
                 triggers.append((f"    DI+>DI-: {dmp_val:.1f}/{dmn_val:.1f}", bool(di_ok)))
-                triggers.append((f"    EMA20 반등: 이전종가{'<' if prev_close < prev_ema20 else '≥'}EMA20, 현재가{'>' if curr_price > ema_20 else '≤'}EMA20", bool(bounce_ok)))
+                triggers.append((f"    EMA20 반등: 이전종가<EMA20 & 현재가>EMA20 필요", bool(bounce_ok)))
                 triggers.append((f"    RSI>{self.trend_rider_rsi_min}: 현재 {rsi_val:.1f}", bool(rsi_ok)))
 
         # 신호 3: BULL PULLBACK (EMA200/EMA50 bounce/RSI)
@@ -186,8 +186,8 @@ class MomentumBreakoutEliteStrategy(BaseStrategy):
                 rsi_ok = rsi_val > self.pullback_rsi_min
                 is_met = ema200_ok and bounce_ok and rsi_ok
                 triggers.append(("🔹 불 풀백", bool(is_met)))
-                triggers.append((f"    가격 {curr_price:,.0f} {'>' if ema200_ok else '≤'} EMA200 {ema_200:,.0f}", bool(ema200_ok)))
-                triggers.append((f"    EMA50 반등: 이전저가{'<' if prev_low < ema_50 else '≥'}EMA50, 현재가{'>' if curr_price > ema_50 else '≤'}EMA50", bool(bounce_ok)))
+                triggers.append((f"    가격>EMA200: {curr_price:,.0f}(현재가) {'>' if ema200_ok else '≤'} {ema_200:,.0f}(EMA200)", bool(ema200_ok)))
+                triggers.append((f"    EMA50 반등: 이전저가<EMA50 & 현재가>EMA50 필요", bool(bounce_ok)))
                 triggers.append((f"    RSI>{self.pullback_rsi_min}: 현재 {rsi_val:.1f}", bool(rsi_ok)))
 
         return triggers

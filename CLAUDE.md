@@ -223,6 +223,9 @@ Add new strategies: `backend/core/strategies/`에 클래스 생성 → `strategy
 
 ### 3. Async Bot Management & Position Persistence
 `backend/bot_manager.py` — `Dict[int, asyncio.Task]` for bot lifecycle.
+- **60초 루프**: 매 tick마다 전 종목 데이터 fetch + SL/TP 청산 감시 + 신호 분석
+- **텔레그램 피드백**: 시계 기반이 아닌 **캔들 타임스탬프 기반** — `df.iloc[-2]` 타임스탬프가 바뀌면(새 봉 마감) 전송
+- **트리거 조건 표시**: `"조건이름: 실제값 부등호 비교값"` 포맷 (예: `❌ 이전MACD≤시그널: 450,369 > 402,785`)
 - Position persistence to `ActivePosition` table every tick
 - Atomic saves via `position_manager.py` (`begin_nested()` savepoint)
 - Auto-recovery on server restart
