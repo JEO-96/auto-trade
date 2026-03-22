@@ -149,8 +149,12 @@ class WideSwing1dStrategy(BaseStrategy):
 
         # 신호 1: RSI 눌림목 반등
         if rsi_curr is not None and rsi_prev is not None:
-            is_met = rsi_prev < 50 and rsi_curr > rsi_prev
-            triggers.append((f"RSI눌림목 (이전:{rsi_prev:.1f} 현재:{rsi_curr:.1f})", bool(is_met)))
+            prev_below = rsi_prev < 50
+            curr_rising = rsi_curr > rsi_prev
+            is_met = prev_below and curr_rising
+            triggers.append(("🔹 RSI 눌림목 반등", bool(is_met)))
+            triggers.append((f"    이전RSI<50: {rsi_prev:.1f}", bool(prev_below)))
+            triggers.append((f"    RSI 상승: {rsi_prev:.1f}→{rsi_curr:.1f}", bool(curr_rising)))
 
         # 신호 2: MACD 골든크로스
         macd_curr = _val(current, self.macd_col)
@@ -158,16 +162,24 @@ class WideSwing1dStrategy(BaseStrategy):
         macd_prev = _val(prev, self.macd_col)
         macds_prev = _val(prev, self.macds_col)
         if all(v is not None for v in (macd_curr, macds_curr, macd_prev, macds_prev)):
-            is_met = macd_prev <= macds_prev and macd_curr > macds_curr
-            triggers.append(("MACD 골든크로스", bool(is_met)))
+            prev_below = macd_prev <= macds_prev
+            curr_above = macd_curr > macds_curr
+            is_met = prev_below and curr_above
+            triggers.append(("🔹 MACD 골든크로스", bool(is_met)))
+            triggers.append((f"    이전: MACD {macd_prev:.2f} {'≤' if prev_below else '>'} 시그널 {macds_prev:.2f}", bool(prev_below)))
+            triggers.append((f"    현재: MACD {macd_curr:.2f} {'>' if curr_above else '≤'} 시그널 {macds_curr:.2f}", bool(curr_above)))
 
         # 신호 3: EMA_20 바운스
         prev_close = _val(prev, 'close')
         prev_ema20 = _val(prev, 'EMA_20')
         curr_ema20 = _val(current, 'EMA_20')
         if prev_close is not None and prev_ema20 is not None and curr_ema20 is not None:
-            is_met = prev_close < prev_ema20 and curr_price > curr_ema20
-            triggers.append(("EMA20 바운스", bool(is_met)))
+            prev_below = prev_close < prev_ema20
+            curr_above = curr_price > curr_ema20
+            is_met = prev_below and curr_above
+            triggers.append(("🔹 EMA20 바운스", bool(is_met)))
+            triggers.append((f"    이전종가<EMA20: {prev_close:,.0f} vs {prev_ema20:,.0f}", bool(prev_below)))
+            triggers.append((f"    현재가>EMA20: {curr_price:,.0f} vs {curr_ema20:,.0f}", bool(curr_above)))
 
         return triggers
 

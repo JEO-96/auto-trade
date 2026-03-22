@@ -108,25 +108,29 @@ class MomentumBreakoutProStableStrategy(BaseStrategy):
         vol = _val(current, 'volume')
         vol_ma = _val(current, self.vol_ma_col)
         if all(v is not None for v in (rsi, adx, macd, macds, vol, vol_ma)) and vol_ma > 0:
-            is_met = (
-                rsi > self.rsi_threshold
-                and adx > self.adx_threshold
-                and macd > macds
-                and vol > vol_ma * self.volume_multiplier
-            )
-            triggers.append(("브레이크아웃 (RSI/ADX/MACD/볼륨)", bool(is_met)))
+            rsi_ok = rsi > self.rsi_threshold
+            adx_ok = adx > self.adx_threshold
+            macd_ok = macd > macds
+            vol_ratio = vol / vol_ma
+            vol_ok = vol_ratio > self.volume_multiplier
+            is_met = rsi_ok and adx_ok and macd_ok and vol_ok
+            triggers.append(("🔹 브레이크아웃", bool(is_met)))
+            triggers.append((f"    RSI>{self.rsi_threshold}: 현재 {rsi:.1f}", bool(rsi_ok)))
+            triggers.append((f"    ADX>{self.adx_threshold}: 현재 {adx:.1f}", bool(adx_ok)))
+            triggers.append((f"    MACD>시그널: {macd:.1f}/{macds:.1f}", bool(macd_ok)))
+            triggers.append((f"    거래량>{self.volume_multiplier}x: 현재 {vol_ratio:.1f}x", bool(vol_ok)))
 
         # 신호 2: 풀백 진입
         prev_ema20 = _val(prev, 'EMA_20')
         curr_ema20 = _val(current, 'EMA_20')
         prev_close = _val(prev, 'close')
         if all(v is not None for v in (adx, prev_ema20, prev_close, curr_ema20)):
-            is_met = (
-                adx > self.pullback_adx_threshold
-                and prev_close < prev_ema20
-                and curr_price > curr_ema20
-            )
-            triggers.append(("풀백 진입 (ADX/EMA20 반등)", bool(is_met)))
+            adx_ok = adx > self.pullback_adx_threshold
+            bounce_ok = prev_close < prev_ema20 and curr_price > curr_ema20
+            is_met = adx_ok and bounce_ok
+            triggers.append(("🔹 풀백 진입", bool(is_met)))
+            triggers.append((f"    ADX>{self.pullback_adx_threshold}: 현재 {adx:.1f}", bool(adx_ok)))
+            triggers.append((f"    EMA20 반등: 이전종가{'<' if prev_close < prev_ema20 else '≥'}EMA20, 현재가{'>' if curr_price > curr_ema20 else '≤'}EMA20", bool(bounce_ok)))
 
         return triggers
 

@@ -167,38 +167,47 @@ class MultiSignal4hStrategy(BaseStrategy):
 
         # 신호 1: CORE BREAKOUT
         if all(v is not None for v in (adx_val, rsi_val, macd_val, macds_val, vol, vol_avg, ema_100)) and vol_avg > 0:
-            is_met = (
-                adx_val > self.breakout_adx_min
-                and rsi_val > self.rsi_threshold
-                and macd_val > macds_val
-                and vol > vol_avg * self.volume_multiplier
-                and curr_price > ema_100
-            )
-            triggers.append(("코어 브레이크아웃 (ADX/RSI/MACD/볼륨/EMA100)", bool(is_met)))
+            adx_ok = adx_val > self.breakout_adx_min
+            rsi_ok = rsi_val > self.rsi_threshold
+            macd_ok = macd_val > macds_val
+            vol_ratio = vol / vol_avg
+            vol_ok = vol_ratio > self.volume_multiplier
+            ema_ok = curr_price > ema_100
+            is_met = adx_ok and rsi_ok and macd_ok and vol_ok and ema_ok
+            triggers.append(("🔹 코어 브레이크아웃", bool(is_met)))
+            triggers.append((f"    ADX>{self.breakout_adx_min}: 현재 {adx_val:.1f}", bool(adx_ok)))
+            triggers.append((f"    RSI>{self.rsi_threshold}: 현재 {rsi_val:.1f}", bool(rsi_ok)))
+            triggers.append((f"    MACD>시그널: {macd_val:.1f}/{macds_val:.1f}", bool(macd_ok)))
+            triggers.append((f"    거래량>{self.volume_multiplier}x: 현재 {vol_ratio:.1f}x", bool(vol_ok)))
+            triggers.append((f"    가격>EMA100: {curr_price:,.0f} vs {ema_100:,.0f}", bool(ema_ok)))
 
         # 신호 2: TREND RIDER
         prev_ema20 = _val(prev, 'EMA_20')
         prev_close = _val(prev, 'close')
         if all(v is not None for v in (adx_val, rsi_val, ema_20, prev_ema20, prev_close)):
-            is_met = (
-                adx_val > self.trend_rider_adx_min
-                and curr_price > ema_20
-                and prev_close < prev_ema20
-                and rsi_val > self.trend_rider_rsi_min
-            )
-            triggers.append(("트렌드 라이더 (ADX/EMA20 반등/RSI)", bool(is_met)))
+            adx_ok = adx_val > self.trend_rider_adx_min
+            bounce_ok = prev_close < prev_ema20 and curr_price > ema_20
+            rsi_ok = rsi_val > self.trend_rider_rsi_min
+            is_met = adx_ok and bounce_ok and rsi_ok
+            triggers.append(("🔹 트렌드 라이더", bool(is_met)))
+            triggers.append((f"    ADX>{self.trend_rider_adx_min}: 현재 {adx_val:.1f}", bool(adx_ok)))
+            triggers.append((f"    EMA20 반등: 이전종가{'<' if prev_close < prev_ema20 else '≥'}EMA20, 현재가{'>' if curr_price > ema_20 else '≤'}EMA20", bool(bounce_ok)))
+            triggers.append((f"    RSI>{self.trend_rider_rsi_min}: 현재 {rsi_val:.1f}", bool(rsi_ok)))
 
         # 신호 3: BULL PULLBACK
         prev_low = _val(prev, 'low')
         if all(v is not None for v in (ema_50, rsi_val, macd_val, macds_val, vol, vol_avg, prev_low)) and vol_avg > 0:
-            is_met = (
-                prev_low < ema_50
-                and curr_price > ema_50
-                and rsi_val > self.pullback_rsi_min
-                and macd_val > macds_val
-                and vol > vol_avg * self.pullback_volume_multiplier
-            )
-            triggers.append(("불 풀백 (EMA50 반등/RSI/MACD/볼륨)", bool(is_met)))
+            bounce_ok = prev_low < ema_50 and curr_price > ema_50
+            rsi_ok = rsi_val > self.pullback_rsi_min
+            macd_ok = macd_val > macds_val
+            vol_ratio = vol / vol_avg
+            vol_ok = vol_ratio > self.pullback_volume_multiplier
+            is_met = bounce_ok and rsi_ok and macd_ok and vol_ok
+            triggers.append(("🔹 불 풀백", bool(is_met)))
+            triggers.append((f"    EMA50 반등: 이전저가{'<' if prev_low < ema_50 else '≥'}EMA50, 현재가{'>' if curr_price > ema_50 else '≤'}EMA50", bool(bounce_ok)))
+            triggers.append((f"    RSI>{self.pullback_rsi_min}: 현재 {rsi_val:.1f}", bool(rsi_ok)))
+            triggers.append((f"    MACD>시그널: {macd_val:.1f}/{macds_val:.1f}", bool(macd_ok)))
+            triggers.append((f"    거래량>{self.pullback_volume_multiplier}x: 현재 {vol_ratio:.1f}x", bool(vol_ok)))
 
         return triggers
 

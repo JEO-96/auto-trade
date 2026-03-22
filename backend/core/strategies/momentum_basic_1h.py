@@ -149,27 +149,34 @@ class MomentumBasic1hStrategy(BaseStrategy):
         if all(v is not None for v in (rsi_curr, rsi_prev, adx, macd, macds, vol, vol_ma)) and vol_ma > 0:
             rsi_cross_up = (rsi_prev <= self.rsi_threshold) and (rsi_curr > self.rsi_threshold)
             rsi_momentum = rsi_curr - rsi_prev > 5
-            is_met = (
-                (rsi_cross_up or (rsi_curr > self.rsi_threshold and rsi_momentum))
-                and adx > self.adx_threshold
-                and macd > macds
-                and vol > vol_ma * self.volume_multiplier
-            )
-            triggers.append((f"브레이크아웃 (RSI:{rsi_curr:.1f} ADX:{adx:.1f})", bool(is_met)))
+            rsi_ok = rsi_cross_up or (rsi_curr > self.rsi_threshold and rsi_momentum)
+            adx_ok = adx > self.adx_threshold
+            macd_ok = macd > macds
+            vol_ratio = vol / vol_ma
+            vol_ok = vol_ratio > self.volume_multiplier
+            is_met = rsi_ok and adx_ok and macd_ok and vol_ok
+            triggers.append(("🔹 브레이크아웃", bool(is_met)))
+            triggers.append((f"    RSI 돌파: {rsi_prev:.1f}→{rsi_curr:.1f} (기준>{self.rsi_threshold}↑ 또는 +5모멘텀)", bool(rsi_ok)))
+            triggers.append((f"    ADX>{self.adx_threshold}: 현재 {adx:.1f}", bool(adx_ok)))
+            triggers.append((f"    MACD>시그널: {macd:.1f}/{macds:.1f}", bool(macd_ok)))
+            triggers.append((f"    거래량>{self.volume_multiplier}x: 현재 {vol_ratio:.1f}x", bool(vol_ok)))
 
         # 신호 2: 풀백 진입
         prev_ema20 = _val(prev, 'EMA_20')
         curr_ema20 = _val(current, 'EMA_20')
         prev_close = _val(prev, 'close')
         if all(v is not None for v in (adx, prev_ema20, prev_close, curr_ema20, macd, macds, vol, vol_ma)):
-            is_met = (
-                adx > self.pullback_adx_threshold
-                and prev_close < prev_ema20
-                and curr_price > curr_ema20
-                and macd > macds
-                and vol > vol_ma
-            )
-            triggers.append(("풀백 진입 (EMA20 반등/MACD/볼륨)", bool(is_met)))
+            adx_ok = adx > self.pullback_adx_threshold
+            bounce_ok = prev_close < prev_ema20 and curr_price > curr_ema20
+            macd_ok = macd > macds
+            vol_ratio = vol / vol_ma if vol_ma > 0 else 0
+            vol_ok = vol > vol_ma
+            is_met = adx_ok and bounce_ok and macd_ok and vol_ok
+            triggers.append(("🔹 풀백 진입", bool(is_met)))
+            triggers.append((f"    ADX>{self.pullback_adx_threshold}: 현재 {adx:.1f}", bool(adx_ok)))
+            triggers.append((f"    EMA20 반등: 이전종가{'<' if prev_close < prev_ema20 else '≥'}EMA20, 현재가{'>' if curr_price > curr_ema20 else '≤'}EMA20", bool(bounce_ok)))
+            triggers.append((f"    MACD>시그널: {macd:.1f}/{macds:.1f}", bool(macd_ok)))
+            triggers.append((f"    거래량>평균: {vol_ratio:.1f}x", bool(vol_ok)))
 
         return triggers
 

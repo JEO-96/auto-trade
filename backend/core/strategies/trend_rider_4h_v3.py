@@ -239,8 +239,12 @@ class TrendRider4hV3Strategy(BaseStrategy):
         rsi_curr = _val(current, self.rsi_col)
         rsi_prev = _val(prev, self.rsi_col)
         if rsi_curr is not None and rsi_prev is not None:
-            is_met = rsi_prev < 55 and rsi_curr > rsi_prev
-            triggers.append((f"RSI눌림목 (이전:{rsi_prev:.1f} 현재:{rsi_curr:.1f})", bool(is_met)))
+            prev_below = rsi_prev < 55
+            curr_rising = rsi_curr > rsi_prev
+            is_met = prev_below and curr_rising
+            triggers.append(("🔹 RSI 눌림목 반등", bool(is_met)))
+            triggers.append((f"    이전RSI<55: {rsi_prev:.1f}", bool(prev_below)))
+            triggers.append((f"    RSI 상승: {rsi_prev:.1f}→{rsi_curr:.1f}", bool(curr_rising)))
 
         # 신호 2: MACD 골든크로스
         macd_curr = _val(current, self.macd_col)
@@ -248,24 +252,36 @@ class TrendRider4hV3Strategy(BaseStrategy):
         macd_prev = _val(prev, self.macd_col)
         macds_prev = _val(prev, self.macds_col)
         if all(v is not None for v in (macd_curr, macds_curr, macd_prev, macds_prev)):
-            is_met = macd_prev <= macds_prev and macd_curr > macds_curr
-            triggers.append(("MACD 골든크로스", bool(is_met)))
+            prev_below = macd_prev <= macds_prev
+            curr_above = macd_curr > macds_curr
+            is_met = prev_below and curr_above
+            triggers.append(("🔹 MACD 골든크로스", bool(is_met)))
+            triggers.append((f"    이전: MACD {macd_prev:.2f} {'≤' if prev_below else '>'} 시그널 {macds_prev:.2f}", bool(prev_below)))
+            triggers.append((f"    현재: MACD {macd_curr:.2f} {'>' if curr_above else '≤'} 시그널 {macds_curr:.2f}", bool(curr_above)))
 
         # 신호 3: EMA_20 바운스
         prev_close = _val(prev, 'close')
         prev_ema20 = _val(prev, 'EMA_20')
         curr_ema20 = _val(current, 'EMA_20')
         if prev_close is not None and prev_ema20 is not None and curr_ema20 is not None:
-            is_met = prev_close < prev_ema20 and curr_price > curr_ema20
-            triggers.append(("EMA20 바운스", bool(is_met)))
+            prev_below = prev_close < prev_ema20
+            curr_above = curr_price > curr_ema20
+            is_met = prev_below and curr_above
+            triggers.append(("🔹 EMA20 바운스", bool(is_met)))
+            triggers.append((f"    이전종가<EMA20: {prev_close:,.0f} vs {prev_ema20:,.0f}", bool(prev_below)))
+            triggers.append((f"    현재가>EMA20: {curr_price:,.0f} vs {curr_ema20:,.0f}", bool(curr_above)))
 
         # 신호 4: 볼린저 밴드 하단 반등
         bb_lower = _val(current, 'BB_LOWER')
         prev_bb_lower = _val(prev, 'BB_LOWER')
         prev_close_val = _val(prev, 'close')
         if bb_lower is not None and prev_bb_lower is not None and prev_close_val is not None:
-            is_met = prev_close_val <= prev_bb_lower * 1.01 and curr_price > bb_lower
-            triggers.append(("BB 하단 반등", bool(is_met)))
+            prev_near_bb = prev_close_val <= prev_bb_lower * 1.01
+            curr_above_bb = curr_price > bb_lower
+            is_met = prev_near_bb and curr_above_bb
+            triggers.append(("🔹 BB 하단 반등", bool(is_met)))
+            triggers.append((f"    이전종가≤BB하단*1.01: {prev_close_val:,.0f} vs {prev_bb_lower * 1.01:,.0f}", bool(prev_near_bb)))
+            triggers.append((f"    현재가>BB하단: {curr_price:,.0f} vs {bb_lower:,.0f}", bool(curr_above_bb)))
 
         # 신호 5: 스토캐스틱 골든크로스
         stoch_k = _val(current, 'STOCH_K')
@@ -273,8 +289,14 @@ class TrendRider4hV3Strategy(BaseStrategy):
         prev_stoch_k = _val(prev, 'STOCH_K')
         prev_stoch_d = _val(prev, 'STOCH_D')
         if all(v is not None for v in (stoch_k, stoch_d, prev_stoch_k, prev_stoch_d)):
-            is_met = prev_stoch_k <= prev_stoch_d and stoch_k > stoch_d and stoch_k < 80
-            triggers.append((f"스토캐스틱 크로스 (K:{stoch_k:.1f})", bool(is_met)))
+            prev_below = prev_stoch_k <= prev_stoch_d
+            curr_cross = stoch_k > stoch_d
+            not_overbought = stoch_k < 80
+            is_met = prev_below and curr_cross and not_overbought
+            triggers.append(("🔹 스토캐스틱 크로스", bool(is_met)))
+            triggers.append((f"    이전: K {prev_stoch_k:.1f} {'≤' if prev_below else '>'} D {prev_stoch_d:.1f}", bool(prev_below)))
+            triggers.append((f"    현재: K {stoch_k:.1f} {'>' if curr_cross else '≤'} D {stoch_d:.1f}", bool(curr_cross)))
+            triggers.append((f"    과매수 아님(K<80): {stoch_k:.1f}", bool(not_overbought)))
 
         # 신호 6: 강세 장악형 캔들
         prev_open = _val(prev, 'open')
@@ -285,7 +307,10 @@ class TrendRider4hV3Strategy(BaseStrategy):
             curr_bullish = curr_price > curr_open
             engulf = curr_price > prev_open and curr_open <= prev_close_v
             is_met = prev_bearish and curr_bullish and engulf
-            triggers.append(("강세 장악형 캔들", bool(is_met)))
+            triggers.append(("🔹 강세 장악형 캔들", bool(is_met)))
+            triggers.append((f"    이전 음봉: 종가 {prev_close_v:,.0f} < 시가 {prev_open:,.0f}", bool(prev_bearish)))
+            triggers.append((f"    현재 양봉: 종가 {curr_price:,.0f} > 시가 {curr_open:,.0f}", bool(curr_bullish)))
+            triggers.append((f"    장악: 현재종가>이전시가, 현재시가≤이전종가", bool(engulf)))
 
         return triggers
 

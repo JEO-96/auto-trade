@@ -446,6 +446,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
             current_db = database.SessionLocal()
             try:
                 signal_details: list[str] = []
+                trade_occurred: bool = False  # 이번 tick에서 매매 발생 여부
 
                 # First pass: Fetch data for all symbols and update equity
                 for symbol in symbols:
@@ -514,6 +515,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                             paper_trading=paper_trading,
                         )
                         if was_exited:
+                            trade_occurred = True
                             # 손절인 경우 쿨다운 적용
                             if curr_price <= pos['stop_loss']:
                                 from datetime import timedelta
@@ -547,6 +549,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                                 total_equity, liquid_capital,
                             )
                             if new_position:
+                                trade_occurred = True
                                 active_positions[symbol] = new_position
                                 cooldown_until.pop(symbol, None)
 
@@ -573,19 +576,19 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                     list(active_positions.keys()),
                 )
 
-                # 캔들 마감 시점에 피드백 전송 (사용자 알림 주기 설정 반영)
-                # 복구 후 첫 tick에서는 캔들 마감 체크 없이 즉시 전송
+                # 캔들 마감 시점에 매매가 없었을 때만 분석 피드백 전송
+                # 매매가 발생했으면 이미 체결 알림이 갔으므로 중복 전송 안 함
                 nearest_close = _get_nearest_candle_close(timeframe)
                 should_send_now = first_tick_after_recovery and signal_details
                 should_send_scheduled = (
                     signal_details
+                    and not trade_occurred
                     and _is_candle_close_time(timeframe)
                     and nearest_close != last_feedback_candle_close
                     and _should_send_feedback(user_id, timeframe, last_feedback_ts)
                 )
                 if should_send_now or should_send_scheduled:
                     if should_send_scheduled:
-                        # 정기 스케줄 전송일 때만 타이머 업데이트 (복구 즉시 전송은 제외)
                         last_feedback_candle_close = nearest_close
                         last_feedback_ts = datetime.now().timestamp()
                     first_tick_after_recovery = False
