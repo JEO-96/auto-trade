@@ -556,10 +556,16 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                     latest_closed_candle_ts is not None
                     and latest_closed_candle_ts != last_feedback_candle_ts
                 )
+
+                if new_candle_closed:
+                    logger.info(
+                        "[Bot %d] 🕯️ 새 캔들 감지! prev_ts=%s → new_ts=%s",
+                        bot_config_id, last_feedback_candle_ts, latest_closed_candle_ts,
+                    )
+
                 should_send_now = first_tick_after_recovery and signal_details
                 should_send_scheduled = (
                     signal_details
-                    and not trade_occurred
                     and new_candle_closed
                     and _should_send_feedback(user_id, timeframe, last_feedback_ts)
                 )
