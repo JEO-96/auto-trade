@@ -188,14 +188,34 @@ def _process_symbol_entry(
     return liquid_capital, position
 
 
+async def _safe_send_trade(user_id: int, msg: str) -> None:
+    """에러 로깅이 포함된 trade notification 전송."""
+    try:
+        result = await send_trade_notification(user_id, msg)
+        if not result:
+            logger.warning("[Telegram] Trade notification not sent for user %d (disabled or no chat_id)", user_id)
+    except Exception as e:
+        logger.error("[Telegram] Failed to send trade notification for user %d: %s", user_id, e)
+
+
+async def _safe_send_bot_status(user_id: int, msg: str) -> None:
+    """에러 로깅이 포함된 bot status notification 전송."""
+    try:
+        result = await send_bot_status_notification(user_id, msg)
+        if not result:
+            logger.warning("[Telegram] Bot status notification not sent for user %d (disabled or no chat_id)", user_id)
+    except Exception as e:
+        logger.error("[Telegram] Failed to send bot status notification for user %d: %s", user_id, e)
+
+
 def _send_trade_notification(user_id: int, msg: str) -> None:
-    """Fire-and-forget trade notification wrapped in asyncio.create_task."""
-    asyncio.create_task(send_trade_notification(user_id, msg))
+    """Fire-and-forget trade notification with error logging."""
+    asyncio.create_task(_safe_send_trade(user_id, msg))
 
 
 def _send_bot_status_notification(user_id: int, msg: str) -> None:
-    """Fire-and-forget bot status notification wrapped in asyncio.create_task."""
-    asyncio.create_task(send_bot_status_notification(user_id, msg))
+    """Fire-and-forget bot status notification with error logging."""
+    asyncio.create_task(_safe_send_bot_status(user_id, msg))
 
 
 # 타임프레임별 캔들 마감 간격 (분)

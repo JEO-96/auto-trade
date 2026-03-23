@@ -73,9 +73,10 @@ class DataFetcher:
 
             if len(db_data) >= expected_count * 0.9:
                 # 캐시가 충분하지만, 끝 부분이 오래됐으면 최신 데이터만 보충
+                # 1캔들 이상 경과 시 반드시 새 데이터 fetch (봇 실시간 감지 필수)
                 if db_data:
                     last_ts = db_data[-1][0]
-                    if until - last_ts > duration_ms * 2:
+                    if until - last_ts >= duration_ms:
                         gaps.append((last_ts + 1, until))
                         logger.info("Cache tail gap for %s %s: fetching %s ~ end",
                                    symbol, timeframe, pd.Timestamp(last_ts + 1, unit='ms'))
@@ -99,8 +100,8 @@ class DataFetcher:
                         logger.info("Cache head gap for %s %s: %s ~ %s",
                                    symbol, timeframe,
                                    pd.Timestamp(since, unit='ms'), pd.Timestamp(first_ts, unit='ms'))
-                    # 뒤쪽 gap
-                    if until - last_ts > duration_ms * 2:
+                    # 뒤쪽 gap (1캔들 이상 경과 시 fetch)
+                    if until - last_ts >= duration_ms:
                         gaps.append((last_ts + 1, until))
                         logger.info("Cache tail gap for %s %s: %s ~ %s",
                                    symbol, timeframe,
@@ -254,8 +255,16 @@ class DataFetcher:
                     }
                     for candle in chunk
                 ]
-                stmt = pg_insert(models.OHLCV).values(rows).on_conflict_do_nothing(
-                    index_elements=['symbol', 'timeframe', 'timestamp']
+                stmt = pg_insert(models.OHLCV).values(rows)
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=['symbol', 'timeframe', 'timestamp'],
+                    set_={
+                        'open': stmt.excluded.open,
+                        'high': stmt.excluded.high,
+                        'low': stmt.excluded.low,
+                        'close': stmt.excluded.close,
+                        'volume': stmt.excluded.volume,
+                    },
                 )
                 db.execute(stmt)
                 db.commit()
