@@ -586,7 +586,6 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                 should_send_now = first_tick_after_recovery and signal_details
                 should_send_scheduled = (
                     signal_details
-                    and new_candle_closed
                     and _should_send_feedback(user_id, timeframe, last_feedback_ts)
                 )
                 if should_send_now or should_send_scheduled:
