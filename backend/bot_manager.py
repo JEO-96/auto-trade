@@ -473,9 +473,11 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                         continue
 
                     # 마지막 마감 캔들 타임스탬프 추적 (새 캔들 마감 감지용)
+                    # 모든 심볼 중 가장 최신 마감 캔들 타임스탬프를 사용
                     candle_ts = df.index[current_idx] if hasattr(df.index, '__getitem__') else None
-                    if candle_ts is not None and latest_closed_candle_ts is None:
-                        latest_closed_candle_ts = candle_ts
+                    if candle_ts is not None:
+                        if latest_closed_candle_ts is None or candle_ts > latest_closed_candle_ts:
+                            latest_closed_candle_ts = candle_ts
 
                     # 신호 분석 (텔레그램 피드백용)
                     has_buy_signal = strategy.check_buy_signal(df, current_idx)
