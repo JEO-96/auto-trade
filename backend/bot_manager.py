@@ -579,6 +579,13 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                     and latest_closed_candle_ts != last_feedback_candle_ts
                 )
 
+                # 디버깅: 매 tick마다 캔들 감지 상태 로그
+                logger.info(
+                    "[Bot %d] 📊 Tick 상태: latest_ts=%s | last_feedback_ts=%s | new_candle=%s | signals=%d",
+                    bot_config_id, latest_closed_candle_ts, last_feedback_candle_ts,
+                    new_candle_closed, len(signal_details),
+                )
+
                 if new_candle_closed:
                     logger.info(
                         "[Bot %d] 🕯️ 새 캔들 감지! prev_ts=%s → new_ts=%s",
@@ -591,6 +598,15 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                     and new_candle_closed
                     and _should_send_feedback(user_id, timeframe, last_feedback_ts)
                 )
+
+                # 디버깅: 전송 판단 로그
+                if signal_details and not (should_send_now or should_send_scheduled):
+                    logger.info(
+                        "[Bot %d] ⏭️ 피드백 미전송: new_candle=%s, recovery=%s, should_send_feedback=%s",
+                        bot_config_id, new_candle_closed, first_tick_after_recovery,
+                        _should_send_feedback(user_id, timeframe, last_feedback_ts) if new_candle_closed else "N/A(no_candle)",
+                    )
+
                 if should_send_now or should_send_scheduled:
                     if should_send_scheduled:
                         last_feedback_candle_ts = latest_closed_candle_ts
@@ -602,6 +618,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                         exchange_name=exchange_name,
                     )
                     _send_trade_notification(user_id, feedback_msg)
+                    logger.info("[Bot %d] ✅ 텔레그램 피드백 전송 완료", bot_config_id)
 
                 consecutive_errors = 0  # 성공 시 에러 카운터 초기화
 
