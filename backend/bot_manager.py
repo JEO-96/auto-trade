@@ -441,8 +441,8 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                 # First pass: Fetch data for all symbols and update equity
                 for symbol in symbols:
                     # Use async wrapper to avoid blocking the event loop with time.sleep()
-                    # DB 캐시 사용하지 않음 — 항상 거래소 API에서 최신 데이터 fetch
-                    df = await fetcher.fetch_ohlcv_async(symbol=symbol, timeframe=timeframe, limit=300, db=None)
+                    # DB 캐시 활용 — 빠진 캔들만 API fetch + DB 저장
+                    df = await fetcher.fetch_ohlcv_async(symbol=symbol, timeframe=timeframe, limit=300, db=current_db)
                     if df is None or df.empty:
                         continue
 
