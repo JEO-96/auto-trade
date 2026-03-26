@@ -357,6 +357,42 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
         liquid_capital -= invested
         logger.info("[Bot %d] Recovered position %s: entry=%.0f, qty=%.4f", bot_config_id, sym, pos['entry_price'], pos['position_amount'])
 
+    # 실매매 전용: 거래소 잔고에서 기존 보유 코인 감지
+    detected_holdings: dict[str, dict] = {}
+    if not paper_trading:
+        holdings = execution.detect_existing_holdings(symbols)
+        sl_pct = getattr(strategy, 'backtest_sl_pct', 0.015)
+        tp_pct = getattr(strategy, 'backtest_tp_pct', 0.03)
+
+        for sym, info in holdings.items():
+            if sym in active_positions:
+                # 이미 DB에 포지션이 있으면 스킵 (서버 재시작 복구 케이스)
+                logger.info("[Bot %d] %s already in DB positions, skipping exchange detection", bot_config_id, sym)
+                continue
+
+            avg_price: float = info['avg_buy_price']
+            amount: float = info['amount']
+            sl = avg_price * (1 - sl_pct) if sl_pct else avg_price * 0.9
+            tp = avg_price * (1 + tp_pct) if tp_pct else avg_price * 1.5
+
+            active_positions[sym] = {
+                'position_amount': amount,
+                'entry_price': avg_price,
+                'stop_loss': sl,
+                'take_profit': tp,
+            }
+            detected_holdings[sym] = info
+            # 기존 보유 코인은 liquid_capital에서 차감하지 않음
+            # (봇 시작 전에 별도로 매수한 것이므로 allocated_capital과 무관)
+            logger.info(
+                "[Bot %d] Detected exchange holding %s: qty=%.6f, avg_price=%.0f, SL=%.0f, TP=%.0f",
+                bot_config_id, sym, amount, avg_price, sl, tp,
+            )
+
+        # 감지된 포지션을 DB에 저장
+        if detected_holdings:
+            save_positions_to_db(bot_config_id, active_positions)
+
     set_bot_active(bot_config_id, True)
 
     return {
@@ -371,6 +407,7 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
         "execution": execution,
         "active_positions": active_positions,
         "cooldown_until": cooldown_until,
+        "detected_holdings": detected_holdings,
     }
 
 
@@ -416,12 +453,23 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
             symbol_price_lines.append(f"  {sym}: 조회 실패")
 
     pos_lines: list[str] = []
+    detected_holdings: dict = init.get("detected_holdings", {})
     if is_recovery:
         for sym, pos in active_positions.items():
             pos_lines.append(f"  {sym}: 진입가 {pos['entry_price']:,.0f}")
+    if detected_holdings:
+        for sym, info in detected_holdings.items():
+            pos = active_positions.get(sym, {})
+            sl = pos.get('stop_loss', 0)
+            tp = pos.get('take_profit', 0)
+            pos_lines.append(
+                f"  {sym}: 평균매수가 {info['avg_buy_price']:,.0f} / "
+                f"SL {sl:,.0f} / TP {tp:,.0f} (거래소 감지)"
+            )
     _send_bot_status_notification(user_id, format_bot_start_notification(
         paper_trading, strategy_name, timeframe, exchange_name,
-        liquid_capital, symbol_price_lines, is_recovery, pos_lines or None,
+        liquid_capital, symbol_price_lines, is_recovery or bool(detected_holdings),
+        pos_lines or None,
     ))
 
     try:

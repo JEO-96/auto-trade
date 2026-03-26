@@ -188,3 +188,64 @@ class ExecutionEngine:
             logger.info("[LIVE] SELL Order Successful! ID: %s, Price: %.2f, Reason: %s",
                         order.get('id', 'N/A'), executed_price, reason)
             return {"status": "success", "price": executed_price, "amount": float(filled)}
+
+    def detect_existing_holdings(self, symbols: list[str]) -> dict[str, dict]:
+        """거래소 잔고에서 봇 심볼에 해당하는 기존 보유 코인을 감지.
+
+        Returns:
+            {symbol: {'amount': float, 'avg_buy_price': float}}
+            보유량이 0이거나 거래소 연결이 안 된 경우 빈 dict 반환.
+        """
+        if not self.exchange:
+            return {}
+
+        try:
+            balance = self.exchange.fetch_balance()
+        except Exception as e:
+            logger.error("[ExecutionEngine] Failed to fetch balance for holding detection: %s", e)
+            return {}
+
+        # symbol → currency 매핑 (예: "BTC/KRW" → "BTC")
+        symbol_to_currency: dict[str, str] = {}
+        for sym in symbols:
+            parts = sym.split('/')
+            if parts:
+                symbol_to_currency[sym] = parts[0]
+
+        holdings: dict[str, dict] = {}
+
+        # 업비트 raw info에서 avg_buy_price 추출
+        raw_info: list[dict] = balance.get('info', [])
+        avg_prices: dict[str, float] = {}
+        if isinstance(raw_info, list):
+            for item in raw_info:
+                currency = item.get('currency', '')
+                avg_price = float(item.get('avg_buy_price', 0) or 0)
+                if currency and avg_price > 0:
+                    avg_prices[currency] = avg_price
+
+        for sym, currency in symbol_to_currency.items():
+            total_amount = float(balance.get(currency, {}).get('total', 0) or 0)
+            if total_amount <= 0:
+                continue
+
+            avg_buy_price = avg_prices.get(currency, 0)
+            if avg_buy_price <= 0:
+                # avg_buy_price를 못 가져오면 현재가 fallback
+                try:
+                    ticker = self.exchange.fetch_ticker(sym)
+                    avg_buy_price = float(ticker.get('last', 0) or 0)
+                except Exception:
+                    logger.warning("[ExecutionEngine] Cannot get price for %s, skipping", sym)
+                    continue
+
+            holdings[sym] = {
+                'amount': total_amount,
+                'avg_buy_price': avg_buy_price,
+            }
+            logger.info(
+                "[ExecutionEngine] Detected holding: %s qty=%.6f avg_price=%.0f",
+                sym, total_amount, avg_buy_price,
+            )
+
+        return holdings
