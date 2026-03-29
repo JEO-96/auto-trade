@@ -62,6 +62,7 @@
 - **bot_manager.py limit=300**: 전략은 `current_idx >= 200` 필요
 - **새 전략 추가**: `strategies/` 클래스 → `strategy.py` STRATEGY_MAP → `constants.py` STRATEGY_DEFINITIONS → `constants.ts`
 - **SL/TP 통일**: `backtest_sl_pct`/`backtest_tp_pct`/`backtest_trailing` — 백테스트와 실매매 동일
+- **로그인 리다이렉트**: `/login?redirect=/path` 지원 — AuthGuard에서 자동 전달
 
 ---
 
@@ -79,6 +80,12 @@
 - Constants: `lib/constants.ts` (21개 전략 + helpers)
 - Hooks: `lib/useStrategies.ts` 등
 - `@/` path alias → `src/`, Tailwind CSS
+- **테마 토큰 필수**: `text-white`/`text-gray-*` 금지 → `text-th-text`/`text-th-text-secondary`/`text-th-text-muted` 사용
+- **배경/보더**: `bg-th-card`, `bg-th-modal`, `bg-th-input`, `border-th-border`, `border-th-border-light`
+- **하드코딩 hex 금지**: `bg-[#0d1117]` 등 금지 → CSS 변수 토큰 사용
+- **에러 처리**: catch 블록에서 `toast.error()` 필수 (폴링 제외), console.error 금지
+- **반응형 텍스트**: `text-[10px] sm:text-xs` 패턴 — 10-11px에는 반드시 sm 브레이크포인트 추가
+- **디자인 컨텍스트**: `.impeccable.md` 참조 (브랜드, 팔레트, 원칙)
 
 ### Git
 - Production branch: `main`, push 시 자동 배포
