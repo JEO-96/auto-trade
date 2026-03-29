@@ -52,45 +52,54 @@ export default function Home() {
                             카카오로 시작하기
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                         </Link>
-                        <Link href="/community" className="px-8 py-3.5 rounded-xl border border-th-border hover:bg-white/[0.04] transition-all flex items-center justify-center gap-2 text-sm font-semibold text-th-text-secondary">
-                            커뮤니티 둘러보기
+                        <Link href="/login" className="px-8 py-3.5 rounded-xl border border-th-border hover:bg-white/[0.04] transition-all flex items-center justify-center gap-2 text-sm font-semibold text-th-text-secondary">
+                            백테스트 먼저 해보기
                         </Link>
                     </div>
                 </div>
 
-                {/* Features */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full mb-24">
-                    {[
-                        {
-                            icon: <Zap className="w-5 h-5" />,
-                            bgClass: 'bg-primary/10 border-primary/10',
-                            textClass: 'text-primary',
-                            title: '백테스트로 검증',
-                            desc: '실제 과거 데이터로 전략을 직접 검증하세요. 수익률, 승률, 최대 낙폭까지 투명하게 확인할 수 있습니다.'
-                        },
-                        {
-                            icon: <TrendingUp className="w-5 h-5" />,
-                            bgClass: 'bg-secondary/10 border-secondary/10',
-                            textClass: 'text-secondary',
-                            title: '베타 무료 이용',
-                            desc: '베타 기간 중 무료로 모든 기능을 이용하세요.'
-                        },
-                        {
-                            icon: <ShieldCheck className="w-5 h-5" />,
-                            bgClass: 'bg-accent/10 border-accent/10',
-                            textClass: 'text-accent',
-                            title: '24시간 365일 모니터링',
-                            desc: 'ATR 기반 동적 손절/익절과 다양한 전략으로 24시간 시장을 모니터링하고 알림을 제공합니다.'
-                        }
-                    ].map((feature) => (
-                        <div key={feature.title} className="glass-panel glass-panel-hover p-8 rounded-2xl flex flex-col items-start">
-                            <div className={`${feature.bgClass} p-3 rounded-xl mb-6 border`}>
-                                <span className={feature.textClass}>{feature.icon}</span>
+                {/* How it works */}
+                <div className="w-full mb-24">
+                    <h2 className="text-sm font-bold text-th-text-muted uppercase tracking-wider mb-6 text-center">이렇게 사용하세요</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {[
+                            {
+                                step: '1',
+                                icon: <Zap className="w-5 h-5" />,
+                                bgClass: 'bg-primary/10 border-primary/10',
+                                textClass: 'text-primary',
+                                title: '전략 백테스트',
+                                desc: '21개 전략 중 선택하고 과거 데이터로 수익률, 승률, 최대 낙폭을 확인하세요.'
+                            },
+                            {
+                                step: '2',
+                                icon: <TrendingUp className="w-5 h-5" />,
+                                bgClass: 'bg-secondary/10 border-secondary/10',
+                                textClass: 'text-secondary',
+                                title: '모의투자 봇 실행',
+                                desc: '검증된 전략으로 모의투자 봇을 만들고 24시간 자동 매매를 시뮬레이션하세요.'
+                            },
+                            {
+                                step: '3',
+                                icon: <ShieldCheck className="w-5 h-5" />,
+                                bgClass: 'bg-accent/10 border-accent/10',
+                                textClass: 'text-accent',
+                                title: '성과 분석 & 공유',
+                                desc: '실시간 성과를 추적하고 커뮤니티에서 다른 트레이더와 전략을 비교하세요.'
+                            }
+                        ].map((feature) => (
+                            <div key={feature.title} className="glass-panel glass-panel-hover p-8 rounded-2xl flex flex-col items-start">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className={`${feature.bgClass} p-3 rounded-xl border`}>
+                                        <span className={feature.textClass}>{feature.icon}</span>
+                                    </div>
+                                    <span className="text-xs font-bold text-th-text-muted">{feature.step}단계</span>
+                                </div>
+                                <h3 className="text-lg font-bold mb-3 text-th-text">{feature.title}</h3>
+                                <p className="text-sm text-th-text-secondary leading-relaxed [text-wrap:pretty]">{feature.desc}</p>
                             </div>
-                            <h3 className="text-lg font-bold mb-3 text-th-text">{feature.title}</h3>
-                            <p className="text-sm text-th-text-secondary leading-relaxed [text-wrap:pretty]">{feature.desc}</p>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
 
                 {/* Footer */}

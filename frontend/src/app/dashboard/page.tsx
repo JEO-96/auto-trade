@@ -371,14 +371,16 @@ export default function DashboardPage() {
                 hasBots={bots.length > 0}
             />
 
-            {/* Summary Stats */}
-            <SummaryStats
-                botCount={bots.length}
-                activeBotCount={activeBotCount}
-                balances={balances}
-                onAssetDetailClick={() => setShowAssetDetail(true)}
-                isAdmin={isAdmin}
-            />
+            {/* Summary Stats — 봇이 있거나 관리자일 때만 표시 */}
+            {(bots.length > 0 || isAdmin) && (
+                <SummaryStats
+                    botCount={bots.length}
+                    activeBotCount={activeBotCount}
+                    balances={balances}
+                    onAssetDetailClick={() => setShowAssetDetail(true)}
+                    isAdmin={isAdmin}
+                />
+            )}
 
             {/* Asset Detail Modal */}
             <AssetDetailModal
