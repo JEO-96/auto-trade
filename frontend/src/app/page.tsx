@@ -3,6 +3,7 @@ import React from 'react';
 import { ShieldCheck, Zap, ArrowRight, TrendingUp, LayoutDashboard } from 'lucide-react';
 import Logo from '@/components/Logo';
 import Link from 'next/link';
+import CountUp from '@/components/ui/CountUp';
 
 export default function Home() {
     return (
@@ -56,6 +57,22 @@ export default function Home() {
                             백테스트 먼저 해보기
                         </Link>
                     </div>
+                </div>
+
+                {/* Hero Stats Counter */}
+                <div className="grid grid-cols-3 gap-6 w-full max-w-lg mx-auto mb-24">
+                    {[
+                        { end: 21, suffix: '개', label: '검증된 전략' },
+                        { end: 4, suffix: '개', label: '타임프레임' },
+                        { end: 24, suffix: 'h', label: '자동 모니터링' },
+                    ].map((stat) => (
+                        <div key={stat.label} className="text-center">
+                            <p className="text-3xl md:text-4xl font-extrabold text-th-text tracking-tight">
+                                <CountUp end={stat.end} suffix={stat.suffix} />
+                            </p>
+                            <p className="text-xs text-th-text-muted mt-1 font-medium">{stat.label}</p>
+                        </div>
+                    ))}
                 </div>
 
                 {/* How it works */}
