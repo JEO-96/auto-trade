@@ -58,6 +58,17 @@ Desktop.ini
 
 # Claude Code
 .claude/
+skills-lock.json
+
+# AI agents / IDE assistants
+.agents/
+.junie/
+
+# Crash dumps
+*.stackdump
+
+# Sensitive files — 절대 커밋 금지
+github token.txt
 
 # Local scripts
 scripts/

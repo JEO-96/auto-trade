@@ -19,7 +19,7 @@
 backtested/
 ├── backend/                    # FastAPI Python application
 │   ├── main.py                 # App entry point, CORS config, router registration, rate limiting
-│   ├── models.py               # SQLAlchemy ORM models
+│   ├── models.py               # SQLAlchemy ORM models (13 models)
 │   ├── schemas.py              # Pydantic request/response schemas
 │   ├── database.py             # PostgreSQL connection (AWS RDS) with connection pooling
 │   ├── settings.py             # Pydantic BaseSettings — centralized config from .env
@@ -31,38 +31,45 @@ backtested/
 │   ├── crypto_utils.py         # Fernet encryption/decryption + API key masking + create_exchange() factory
 │   ├── kakao_service.py        # Kakao OAuth token exchange & user info
 │   ├── utils.py                # Common helpers (safe_json_loads, parse_symbols, mask_nickname)
-│   ├── constants.py            # Centralized constants (bot limits, validation, strategy labels)
+│   ├── constants.py            # Centralized constants (bot limits, validation, strategy labels/definitions)
 │   ├── log_config.py           # Centralized logging setup
 │   ├── position_manager.py     # DB-based position persistence (atomic save/load/clear)
+│   ├── feedback_formatter.py   # Telegram 피드백 메시지 포맷팅 (bot_manager에서 분리)
+│   ├── trade_logger.py         # Trade logging — DB 거래 기록 영속화
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   ├── .env.example
-│   ├── migrate_*.py            # Migration scripts (historical)
+│   ├── migrations/             # DB migration scripts (16개)
+│   ├── scripts/                # Utility scripts (batch backtest, comparison, RDS backup check)
 │   ├── tests/
 │   │   ├── conftest.py         # Test fixtures
 │   │   └── test_core_logic.py  # 핵심 로직 단위 테스트
 │   ├── routers/
-│   │   ├── auth.py             # Kakao OAuth, JWT, 알림 설정
+│   │   ├── auth.py             # Kakao OAuth, JWT, 알림 설정, 회원 탈퇴
 │   │   ├── backtest.py         # Backtest CRUD + share to community
 │   │   ├── bots.py             # Bot CRUD + start/stop/status/logs/performance
 │   │   ├── keys.py             # Exchange key management (관리자 전용)
 │   │   ├── admin.py            # Admin: dashboard stats, user listing
-│   │   └── community.py        # Community: posts, comments, likes, chat, leaderboard
+│   │   ├── community.py        # Community: posts, comments, likes, chat, leaderboard, strategy reviews
+│   │   ├── settings.py         # 전략 가시성 토글 + 백테스트 설정 관리
+│   │   └── strategies.py       # 사용자 커스텀 전략 CRUD (백테스트→전략 저장)
 │   └── core/
 │       ├── config.py           # Trading parameters
 │       ├── data_fetcher.py     # CCXT OHLCV fetcher with PostgreSQL caching
 │       ├── execution.py        # Paper/live trade execution engine
 │       ├── strategy.py         # Strategy factory: get_strategy(name)
 │       ├── vector_backtester.py # Vectorized backtesting with vectorbt
-│       └── strategies/         # 전략 클래스들 (base.py + 개별 전략)
+│       └── strategies/         # 21개 전략 클래스 (base.py + 개별 전략)
 ├── frontend/                   # Next.js 14 application
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── page.tsx        # Landing page
 │   │   │   ├── login/page.tsx
+│   │   │   ├── register/page.tsx
 │   │   │   ├── terms/page.tsx
 │   │   │   ├── privacy/page.tsx
 │   │   │   ├── auth/kakao/page.tsx
+│   │   │   ├── auth/register-email/page.tsx
 │   │   │   ├── community/      # Public community pages
 │   │   │   └── dashboard/
 │   │   │       ├── layout.tsx   # Sidebar navigation
@@ -70,21 +77,33 @@ backtested/
 │   │   │       ├── backtest/page.tsx
 │   │   │       ├── keys/page.tsx       # API 키 관리 (관리자만 접근)
 │   │   │       ├── performance/page.tsx
-│   │   │       ├── live-bots/page.tsx
+│   │   │       ├── live-bots/page.tsx   # 실시간 봇 현황 대시보드
+│   │   │       ├── profile/page.tsx     # 사용자 프로필
 │   │   │       ├── settings/page.tsx
 │   │   │       ├── admin/page.tsx
 │   │   │       └── community/          # Dashboard community pages
+│   │   │           └── profile/page.tsx # 커뮤니티 멤버 프로필
 │   │   ├── contexts/AuthContext.tsx
 │   │   ├── components/
-│   │   │   ├── ui/              # Reusable UI components
-│   │   │   ├── modals/          # BotFormModal, ConfirmationModal, etc.
+│   │   │   ├── ui/              # Reusable UI (ThemeToggle, Badge, StatCard, PageContainer 등)
+│   │   │   ├── modals/          # BotFormModal, ConfirmationModal, DeleteConfirmationModal, AssetDetailModal
 │   │   │   ├── cards/BotCard.tsx
-│   │   │   └── sections/SummaryStats.tsx
-│   │   ├── types/               # TypeScript type definitions
+│   │   │   └── sections/        # SummaryStats, TradeLogTimeline
+│   │   ├── types/               # TypeScript type definitions (index.ts + 모듈별)
 │   │   └── lib/
 │   │       ├── api.ts           # Axios instance with auth interceptors
-│   │       ├── api/             # Modular API functions
-│   │       ├── constants.ts     # Symbols, strategies, timeframes
+│   │       ├── api/             # Modular API functions (9 modules)
+│   │       │   ├── admin.ts
+│   │       │   ├── auth.ts
+│   │       │   ├── backtest.ts
+│   │       │   ├── bot.ts
+│   │       │   ├── community.ts
+│   │       │   ├── keys.ts
+│   │       │   ├── settings.ts  # 전략 가시성 + 백테스트 설정 API
+│   │       │   ├── strategies.ts # 사용자 커스텀 전략 API
+│   │       │   └── index.ts
+│   │       ├── constants.ts     # 21개 전략 정의, symbols, timeframes, helper functions
+│   │       ├── useStrategies.ts # 전략 관련 React hook
 │   │       └── utils.ts
 │   ├── public/                  # PWA manifest, icons, service worker
 │   ├── package.json
@@ -137,13 +156,14 @@ docker-compose pull && docker-compose up -d
 
 | Model | Key Fields | Notes |
 |-------|-----------|-------|
-| `User` | id, email, nickname, kakao_id, telegram_chat_id, notification_*, is_active, is_admin | `is_active=True` (auto-approved); `is_admin` gates admin features |
+| `User` | id, email, nickname, kakao_id, telegram_chat_id, notification_*, is_active, is_admin, created_at | `is_active=True` (auto-approved); `is_admin` gates admin features |
 | `ExchangeKey` | user_id, exchange_name, api_key_encrypted, api_secret_encrypted | Fernet 암호화, 관리자만 등록 가능 |
-| `BotConfig` | user_id, symbol, timeframe, exchange_name, strategy_name, is_active, paper_trading_mode, allocated_capital | 일반 사용자: 모의투자 1개, 관리자: 5개 (실매매 1개) |
+| `BotConfig` | user_id, symbol, timeframe, exchange_name, strategy_name, is_active, paper_trading_mode, allocated_capital, custom_strategy_id | 일반 사용자: 모의투자 1개, 관리자: 5개 (실매매 1개) |
 | `TradeLog` | bot_id, symbol, side, price, amount, pnl, reason | BUY/SELL |
 | `OHLCV` | symbol, timeframe, timestamp, open, high, low, close, volume | CCXT 캐싱 |
-| `BacktestHistory` | user_id, symbols, timeframe, strategy_name, result_data, status | 백테스트 결과 |
+| `BacktestHistory` | user_id, symbols, timeframe, strategy_name, result_data, status, title | 백테스트 결과 |
 | `ActivePosition` | bot_id, symbol, position_amount, entry_price, stop_loss, take_profit | 봇 포지션 영속화 |
+| `UserStrategy` | user_id, name, base_strategy_name, custom_params (JSON), backtest_history_id, is_deleted | 사용자 커스텀 전략 (백테스트에서 생성) |
 | `CommunityPost` | user_id, post_type, title, content, like_count, comment_count | 커뮤니티 |
 | `PostComment` | post_id, user_id, content, is_deleted | Soft-delete |
 | `PostLike` | post_id, user_id | Unique constraint |
@@ -163,6 +183,7 @@ All routes except `/auth/*` and some `/community/*` GETs require `Authorization:
 | POST | `/auth/kakao/complete` | 이메일 없는 카카오 사용자 등록 완료 |
 | GET | `/auth/me` | Current user info |
 | GET/PUT | `/auth/notifications` | 알림 설정 조회/업데이트 |
+| DELETE | `/auth/withdraw` | 회원 탈퇴 |
 
 ### Bots (`/bot`)
 | Method | Path | Description |
@@ -200,7 +221,26 @@ All routes except `/auth/*` and some `/community/*` GETs require `Authorization:
 | GET/POST | `/community/chat` | 실시간 채팅 |
 | GET | `/community/leaderboard` | 수익률 리더보드 |
 | GET | `/community/strategy-rankings` | 전략별 랭킹 |
+| GET | `/community/strategies/{name}/reviews` | 전략 리뷰 조회 |
+| POST | `/community/strategies/{name}/rating` | 전략 평점 등록 |
+| PUT | `/community/profile/nickname` | 닉네임 변경 |
 | PUT | `/community/profile/telegram` | 텔레그램 연동 |
+
+### Settings (`/settings`) — 관리자 전용
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/settings/strategies` | 전략 목록 + 가시성 설정 |
+| PUT | `/settings/strategies/visibility` | 전략 가시성 토글 |
+| GET | `/settings/backtest` | 백테스트 설정 |
+| PUT | `/settings/backtest` | 백테스트 설정 업데이트 |
+
+### Strategies (`/strategies`) — 사용자 커스텀 전략
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/strategies/` | 커스텀 전략 생성 |
+| POST | `/strategies/from-backtest/{history_id}` | 백테스트 결과에서 전략 생성 |
+| GET | `/strategies/` | 내 커스텀 전략 목록 |
+| DELETE | `/strategies/{strategy_id}` | 커스텀 전략 삭제 |
 
 ### Admin (`/admin`) — 관리자 전용
 | Method | Path | Description |
@@ -214,34 +254,65 @@ All routes except `/auth/*` and some `/community/*` GETs require `Authorization:
 
 ### 1. Service Model (사용자 권한)
 - **일반 사용자**: 모의투자 봇 1개 + 백테스트 + 커뮤니티 + 텔레그램 알림
-- **관리자**: 실매매 봇 + API 키 관리 + 거래소 잔고 조회 + 사용자 관리
+- **관리자**: 실매매 봇 + API 키 관리 + 거래소 잔고 조회 + 사용자 관리 + 전략 가시성 설정
 - 실매매/API 키는 프론트/백엔드 양쪽에서 `is_admin` 체크
 
-### 2. Strategy Factory Pattern
+### 2. Strategy System
 `backend/core/strategy.py` — `get_strategy(name)` returns a strategy instance.
-Add new strategies: `backend/core/strategies/`에 클래스 생성 → `strategy.py` 등록 → `constants.ts` 추가
 
-### 3. Async Bot Management & Position Persistence
+#### 전략 목록 (21개)
+| 카테고리 | 전략 | 타임프레임 |
+|---------|------|-----------|
+| 모멘텀 Basic | momentum_basic_1h/4h/1d | 1h, 4h, 1d |
+| 모멘텀 Stable | momentum_stable_1h/4h/1d | 1h, 4h, 1d |
+| 모멘텀 Aggressive | momentum_aggressive_1h/4h/1d | 1h, 4h, 1d |
+| 멀티시그널 | multi_signal_15m/1h/4h/1d | 15m, 1h, 4h, 1d |
+| 퀵 스윙 | quick_swing_15m/1h | 15m, 1h |
+| 트렌드 라이더 | trend_rider_4h_v1/v2/v3 | 4h |
+| 와이드 스윙 | wide_swing_1d | 1d |
+| 스캘퍼 | scalper_15m | 15m |
+| 추세추종 | trend_follower_15m | 15m |
+| 시그널 테스트 | signal_test_15m | 15m |
+
+#### 전략 상태 시스템
+- `status: "confirmed"` — 검증 완료, 사용자에게 공개
+- `status: "testing"` — 테스트 중, 관리자만 접근 가능
+- DB-driven visibility override via `SystemSettings` (관리자 전략 가시성 토글)
+
+#### 새 전략 추가 절차
+1. `backend/core/strategies/`에 클래스 생성
+2. `strategy.py` STRATEGY_MAP에 등록
+3. `constants.py` STRATEGY_DEFINITIONS에 추가
+4. `frontend/src/lib/constants.ts`에 추가
+
+### 3. User Custom Strategies
+- 사용자가 백테스트 결과에서 파라미터를 저장하여 커스텀 전략 생성
+- `UserStrategy` 모델로 영속화, `BotConfig.custom_strategy_id`로 참조
+- `routers/strategies.py`에서 CRUD 제공
+
+### 4. Async Bot Management & Position Persistence
 `backend/bot_manager.py` — `Dict[int, asyncio.Task]` for bot lifecycle.
 - **60초 루프**: 매 tick마다 전 종목 데이터 fetch + SL/TP 청산 감시 + 신호 분석
 - **텔레그램 피드백**: 시계 기반이 아닌 **캔들 타임스탬프 기반** — `df.iloc[-2]` 타임스탬프가 바뀌면(새 봉 마감) 전송
 - **트리거 조건 표시**: `"조건이름: 실제값 부등호 비교값"` 포맷 (예: `❌ 이전MACD≤시그널: 450,369 > 402,785`)
+- **피드백 포맷팅**: `feedback_formatter.py`에서 메시지 구성 (bot_manager에서 분리)
+- **거래 기록**: `trade_logger.py`로 DB 영속화
 - Position persistence to `ActivePosition` table every tick
 - Atomic saves via `position_manager.py` (`begin_nested()` savepoint)
 - Auto-recovery on server restart
 - Bot limits: `MAX_BOTS_PER_REGULAR_USER=1`, `MAX_BOTS_PER_USER=5` (admin), `MAX_LIVE_BOTS_PER_USER=1`
 
-### 4. Fernet Encryption
+### 5. Fernet Encryption
 `backend/crypto_utils.py` — API keys + Kakao tokens encrypted with Fernet.
 `create_exchange()` factory for ccxt instances (upbit/bithumb).
 
-### 5. Category-Based Notifications
+### 6. Category-Based Notifications
 `backend/notifications.py` — per-user Telegram alerts.
 - `send_trade_notification()` — 매매 체결
 - `send_bot_status_notification()` — 봇 상태
 - `send_system_notification()` — 관리자 시스템 알림
 
-### 6. Error Monitoring
+### 7. Error Monitoring
 `backend/error_monitor.py` — `TelegramErrorHandler` sends ERROR+ logs to admin Telegram with rate limiting.
 
 ---
@@ -286,8 +357,9 @@ Add new strategies: `backend/core/strategies/`에 클래스 생성 → `strategy
 
 ### TypeScript (Frontend)
 - Functional components + hooks only
-- All API calls via `lib/api.ts` (Axios)
-- Constants in `lib/constants.ts`
+- All API calls via `lib/api.ts` (Axios) + `lib/api/` modular modules
+- Constants in `lib/constants.ts` (21개 전략 정의 + helper functions)
+- Custom hooks in `lib/` (예: `useStrategies.ts`)
 - `@/` path alias → `src/`
 - Tailwind CSS, Toast notifications, ModalWrapper for modals
 
