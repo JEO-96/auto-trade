@@ -7,6 +7,7 @@ import {
     MessageSquare, Heart, Star, TrendingUp, BarChart2,
     MessageCircle, Plus, ChevronLeft, ChevronRight, FlaskConical, LogIn
 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
@@ -170,6 +171,7 @@ function getTimeAgo(dateString: string): string {
 }
 
 export default function PublicCommunityPage() {
+    const toast = useToast();
     const { isAuthenticated } = useAuth();
     const pathname = usePathname();
     const basePath = pathname?.startsWith('/dashboard') ? '/dashboard/community' : '/community';
@@ -192,11 +194,11 @@ export default function PublicCommunityPage() {
             setPosts(data.posts);
             setTotal(data.total);
         } catch {
-            // error handled by UI state
+            toast.error('게시글을 불러오지 못했습니다.');
         } finally {
             setLoading(false);
         }
-    }, [page, activeTab]);
+    }, [page, activeTab, toast]);
 
     useEffect(() => {
         fetchPosts();
@@ -219,7 +221,7 @@ export default function PublicCommunityPage() {
                 )
             );
         } catch {
-            // error handled by UI state
+            toast.error('좋아요 처리에 실패했습니다.');
         }
     };
 

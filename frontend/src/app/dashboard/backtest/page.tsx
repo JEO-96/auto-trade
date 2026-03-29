@@ -7,6 +7,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
+import { useToast } from '@/components/ui/Toast';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel, getStrategyTimeframe, TIMEFRAME_LABEL_MAP, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe, STRATEGY_DEFAULTS } from '@/lib/constants';
 import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle } from '@/lib/api/backtest';
@@ -19,6 +20,7 @@ import ParameterTuningPanel, { TuningState, DEFAULT_TUNING_STATE } from '@/compo
 import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryItem } from '@/types/backtest';
 
 export default function BacktestPage() {
+    const toast = useToast();
     const { backtestStrategies } = useStrategies();
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<BacktestResult | null>(null);
@@ -73,11 +75,11 @@ export default function BacktestPage() {
             const data = await getBacktestHistory(1, 50);
             setHistoryList(data);
         } catch {
-            // error handled by UI state
+            toast.error('백테스트 기록을 불러오지 못했습니다.');
         } finally {
             setHistoryLoading(false);
         }
-    }, []);
+    }, [toast]);
 
     const loadHistoryDetail = async (id: number) => {
         try {
@@ -91,7 +93,7 @@ export default function BacktestPage() {
                 setDetailMode(true);
             }
         } catch {
-            // error handled by UI state
+            toast.error('백테스트 상세 정보를 불러오지 못했습니다.');
         }
     };
 
@@ -120,7 +122,7 @@ export default function BacktestPage() {
                 setShareSuccess(false);
             }, 1500);
         } catch {
-            // error handled by UI state
+            toast.error('공유에 실패했습니다.');
         } finally {
             setSharing(false);
         }
@@ -174,7 +176,7 @@ export default function BacktestPage() {
             setHistoryList(prev => prev.map(h => h.id === id ? { ...h, title: editTitleValue } : h));
             setEditingTitleId(null);
         } catch {
-            // error handled by UI state
+            toast.error('제목 수정에 실패했습니다.');
         }
     };
 
@@ -185,7 +187,7 @@ export default function BacktestPage() {
             setHistoryList(prev => prev.filter(h => h.id !== id));
             setDeletingHistoryId(null);
         } catch {
-            // error handled by UI state
+            toast.error('삭제에 실패했습니다.');
         } finally {
             setDeleteLoading(false);
         }

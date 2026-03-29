@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, User as UserIcon, Check, Heart, MessageCircle } from 'lucide-react';
 import PageContainer from '@/components/ui/PageContainer';
+import { useToast } from '@/components/ui/Toast';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -15,6 +16,7 @@ import { POST_TYPE_BADGE } from '@/lib/constants';
 import type { CommunityPost, PostType } from '@/types/community';
 
 export default function ProfilePage() {
+    const toast = useToast();
     const { user, refreshUser } = useAuth();
     const [nickname, setNickname] = useState('');
     const [saving, setSaving] = useState(false);
@@ -38,11 +40,11 @@ export default function ProfilePage() {
             const profile = await getUserProfile(user.id);
             setPostCount(profile.post_count);
         } catch {
-            // error handled by UI state
+            toast.error('게시글을 불러오지 못했습니다.');
         } finally {
             setLoadingPosts(false);
         }
-    }, [user]);
+    }, [user, toast]);
 
     useEffect(() => {
         fetchMyPosts();

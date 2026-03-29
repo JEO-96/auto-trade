@@ -9,6 +9,7 @@ import {
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import { useToast } from '@/components/ui/Toast';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import { getPost, toggleLike, getComments, createComment, deleteComment, deletePost } from '@/lib/api/community';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +38,7 @@ export default function PublicPostDetailPage() {
     const pathname = usePathname();
     const basePath = pathname?.startsWith('/dashboard') ? '/dashboard/community' : '/community';
     const { user, isAuthenticated } = useAuth();
+    const toast = useToast();
     const postId = Number(searchParams.get('id'));
 
     const [post, setPost] = useState<CommunityPost | null>(null);
@@ -57,11 +59,11 @@ export default function PublicPostDetailPage() {
             setPost(postData);
             setComments(commentsData);
         } catch {
-            // error handled by UI state
+            toast.error('게시글을 불러오지 못했습니다.');
         } finally {
             setLoading(false);
         }
-    }, [postId]);
+    }, [postId, toast]);
 
     useEffect(() => {
         fetchData();
@@ -73,7 +75,7 @@ export default function PublicPostDetailPage() {
             const result = await toggleLike(post.id);
             setPost(prev => prev ? { ...prev, is_liked: result.liked, like_count: result.like_count } : prev);
         } catch {
-            // error handled by UI state
+            toast.error('좋아요 처리에 실패했습니다.');
         }
     };
 
@@ -87,7 +89,7 @@ export default function PublicPostDetailPage() {
             setCommentText('');
             setPost(prev => prev ? { ...prev, comment_count: prev.comment_count + 1 } : prev);
         } catch {
-            // error handled by UI state
+            toast.error('댓글 작성에 실패했습니다.');
         } finally {
             setSubmittingComment(false);
         }
@@ -106,7 +108,7 @@ export default function PublicPostDetailPage() {
             setComments(prev => prev.filter(c => c.id !== commentId));
             setPost(prev => prev ? { ...prev, comment_count: Math.max(0, prev.comment_count - 1) } : prev);
         } catch {
-            // error handled by UI state
+            toast.error('댓글 삭제에 실패했습니다.');
         }
     };
 
@@ -122,7 +124,7 @@ export default function PublicPostDetailPage() {
             await deletePost(post.id);
             router.push(basePath);
         } catch {
-            // error handled by UI state
+            toast.error('게시글 삭제에 실패했습니다.');
         }
     };
 

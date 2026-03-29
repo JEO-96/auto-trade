@@ -109,7 +109,7 @@ export default function DashboardPage() {
                 });
             }
         } catch {
-            // error handled by UI state
+            // polling에서 재시도됨 — 토스트 불필요
         } finally {
             setLoading(false);
         }
@@ -120,7 +120,7 @@ export default function DashboardPage() {
             const logs = await getBotLogs(botId);
             setTradeLogs(logs);
         } catch {
-            // error handled by UI state
+            // polling에서 재시도됨 — 토스트 불필요
         }
     }, []);
 

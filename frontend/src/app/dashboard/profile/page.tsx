@@ -71,11 +71,11 @@ export default function ProfilePage() {
             const profile = await getUserProfile(user.id);
             setPostCount(profile.post_count);
         } catch {
-            // error handled by UI state
+            toast.error('게시글을 불러오지 못했습니다.');
         } finally {
             setLoadingPosts(false);
         }
-    }, [user]);
+    }, [user, toast]);
 
     useEffect(() => {
         fetchMyPosts();
@@ -137,7 +137,7 @@ export default function ProfilePage() {
             setChatId('');
             await refreshUser();
         } catch {
-            // error handled by UI state
+            toast.error('텔레그램 연동 해제에 실패했습니다.');
         }
     };
 

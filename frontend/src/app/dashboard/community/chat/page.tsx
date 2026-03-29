@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Send, User as UserIcon } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
 import PageContainer from '@/components/ui/PageContainer';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Button from '@/components/ui/Button';
@@ -26,6 +27,7 @@ function shouldShowDateSeparator(current: string, prev?: string): boolean {
 }
 
 export default function ChatPage() {
+    const toast = useToast();
     const { user } = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
@@ -62,7 +64,7 @@ export default function ChatPage() {
                 setTimeout(scrollToBottom, 100);
             }
         } catch {
-            // error handled by UI state
+            // polling에서 재시도됨 — 토스트 불필요
         } finally {
             if (initial) setLoading(false);
         }
@@ -89,7 +91,7 @@ export default function ChatPage() {
             isAtBottomRef.current = true;
             setTimeout(scrollToBottom, 100);
         } catch {
-            // error handled by UI state
+            toast.error('메시지 전송에 실패했습니다.');
         } finally {
             setSending(false);
         }
