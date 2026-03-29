@@ -129,7 +129,6 @@ MARKETS_CACHE_TTL = 3600  # 1시간
 @router.get("/markets")
 async def get_exchange_markets(
     exchange_name: str = Query("upbit", description="거래소 이름 (upbit, bithumb)"),
-    current_user: models.User = Depends(get_current_user),
 ):
     """거래소에서 KRW 마켓의 거래 가능한 심볼 목록을 조회합니다."""
     import ccxt
