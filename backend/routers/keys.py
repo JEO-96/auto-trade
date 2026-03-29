@@ -118,3 +118,53 @@ async def get_exchange_balance(
         )
 
     return schemas.BalanceResponse(balances=balances)
+
+
+# 캐시: 마켓 목록은 자주 바뀌지 않으므로 메모리 캐시 (1시간)
+_markets_cache: dict[str, dict] = {}
+_markets_cache_time: dict[str, float] = {}
+MARKETS_CACHE_TTL = 3600  # 1시간
+
+
+@router.get("/markets")
+async def get_exchange_markets(
+    exchange_name: str = Query("upbit", description="거래소 이름 (upbit, bithumb)"),
+    current_user: models.User = Depends(get_current_user),
+):
+    """거래소에서 KRW 마켓의 거래 가능한 심볼 목록을 조회합니다."""
+    import ccxt
+    import time
+
+    now = time.time()
+    cache_key = exchange_name
+
+    # 캐시 히트
+    if cache_key in _markets_cache and (now - _markets_cache_time.get(cache_key, 0)) < MARKETS_CACHE_TTL:
+        return _markets_cache[cache_key]
+
+    try:
+        if exchange_name == "upbit":
+            exchange = ccxt.upbit()
+        elif exchange_name == "bithumb":
+            exchange = ccxt.bithumb()
+        else:
+            raise HTTPException(status_code=400, detail=f"지원하지 않는 거래소: {exchange_name}")
+
+        markets = exchange.load_markets()
+
+        # KRW 마켓만 필터 + 활성 마켓만
+        symbols = sorted([
+            symbol for symbol, market in markets.items()
+            if market.get('quote') == 'KRW' and market.get('active', True)
+        ])
+
+        result = {"exchange": exchange_name, "symbols": symbols, "count": len(symbols)}
+        _markets_cache[cache_key] = result
+        _markets_cache_time[cache_key] = now
+
+        return result
+    except ccxt.NetworkError as e:
+        raise HTTPException(status_code=502, detail=f"거래소 연결 실패: {str(e)}")
+    except Exception as e:
+        logger.error("[Markets] Failed to load markets for %s: %s", exchange_name, e)
+        raise HTTPException(status_code=500, detail="마켓 목록 조회에 실패했습니다.")

@@ -5,7 +5,7 @@ import { Plus, Edit3, AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { SelectInput } from '@/components/ui/Input';
 import ModalWrapper, { ModalHeader } from '@/components/ui/ModalWrapper';
-import { SYMBOLS, BOT_STRATEGIES, EXCHANGES, getStrategyTimeframe, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
+import { BOT_STRATEGIES, EXCHANGES, getStrategyTimeframe, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
 import { getUserStrategies } from '@/lib/api/strategies';
 import type { StrategyItem } from '@/lib/api/settings';
 import type { UserStrategy } from '@/types/backtest';
@@ -31,6 +31,8 @@ export interface BotFormModalProps {
     availableKrw?: number;
     /** API에서 가져온 전략 목록 (없으면 하드코딩 상수 사용) */
     strategies?: StrategyItem[];
+    /** 거래소에서 가져온 심볼 목록 */
+    availableSymbols?: string[];
     /** 관리자 여부 (실매매는 관리자만 허용) */
     isAdmin?: boolean;
     onSubmit: (e: React.FormEvent) => void;
@@ -47,6 +49,7 @@ export default function BotFormModal({
     liveBotLimitReached,
     availableKrw,
     strategies,
+    availableSymbols,
     isAdmin = false,
     onSubmit,
     onClose,
@@ -111,10 +114,10 @@ export default function BotFormModal({
 
                     <div>
                         <label className="text-xs text-th-text-muted font-medium mb-2 block">
-                            거래 심볼 <span className="text-th-text-muted">&mdash; 복수 선택 가능</span>
+                            거래 심볼 <span className="text-th-text-muted">&mdash; 복수 선택 가능 ({formData.symbols.length}개 선택)</span>
                         </label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {SYMBOLS.map(s => {
+                        <div className="grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                            {(availableSymbols ?? ['BTC/KRW', 'ETH/KRW', 'SOL/KRW', 'XRP/KRW']).map(s => {
                                 const isSelected = formData.symbols.includes(s);
                                 return (
                                     <button
@@ -128,13 +131,13 @@ export default function BotFormModal({
                                                     : [...formData.symbols, s],
                                             });
                                         }}
-                                        className={`py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                                        className={`py-2 rounded-lg text-xs font-semibold transition-all border ${
                                             isSelected
                                                 ? 'bg-primary/10 border-primary/30 text-primary'
-                                                : 'bg-white/[0.02] border-white/[0.06] text-th-text-muted hover:border-white/10 hover:text-th-text-secondary'
+                                                : 'bg-th-card border-th-border text-th-text-muted hover:border-th-border hover:text-th-text-secondary'
                                         }`}
                                     >
-                                        {s.split('/')[0]} <span className="opacity-40 text-[10px] sm:text-xs">/ KRW</span>
+                                        {s.replace('/KRW', '')}
                                     </button>
                                 );
                             })}

@@ -22,3 +22,16 @@ export async function getUpbitBalance(exchangeName: string = 'upbit'): Promise<B
     });
     return res.data.balances;
 }
+
+export interface ExchangeMarkets {
+    exchange: string;
+    symbols: string[];
+    count: number;
+}
+
+export async function getExchangeMarkets(exchangeName: string = 'upbit'): Promise<string[]> {
+    const res = await api.get<ExchangeMarkets>('/keys/markets', {
+        params: { exchange_name: exchangeName },
+    });
+    return res.data.symbols;
+}

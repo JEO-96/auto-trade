@@ -9,7 +9,8 @@ import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
 import { useToast } from '@/components/ui/Toast';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
-import { SYMBOLS, BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel, getStrategyTimeframe, TIMEFRAME_LABEL_MAP, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe, STRATEGY_DEFAULTS } from '@/lib/constants';
+import { BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel, getStrategyTimeframe, TIMEFRAME_LABEL_MAP, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe, STRATEGY_DEFAULTS } from '@/lib/constants';
+import { useMarkets } from '@/lib/useMarkets';
 import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle } from '@/lib/api/backtest';
 import { createStrategyFromBacktest } from '@/lib/api/strategies';
 import { getBacktestSettings } from '@/lib/api/settings';
@@ -22,6 +23,7 @@ import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryIt
 export default function BacktestPage() {
     const toast = useToast();
     const { backtestStrategies } = useStrategies();
+    const { symbols: availableSymbols } = useMarkets();
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<BacktestResult | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -903,18 +905,18 @@ export default function BacktestPage() {
                             {/* Assets */}
                             <div>
                                 <label className="text-xs text-th-text-muted font-medium mb-2 block">분석 대상 자산</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {SYMBOLS.map(s => (
+                                <div className="grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                                    {availableSymbols.map(s => (
                                         <button
                                             key={s}
                                             type="button"
                                             onClick={() => toggleSymbol(s)}
-                                            className={`py-2.5 rounded-xl text-xs font-semibold transition-all border ${form.symbols.includes(s)
+                                            className={`py-2 rounded-lg text-xs font-semibold transition-all border ${form.symbols.includes(s)
                                                 ? 'bg-primary/10 border-primary/30 text-primary'
                                                 : 'bg-th-card border-th-border text-th-text-muted hover:border-th-border'
                                                 }`}
                                         >
-                                            {s.split('/')[0]} <span className="opacity-40 text-[10px] sm:text-xs">/ KRW</span>
+                                            {s.replace('/KRW', '')}
                                         </button>
                                     ))}
                                 </div>

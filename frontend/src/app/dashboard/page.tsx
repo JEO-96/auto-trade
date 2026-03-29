@@ -24,6 +24,7 @@ import {
 import { getKeys, getUpbitBalance, type BalanceItem } from '@/lib/api/keys';
 import { getBacktestHistory } from '@/lib/api/backtest';
 import { useStrategies } from '@/lib/useStrategies';
+import { useMarkets } from '@/lib/useMarkets';
 import { getErrorMessage } from '@/lib/utils';
 import type { BotConfig, TradeLog } from '@/types/bot';
 
@@ -43,6 +44,7 @@ export default function DashboardPage() {
     const toast = useToast();
     const { user } = useAuth();
     const { botStrategies } = useStrategies();
+    const { symbols: availableSymbols } = useMarkets();
 
     // Bot list state
     const [bots, setBots] = useState<BotConfig[]>([]);
@@ -340,6 +342,7 @@ export default function DashboardPage() {
                 liveBotLimitReached={liveBotLimitReached}
                 availableKrw={availableKrw}
                 strategies={botStrategies}
+                availableSymbols={availableSymbols}
                 isAdmin={!!user?.is_admin}
                 onSubmit={handleFormSubmit}
                 onClose={() => setShowBotModal(false)}
