@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import Logo from '@/components/Logo';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import KakaoLoginButton from '@/components/KakaoLoginButton';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
@@ -11,11 +11,14 @@ import api from '@/lib/api';
 export default function LoginPage() {
     const [termsAgreed, setTermsAgreed] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { isAuthenticated, isLoading } = useAuth();
 
-    // Redirect to dashboard if already authenticated
+    const redirectTo = searchParams.get('redirect') || '/dashboard';
+
+    // Redirect if already authenticated
     if (!isLoading && isAuthenticated) {
-        router.replace('/dashboard');
+        router.replace(redirectTo);
     }
 
     // Show blank screen while checking auth or if already authenticated (prevents flash)

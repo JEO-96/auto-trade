@@ -52,7 +52,7 @@ export default function Home() {
                             카카오로 시작하기
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                         </Link>
-                        <Link href="/login" className="px-8 py-3.5 rounded-xl border border-th-border hover:bg-white/[0.04] transition-all flex items-center justify-center gap-2 text-sm font-semibold text-th-text-secondary">
+                        <Link href="/login?redirect=/dashboard/backtest" className="px-8 py-3.5 rounded-xl border border-th-border hover:bg-white/[0.04] transition-all flex items-center justify-center gap-2 text-sm font-semibold text-th-text-secondary">
                             백테스트 먼저 해보기
                         </Link>
                     </div>
