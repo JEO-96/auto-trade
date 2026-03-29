@@ -135,6 +135,7 @@ def _process_symbol_entry(
     user_id: int,
     total_equity: float,
     liquid_capital: float,
+    paper_trading: bool = True,
 ) -> tuple[float, Optional[dict]]:
     """
     Check buy signal and execute entry if triggered.
@@ -159,7 +160,21 @@ def _process_symbol_entry(
         )
         return liquid_capital, None
 
-    # 백테스트와 동일: 가용 자본 100% 사용
+    # 실매매: 매수 직전 거래소 실제 KRW 잔고 조회 (추가 입금 반영)
+    if not paper_trading and execution.exchange:
+        try:
+            balance = execution.exchange.fetch_balance()
+            real_krw_free = float(balance.get('KRW', {}).get('free', 0) or 0)
+            if real_krw_free > liquid_capital:
+                logger.info(
+                    "[Bot %d] 거래소 잔고(%.0f) > 내부 자본(%.0f) — 추가 입금 감지, 동기화",
+                    bot_config_id, real_krw_free, liquid_capital,
+                )
+                liquid_capital = real_krw_free
+        except Exception as e:
+            logger.warning("[Bot %d] 잔고 조회 실패, 기존 자본으로 진행: %s", bot_config_id, e)
+
+    # 가용 자본 100% 사용
     if liquid_capital <= 0 or curr_price <= 0:
         return liquid_capital, None
 
@@ -592,7 +607,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                             liquid_capital, new_position = _process_symbol_entry(
                                 symbol, df, curr_price, current_idx, strategy,
                                 execution, bot_config_id, user_id,
-                                total_equity, liquid_capital,
+                                total_equity, liquid_capital, paper_trading,
                             )
                             if new_position:
                                 trade_occurred = True
