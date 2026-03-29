@@ -35,6 +35,14 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
         setDismissed(true);
     }, []);
 
+    // 모든 단계 완료 시 5초 후 자동 닫힘
+    const allDone = hasKeys && hasBacktests && hasBots;
+    useEffect(() => {
+        if (!allDone || dismissed) return;
+        const timer = setTimeout(handleDismiss, 5000);
+        return () => clearTimeout(timer);
+    }, [allDone, dismissed, handleDismiss]);
+
     if (dismissed) return null;
 
     const steps: OnboardingStep[] = [

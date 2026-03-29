@@ -131,7 +131,7 @@ export default function PublicPostDetailPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-[60vh]">
-                <LoadingSpinner message="게시글 불러오는 중..." />
+                <LoadingSpinner message="게시글을 가져오고 있어요" />
             </div>
         );
     }

@@ -50,7 +50,7 @@ export default function SettingsPage() {
         return (
             <PageContainer>
                 <div className="flex items-center justify-center py-20">
-                    <LoadingSpinner message="로딩 중..." />
+                    <LoadingSpinner message="설정을 준비하고 있어요" />
                 </div>
             </PageContainer>
         );
@@ -72,7 +72,7 @@ export default function SettingsPage() {
         return (
             <PageContainer>
                 <div className="flex items-center justify-center py-20">
-                    <LoadingSpinner message="설정 불러오는 중..." />
+                    <LoadingSpinner message="전략 설정을 불러오고 있어요" />
                 </div>
             </PageContainer>
         );

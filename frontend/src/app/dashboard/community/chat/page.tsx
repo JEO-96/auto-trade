@@ -117,7 +117,7 @@ export default function ChatPage() {
                 {/* Messages */}
                 {loading ? (
                     <div className="flex-1 flex items-center justify-center">
-                        <LoadingSpinner message="채팅 불러오는 중..." />
+                        <LoadingSpinner message="대화 내용을 가져오고 있어요" />
                     </div>
                 ) : (
                     <div

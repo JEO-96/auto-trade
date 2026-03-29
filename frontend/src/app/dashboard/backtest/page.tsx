@@ -740,7 +740,7 @@ export default function BacktestPage() {
                         백테스트 기록
                     </h3>
                     {historyLoading ? (
-                        <div className="flex justify-center py-12"><LoadingSpinner message="기록 불러오는 중..." /></div>
+                        <div className="flex justify-center py-12"><LoadingSpinner message="백테스트 기록을 정리하고 있어요" /></div>
                     ) : historyList.length === 0 ? (
                         <EmptyState
                             icon={<History className="w-12 h-12" />}

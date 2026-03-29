@@ -46,7 +46,7 @@ export default function LiveBotsPage() {
         return (
             <PageContainer>
                 <div className="flex items-center justify-center py-20">
-                    <LoadingSpinner message="실행 중인 봇 불러오는 중..." />
+                    <LoadingSpinner message="실시간 봇 현황을 확인하고 있어요" />
                 </div>
             </PageContainer>
         );

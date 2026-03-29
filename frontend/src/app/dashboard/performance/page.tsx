@@ -74,7 +74,7 @@ export default function PerformancePage() {
         return (
             <PageContainer>
                 <div className="flex items-center justify-center min-h-[60vh]">
-                    <LoadingSpinner message="봇 목록 로딩 중..." />
+                    <LoadingSpinner message="봇 목록을 가져오고 있어요" />
                 </div>
             </PageContainer>
         );
@@ -129,7 +129,7 @@ export default function PerformancePage() {
 
             {perfLoading ? (
                 <div className="flex items-center justify-center min-h-[40vh]">
-                    <LoadingSpinner message="성과 데이터 로딩 중..." />
+                    <LoadingSpinner message="매매 성과를 분석하고 있어요" />
                 </div>
             ) : !performance || performance.total_trades === 0 ? (
                 <EmptyState

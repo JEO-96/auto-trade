@@ -282,7 +282,7 @@ export default function PublicCommunityPage() {
             {/* Posts Grid */}
             {loading ? (
                 <div className="flex items-center justify-center py-20">
-                    <LoadingSpinner message="게시글 불러오는 중..." />
+                    <LoadingSpinner message="커뮤니티 글을 모아오고 있어요" />
                 </div>
             ) : posts.length === 0 ? (
                 <EmptyState

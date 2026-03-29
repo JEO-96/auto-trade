@@ -19,7 +19,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (isLoading || !isAuthenticated) {
         return (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background">
-                <LoadingSpinner message="인증 확인 중..." />
+                <LoadingSpinner message="로그인 상태를 확인하고 있어요" />
             </div>
         );
     }

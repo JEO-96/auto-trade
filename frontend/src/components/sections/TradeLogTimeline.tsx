@@ -114,8 +114,8 @@ export default function TradeLogTimeline({
                     )) : (
                         <EmptyState
                             icon={<Clock className="w-12 h-12" />}
-                            title="거래 내역이 없습니다"
-                            description={selectedBot ? '이 봇의 거래 내역이 아직 없습니다.' : '봇을 선택하면 거래 타임라인이 표시됩니다.'}
+                            title="아직 거래가 없어요"
+                            description={selectedBot ? '봇이 시장을 분석하고 있어요. 조건이 맞으면 자동으로 거래합니다.' : '왼쪽에서 봇을 선택하면 거래 기록이 여기에 표시돼요.'}
                         />
                     )}
 

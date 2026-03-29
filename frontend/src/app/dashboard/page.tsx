@@ -302,7 +302,7 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-[80vh]">
-                <LoadingSpinner message="데이터 불러오는 중..." />
+                <LoadingSpinner message="봇 현황을 확인하고 있어요" />
             </div>
         );
     }
@@ -394,8 +394,8 @@ export default function DashboardPage() {
                 <div className="glass-panel rounded-2xl p-16 text-center">
                     <EmptyState
                         icon={<Settings2 className="w-12 h-12" />}
-                        title="등록된 봇이 없습니다"
-                        description="새 봇을 만들어 모의투자를 시작하세요."
+                        title="아직 봇이 없어요"
+                        description="첫 번째 봇을 만들고 전략이 어떻게 동작하는지 확인해 보세요."
                     />
                     <div className="mt-6">
                         <Button variant="primary" size="md" onClick={openCreateModal}>

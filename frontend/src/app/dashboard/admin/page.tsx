@@ -179,7 +179,7 @@ export default function AdminPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-[80vh]">
-                <LoadingSpinner message="사용자 데이터 불러오는 중..." />
+                <LoadingSpinner message="사용자 현황을 정리하고 있어요" />
             </div>
         );
     }
