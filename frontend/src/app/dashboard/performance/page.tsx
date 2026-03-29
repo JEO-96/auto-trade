@@ -13,7 +13,9 @@ import {
     Cell,
     ReferenceLine,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Activity, Target, BarChart2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Target, BarChart2, Plus } from 'lucide-react';
+import Link from 'next/link';
+import Button from '@/components/ui/Button';
 import PageContainer from '@/components/ui/PageContainer';
 import StatCard from '@/components/ui/StatCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -89,6 +91,14 @@ export default function PerformancePage() {
                     icon={<BarChart2 className="w-12 h-12" />}
                     title="생성된 봇이 없습니다"
                     description="대시보드에서 봇을 먼저 생성해주세요."
+                    action={
+                        <Link href="/dashboard">
+                            <Button variant="primary" size="sm">
+                                <Plus className="w-4 h-4" />
+                                봇 만들러 가기
+                            </Button>
+                        </Link>
+                    }
                 />
             </PageContainer>
         );
