@@ -129,7 +129,7 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] sm:text-xs font-bold text-th-text-muted uppercase tracking-wider">
-                                    Step {index + 1}
+                                    {index + 1}단계
                                 </span>
                                 {step.completed && (
                                     <span className="text-[10px] sm:text-xs font-medium text-emerald-500">

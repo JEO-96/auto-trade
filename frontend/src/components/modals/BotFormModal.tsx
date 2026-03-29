@@ -100,7 +100,7 @@ export default function BotFormModal({
 
                     <SelectInput
                         type="select"
-                        label="거래소 (Exchange)"
+                        label="거래소"
                         value={formData.exchange_name}
                         onChange={(e) => onFormChange({ ...formData, exchange_name: e.target.value })}
                     >
@@ -111,7 +111,7 @@ export default function BotFormModal({
 
                     <div>
                         <label className="text-xs text-th-text-muted font-medium mb-2 block">
-                            심볼 (Symbol) <span className="text-th-text-muted">&mdash; 복수 선택 가능</span>
+                            거래 심볼 <span className="text-th-text-muted">&mdash; 복수 선택 가능</span>
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                             {SYMBOLS.map(s => {
@@ -142,7 +142,7 @@ export default function BotFormModal({
                     </div>
 
                     <div>
-                        <label className="text-xs text-th-text-muted font-medium mb-2 block">전략 (Strategy)</label>
+                        <label className="text-xs text-th-text-muted font-medium mb-2 block">전략</label>
                         <div className="flex gap-1 mb-2">
                             {STRATEGY_TIMEFRAME_TABS.map(tab => (
                                 <button

@@ -110,7 +110,7 @@ export default function BotCard({
                     </p>
                 </div>
                 <div className="text-right">
-                    <p className="text-[10px] sm:text-xs text-th-text-muted font-medium uppercase tracking-wider mb-0.5">RSI / Vol MA</p>
+                    <p className="text-[10px] sm:text-xs text-th-text-muted font-medium uppercase tracking-wider mb-0.5">RSI 기간 / 거래량 이평선</p>
                     <p className="text-sm font-semibold text-th-text font-mono">{bot.rsi_period} / {bot.volume_ma_period}</p>
                 </div>
             </div>

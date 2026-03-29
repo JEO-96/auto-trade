@@ -286,7 +286,24 @@ export default function PublicCommunityPage() {
                 <EmptyState
                     icon={<FlaskConical className="w-12 h-12" />}
                     title="아직 게시글이 없습니다"
-                    description="첫 번째 글을 작성해 보세요!"
+                    description="백테스트 결과나 전략 분석을 공유해 보세요."
+                    action={
+                        isAuthenticated ? (
+                            <Link href="/dashboard/community/create">
+                                <Button variant="primary" size="sm">
+                                    <Plus className="w-4 h-4" />
+                                    글쓰기
+                                </Button>
+                            </Link>
+                        ) : (
+                            <Link href="/login">
+                                <Button variant="outline" size="sm">
+                                    <LogIn className="w-4 h-4" />
+                                    로그인하고 글쓰기
+                                </Button>
+                            </Link>
+                        )
+                    }
                 />
             ) : (
                 <>

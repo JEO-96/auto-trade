@@ -34,7 +34,7 @@ export default function Home() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
                         </span>
-                        Algorithmic Trading Platform
+                        전략 검증 플랫폼
                     </div>
 
                     <h1 className="text-[2rem] md:text-6xl font-extrabold tracking-tight mb-6 leading-[1.1]">
