@@ -180,7 +180,7 @@ export default function LeaderboardPage() {
                                                 }`}>
                                                     {formatPnl(entry.total_pnl)}
                                                 </span>
-                                                <span className="text-[10px] text-gray-500 ml-0.5">KRW</span>
+                                                <span className="text-[10px] sm:text-xs text-gray-500 ml-0.5">KRW</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-3.5 text-right">
@@ -201,7 +201,7 @@ export default function LeaderboardPage() {
                                             </span>
                                         </td>
                                         <td className="px-4 py-3.5 text-center">
-                                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                                            <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-1 rounded-full ${
                                                 entry.is_live
                                                     ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                                                     : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
@@ -252,7 +252,7 @@ export default function LeaderboardPage() {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">평균 모의 수익률</p>
+                                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-0.5">평균 모의 수익률</p>
                                         <p className={`text-lg font-bold tabular-nums ${
                                             strategy.avg_return_rate >= 0 ? 'text-emerald-400' : 'text-red-400'
                                         }`}>
@@ -260,13 +260,13 @@ export default function LeaderboardPage() {
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">평균 승률</p>
+                                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-0.5">평균 승률</p>
                                         <p className="text-lg font-bold text-white tabular-nums">
                                             {strategy.avg_win_rate}%
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">최고 모의 수익률</p>
+                                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-0.5">최고 모의 수익률</p>
                                         <p className={`text-sm font-bold tabular-nums ${
                                             strategy.best_return_rate >= 0 ? 'text-emerald-400' : 'text-red-400'
                                         }`}>
@@ -274,7 +274,7 @@ export default function LeaderboardPage() {
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">총 거래</p>
+                                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-0.5">총 거래</p>
                                         <p className="text-sm font-bold text-gray-400 tabular-nums">
                                             {strategy.total_trades.toLocaleString()}건
                                         </p>

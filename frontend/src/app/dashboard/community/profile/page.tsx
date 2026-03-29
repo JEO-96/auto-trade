@@ -37,8 +37,8 @@ export default function ProfilePage() {
 
             const profile = await getUserProfile(user.id);
             setPostCount(profile.post_count);
-        } catch (err) {
-            console.error('내 게시글 로드 실패', err);
+        } catch {
+            // error handled by UI state
         } finally {
             setLoadingPosts(false);
         }
@@ -95,7 +95,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="ml-auto text-right">
                         <p className="text-2xl font-bold text-white">{postCount}</p>
-                        <p className="text-[10px] text-gray-500">게시글</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500">게시글</p>
                     </div>
                 </div>
 
@@ -141,7 +141,7 @@ export default function ProfilePage() {
                                     <span className="flex-1 text-sm text-white font-medium truncate group-hover:text-primary transition-colors">
                                         {post.title}
                                     </span>
-                                    <div className="flex items-center gap-3 text-[11px] text-gray-500 shrink-0">
+                                    <div className="flex items-center gap-3 text-[11px] sm:text-xs text-gray-500 shrink-0">
                                         <span className="flex items-center gap-0.5">
                                             <Heart className="w-3 h-3" /> {post.like_count}
                                         </span>

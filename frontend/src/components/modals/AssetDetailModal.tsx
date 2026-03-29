@@ -168,7 +168,7 @@ export default function AssetDetailModal({ isOpen, onClose, balances }: AssetDet
                 <div className="overflow-y-auto flex-1 p-6 space-y-6">
                     {/* Total portfolio value */}
                     <div className="glass-panel rounded-xl p-5 text-center">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1">
+                        <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
                             총 자산 평가액
                         </p>
                         <div className="flex items-center justify-center gap-2">
@@ -195,19 +195,19 @@ export default function AssetDetailModal({ isOpen, onClose, balances }: AssetDet
                                 <table className="w-full text-left" role="table">
                                     <thead>
                                         <tr className="border-b border-white/[0.06]">
-                                            <th className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2">
+                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2">
                                                 자산
                                             </th>
-                                            <th className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2 text-right">
+                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2 text-right">
                                                 보유량
                                             </th>
-                                            <th className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2 text-right hidden sm:table-cell">
+                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2 text-right hidden sm:table-cell">
                                                 가용
                                             </th>
-                                            <th className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2 text-right hidden sm:table-cell">
+                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2 text-right hidden sm:table-cell">
                                                 평균 매수가
                                             </th>
-                                            <th className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 pb-2 text-right">
+                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 pb-2 text-right">
                                                 평가 금액
                                             </th>
                                         </tr>
@@ -263,7 +263,7 @@ export default function AssetDetailModal({ isOpen, onClose, balances }: AssetDet
                                                             <span className="text-xs font-bold text-white font-mono">
                                                                 {formatKRW(a.estimatedKRW)}
                                                             </span>
-                                                            <span className="text-[10px] text-gray-500 ml-1.5">
+                                                            <span className="text-[10px] sm:text-xs text-gray-500 ml-1.5">
                                                                 {pct}%
                                                             </span>
                                                         </div>

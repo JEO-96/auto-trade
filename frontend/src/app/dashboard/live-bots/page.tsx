@@ -97,7 +97,7 @@ export default function LiveBotsPage() {
                                 <h3 className="text-sm font-bold text-white truncate">
                                     {getStrategyLabel(strategyKey)}
                                 </h3>
-                                <span className="text-[10px] text-gray-500 font-mono truncate hidden sm:inline">
+                                <span className="text-[10px] sm:text-xs text-gray-500 font-mono truncate hidden sm:inline">
                                     {strategyKey}
                                 </span>
                                 <Badge variant="default" className="ml-auto">
@@ -124,11 +124,11 @@ export default function LiveBotsPage() {
                                                 {bot.nickname ?? '사용자'}
                                             </p>
                                             <div className="flex items-center gap-2 mt-0.5 min-w-0">
-                                                <span className="text-[10px] text-gray-400 font-mono truncate">
+                                                <span className="text-[10px] sm:text-xs text-gray-400 font-mono truncate">
                                                     {bot.symbol}
                                                 </span>
-                                                <span className="text-[10px] text-gray-500">|</span>
-                                                <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                                                <span className="text-[10px] sm:text-xs text-gray-500">|</span>
+                                                <span className="text-[10px] sm:text-xs text-gray-400 flex items-center gap-0.5">
                                                     <Clock className="w-2.5 h-2.5" />
                                                     {TIMEFRAME_LABEL_MAP[bot.timeframe] ?? bot.timeframe}
                                                 </span>

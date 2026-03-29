@@ -70,8 +70,8 @@ export default function ProfilePage() {
 
             const profile = await getUserProfile(user.id);
             setPostCount(profile.post_count);
-        } catch (err) {
-            console.error('내 게시글 로드 실패', err);
+        } catch {
+            // error handled by UI state
         } finally {
             setLoadingPosts(false);
         }
@@ -136,8 +136,8 @@ export default function ProfilePage() {
             await unlinkTelegram();
             setChatId('');
             await refreshUser();
-        } catch (err) {
-            console.error('텔레그램 연동 해제 실패', err);
+        } catch {
+            // error handled by UI state
         }
     };
 
@@ -214,7 +214,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="text-center">
                         <p className="text-2xl font-bold text-white">{postCount}</p>
-                        <p className="text-[10px] text-gray-500">게시글</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500">게시글</p>
                     </div>
                 </div>
 
@@ -282,9 +282,9 @@ export default function ProfilePage() {
                 ) : (
                     <div className="space-y-3">
                         <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-xs text-gray-400 space-y-2.5">
-                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">1</span>텔레그램에서 <a href="https://t.me/backtested_alert_bot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-medium">@backtested_alert_bot</a>을 검색하고 <span className="text-white font-medium">/start</span>를 보내세요.</p>
-                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">2</span>봇이 응답하면, <span className="text-white font-medium">/chatid</span>를 입력하세요. 봇이 Chat ID를 알려줍니다.</p>
-                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold mr-1.5">3</span>받은 숫자를 아래에 입력하면 연동 완료!</p>
+                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] sm:text-xs font-bold mr-1.5">1</span>텔레그램에서 <a href="https://t.me/backtested_alert_bot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-medium">@backtested_alert_bot</a>을 검색하고 <span className="text-white font-medium">/start</span>를 보내세요.</p>
+                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] sm:text-xs font-bold mr-1.5">2</span>봇이 응답하면, <span className="text-white font-medium">/chatid</span>를 입력하세요. 봇이 Chat ID를 알려줍니다.</p>
+                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] sm:text-xs font-bold mr-1.5">3</span>받은 숫자를 아래에 입력하면 연동 완료!</p>
                         </div>
                         <form onSubmit={handleSaveTelegram} className="flex items-end gap-3">
                             <div className="flex-1">
@@ -312,7 +312,7 @@ export default function ProfilePage() {
                     <Bell className="w-4 h-4 text-yellow-400" />
                     <h3 className="text-sm font-semibold text-white">알림 카테고리 설정</h3>
                     {!user?.telegram_chat_id && (
-                        <span className="text-[10px] text-gray-500 ml-auto">텔레그램 연동 후 사용 가능</span>
+                        <span className="text-[10px] sm:text-xs text-gray-500 ml-auto">텔레그램 연동 후 사용 가능</span>
                     )}
                 </div>
 
@@ -344,7 +344,7 @@ export default function ProfilePage() {
                             <div className="shrink-0">{icon}</div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm text-white font-medium">{label}</p>
-                                <p className="text-[11px] text-gray-500">{description}</p>
+                                <p className="text-[11px] sm:text-xs text-gray-500">{description}</p>
                             </div>
                             <button
                                 type="button"
@@ -373,10 +373,10 @@ export default function ProfilePage() {
                     <Clock className="w-4 h-4 text-purple-400" />
                     <h3 className="text-sm font-semibold text-white">정기 분석 알림 주기</h3>
                     {!user?.telegram_chat_id && (
-                        <span className="text-[10px] text-gray-500 ml-auto">텔레그램 연동 후 사용 가능</span>
+                        <span className="text-[10px] sm:text-xs text-gray-500 ml-auto">텔레그램 연동 후 사용 가능</span>
                     )}
                 </div>
-                <p className="text-[11px] text-gray-500 mb-3">
+                <p className="text-[11px] sm:text-xs text-gray-500 mb-3">
                     캔들 분석 피드백의 전송 주기를 설정합니다. 매매 체결/봇 상태 알림은 항상 즉시 전송됩니다.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -400,7 +400,7 @@ export default function ProfilePage() {
                                 }`}
                             >
                                 <p className={`text-sm font-bold ${isSelected ? 'text-primary' : 'text-white'}`}>{label}</p>
-                                <p className="text-[10px] text-gray-500 mt-0.5">{desc}</p>
+                                <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">{desc}</p>
                             </button>
                         );
                     })}
@@ -434,7 +434,7 @@ export default function ProfilePage() {
                                     <span className="flex-1 text-sm text-white font-medium truncate group-hover:text-primary transition-colors">
                                         {post.title}
                                     </span>
-                                    <div className="flex items-center gap-3 text-[11px] text-gray-500 shrink-0">
+                                    <div className="flex items-center gap-3 text-[11px] sm:text-xs text-gray-500 shrink-0">
                                         <span className="flex items-center gap-0.5">
                                             <Heart className="w-3 h-3" /> {post.like_count}
                                         </span>

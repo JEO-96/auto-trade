@@ -123,7 +123,7 @@ export default function SettingsPage() {
                                     )}
                                     <div>
                                         <p className="text-sm font-bold text-white">{s.label}</p>
-                                        <p className="text-[10px] text-gray-500 font-mono">{s.value}</p>
+                                        <p className="text-[10px] sm:text-xs text-gray-500 font-mono">{s.value}</p>
                                     </div>
                                 </div>
                                 <button

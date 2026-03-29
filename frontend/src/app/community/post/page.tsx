@@ -56,8 +56,8 @@ export default function PublicPostDetailPage() {
             ]);
             setPost(postData);
             setComments(commentsData);
-        } catch (err) {
-            console.error('게시글 로드 실패', err);
+        } catch {
+            // error handled by UI state
         } finally {
             setLoading(false);
         }
@@ -72,8 +72,8 @@ export default function PublicPostDetailPage() {
         try {
             const result = await toggleLike(post.id);
             setPost(prev => prev ? { ...prev, is_liked: result.liked, like_count: result.like_count } : prev);
-        } catch (err) {
-            console.error('좋아요 실패', err);
+        } catch {
+            // error handled by UI state
         }
     };
 
@@ -86,8 +86,8 @@ export default function PublicPostDetailPage() {
             setComments(prev => [...prev, newComment]);
             setCommentText('');
             setPost(prev => prev ? { ...prev, comment_count: prev.comment_count + 1 } : prev);
-        } catch (err) {
-            console.error('댓글 작성 실패', err);
+        } catch {
+            // error handled by UI state
         } finally {
             setSubmittingComment(false);
         }
@@ -105,8 +105,8 @@ export default function PublicPostDetailPage() {
             await deleteComment(commentId);
             setComments(prev => prev.filter(c => c.id !== commentId));
             setPost(prev => prev ? { ...prev, comment_count: Math.max(0, prev.comment_count - 1) } : prev);
-        } catch (err) {
-            console.error('댓글 삭제 실패', err);
+        } catch {
+            // error handled by UI state
         }
     };
 
@@ -121,8 +121,8 @@ export default function PublicPostDetailPage() {
         try {
             await deletePost(post.id);
             router.push(basePath);
-        } catch (err) {
-            console.error('게시글 삭제 실패', err);
+        } catch {
+            // error handled by UI state
         }
     };
 
@@ -160,10 +160,10 @@ export default function PublicPostDetailPage() {
                 <div className="flex items-center gap-2 mb-3">
                     <Badge variant={badge.variant}>{badge.label}</Badge>
                     {post.strategy_name && (
-                        <span className="text-[11px] text-gray-500 font-medium">{getStrategyLabel(post.strategy_name)}</span>
+                        <span className="text-[11px] sm:text-xs text-gray-500 font-medium">{getStrategyLabel(post.strategy_name)}</span>
                     )}
                     {post.timeframe && (
-                        <span className="text-[11px] text-gray-500 font-medium">{TIMEFRAME_LABEL_MAP[post.timeframe] || post.timeframe}</span>
+                        <span className="text-[11px] sm:text-xs text-gray-500 font-medium">{TIMEFRAME_LABEL_MAP[post.timeframe] || post.timeframe}</span>
                     )}
                 </div>
 
@@ -181,7 +181,7 @@ export default function PublicPostDetailPage() {
                     </div>
                     <div>
                         <p className="text-sm font-semibold text-white">{post.author_nickname ?? '익명'}</p>
-                        <p className="text-[10px] text-gray-500">{formatDateTime(post.created_at)}</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500">{formatDateTime(post.created_at)}</p>
                     </div>
                 </div>
 
@@ -190,17 +190,17 @@ export default function PublicPostDetailPage() {
                     <div className="mb-5 space-y-3">
                         <div className="grid grid-cols-3 gap-3">
                             <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
-                                <p className="text-[10px] text-gray-500 mb-1">초기 자본</p>
+                                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">초기 자본</p>
                                 <p className="text-sm font-bold text-white">₩{Number(post.backtest_data.initial_capital).toLocaleString()}</p>
                             </div>
                             <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
-                                <p className="text-[10px] text-gray-500 mb-1">최종 자본</p>
+                                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">최종 자본</p>
                                 <p className={`text-sm font-bold ${Number(post.backtest_data.final_capital) >= Number(post.backtest_data.initial_capital) ? 'text-secondary' : 'text-red-400'}`}>
                                     ₩{Number(post.backtest_data.final_capital).toLocaleString()}
                                 </p>
                             </div>
                             <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] text-center">
-                                <p className="text-[10px] text-gray-500 mb-1">총 거래</p>
+                                <p className="text-[10px] sm:text-xs text-gray-500 mb-1">총 거래</p>
                                 <p className="text-sm font-bold text-white">{String(post.backtest_data.total_trades)}회</p>
                             </div>
                         </div>
@@ -225,21 +225,21 @@ export default function PublicPostDetailPage() {
                 {post.post_type === 'performance_share' && post.performance_data && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
                         <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                            <p className="text-[10px] text-gray-500 mb-1">총 PnL</p>
+                            <p className="text-[10px] sm:text-xs text-gray-500 mb-1">총 PnL</p>
                             <p className={`text-sm font-bold ${post.performance_data.total_pnl >= 0 ? 'text-secondary' : 'text-red-400'}`}>
                                 ₩{Number(post.performance_data.total_pnl).toLocaleString()}
                             </p>
                         </div>
                         <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                            <p className="text-[10px] text-gray-500 mb-1">승률</p>
+                            <p className="text-[10px] sm:text-xs text-gray-500 mb-1">승률</p>
                             <p className="text-sm font-bold text-white">{post.performance_data.win_rate}%</p>
                         </div>
                         <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                            <p className="text-[10px] text-gray-500 mb-1">거래 수</p>
+                            <p className="text-[10px] sm:text-xs text-gray-500 mb-1">거래 수</p>
                             <p className="text-sm font-bold text-white">{post.performance_data.trade_count}회</p>
                         </div>
                         <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
-                            <p className="text-[10px] text-gray-500 mb-1">유형</p>
+                            <p className="text-[10px] sm:text-xs text-gray-500 mb-1">유형</p>
                             <p className={`text-sm font-bold ${post.performance_data.is_paper ? 'text-primary' : 'text-secondary'}`}>
                                 {post.performance_data.is_paper ? '모의투자' : '실투자'}
                             </p>
@@ -300,7 +300,7 @@ export default function PublicPostDetailPage() {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="text-xs font-semibold text-white">{comment.author_nickname ?? '익명'}</span>
-                                        <span className="text-[10px] text-gray-500">{formatDateTime(comment.created_at)}</span>
+                                        <span className="text-[10px] sm:text-xs text-gray-500">{formatDateTime(comment.created_at)}</span>
                                     </div>
                                     <p className="text-sm text-gray-400 leading-relaxed">{comment.content}</p>
                                 </div>

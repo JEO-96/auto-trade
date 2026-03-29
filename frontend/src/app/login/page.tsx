@@ -53,7 +53,7 @@ export default function LoginPage() {
                             { label: '백테스팅', value: '포트폴리오' },
                         ].map((item) => (
                             <div key={item.label} className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.04]">
-                                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{item.label}</p>
+                                <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{item.label}</p>
                                 <p className="text-sm font-bold text-white">{item.value}</p>
                             </div>
                         ))}
@@ -110,7 +110,7 @@ export default function LoginPage() {
                     {/* 개발 전용 테스트 로그인 */}
                     {process.env.NODE_ENV === 'development' && (
                         <div className="mt-6 p-4 rounded-xl border border-dashed border-white/[0.06] bg-white/[0.03]">
-                            <p className="text-[10px] text-gray-500 font-mono uppercase mb-3">Dev Only</p>
+                            <p className="text-[10px] sm:text-xs text-gray-500 font-mono uppercase mb-3">Dev Only</p>
                             <div className="flex gap-2">
                                 <button
                                     type="button"

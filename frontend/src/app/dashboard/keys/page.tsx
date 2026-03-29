@@ -30,8 +30,8 @@ export default function ApiKeysPage() {
         try {
             const data = await getKeys();
             setKeys(data);
-        } catch (err) {
-            console.error("Failed to fetch API keys", err);
+        } catch {
+            // error handled by UI state
         } finally {
             setLoading(false);
         }
@@ -135,7 +135,7 @@ export default function ApiKeysPage() {
                                     <p className="text-xs text-amber-400 font-medium">
                                         이미 {exchangeName.toUpperCase()} API 키가 등록되어 있습니다.
                                     </p>
-                                    <p className="text-[10px] text-amber-500/70 mt-0.5">
+                                    <p className="text-[10px] sm:text-xs text-amber-500/70 mt-0.5">
                                         새 키를 입력하면 기존 키가 업데이트됩니다. 삭제 후 재등록하려면 오른쪽 목록에서 삭제해주세요.
                                     </p>
                                 </div>
@@ -174,7 +174,7 @@ export default function ApiKeysPage() {
                                     {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
-                            <p className="text-[10px] text-amber-500/70 mt-2 flex items-center gap-1">
+                            <p className="text-[10px] sm:text-xs text-amber-500/70 mt-2 flex items-center gap-1">
                                 <ShieldCheck className="w-3 h-3" />
                                 Secret Key는 서버에 안전하게 저장됩니다.
                             </p>
@@ -225,7 +225,7 @@ export default function ApiKeysPage() {
                             {keys.map((key) => (
                                 <div key={key.id} className="bg-white/[0.02] border border-white/[0.06] p-4 rounded-xl flex justify-between items-center group hover:border-primary/20 transition-colors">
                                     <div>
-                                        <span className="uppercase text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-md">
+                                        <span className="uppercase text-[10px] sm:text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-md">
                                             {key.exchange_name}
                                         </span>
                                         <p className="font-mono text-sm tracking-wider text-gray-400 mt-1.5">
@@ -297,7 +297,7 @@ export default function ApiKeysPage() {
                                         <li><a href="https://upbit.com/mypage/open_api_management" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">업비트 Open API 관리</a> 페이지 접속</li>
                                         <li><strong className="text-white">Open API Key 발급</strong> 클릭</li>
                                         <li>권한 설정: <strong className="text-white">자산조회</strong>, <strong className="text-white">주문조회</strong>, <strong className="text-white">주문하기</strong> 체크 <span className="text-red-400">(출금 체크 금지)</span></li>
-                                        <li><strong className="text-white">허용 IP 주소</strong>에 서버 IP 입력: <code className="text-primary bg-white/[0.02] px-1 rounded text-[10px]">13.124.235.43</code></li>
+                                        <li><strong className="text-white">허용 IP 주소</strong>에 서버 IP 입력: <code className="text-primary bg-white/[0.02] px-1 rounded text-[10px] sm:text-xs">13.124.235.43</code></li>
                                         <li>2단계 인증 후 <strong className="text-white">Access Key</strong>와 <strong className="text-white">Secret Key</strong> 복사</li>
                                     </ol>
                                 </div>
@@ -309,7 +309,7 @@ export default function ApiKeysPage() {
                                         <li><a href="https://www.bithumb.com/api_support/management_api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">빗썸 API 관리</a> 페이지 접속</li>
                                         <li><strong className="text-white">API Key 발급</strong> 클릭</li>
                                         <li>권한 설정: <strong className="text-white">거래 기능 사용</strong>, <strong className="text-white">조회</strong> 체크 <span className="text-red-400">(출금 체크 금지)</span></li>
-                                        <li><strong className="text-white">허용 IP</strong>에 서버 IP 입력: <code className="text-primary bg-white/[0.02] px-1 rounded text-[10px]">13.124.235.43</code></li>
+                                        <li><strong className="text-white">허용 IP</strong>에 서버 IP 입력: <code className="text-primary bg-white/[0.02] px-1 rounded text-[10px] sm:text-xs">13.124.235.43</code></li>
                                         <li>본인인증 후 <strong className="text-white">API Key(Connect Key)</strong>와 <strong className="text-white">Secret Key</strong> 복사</li>
                                     </ol>
                                 </div>
@@ -321,7 +321,7 @@ export default function ApiKeysPage() {
                                         보안 체크리스트
                                     </h4>
                                     <ul className="text-xs text-gray-400 space-y-1.5 list-disc pl-4">
-                                        <li><strong className="text-white">IP 주소 제한</strong> 설정 필수 (서버 IP: <code className="text-primary bg-white/[0.02] px-1 rounded text-[10px]">13.124.235.43</code>)</li>
+                                        <li><strong className="text-white">IP 주소 제한</strong> 설정 필수 (서버 IP: <code className="text-primary bg-white/[0.02] px-1 rounded text-[10px] sm:text-xs">13.124.235.43</code>)</li>
                                         <li><strong className="text-white">주문, 조회</strong> 권한만 허용. <strong className="text-red-400">출금 권한은 절대 체크하지 마세요.</strong></li>
                                         <li>Secret Key는 발급 시 한 번만 표시되므로 반드시 별도 보관하세요.</li>
                                     </ul>

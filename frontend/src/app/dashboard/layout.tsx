@@ -93,7 +93,7 @@ export default function DashboardLayout({
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold truncate text-white group-hover:text-primary transition-colors">{displayName}</p>
-                                <p className="text-[10px] text-gray-500 truncate">
+                                <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                                     {user?.email || ''}
                                 </p>
                             </div>

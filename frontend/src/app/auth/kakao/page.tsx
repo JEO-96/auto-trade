@@ -50,7 +50,6 @@ export default function KakaoCallbackPage() {
                 await refreshUser();
                 router.push('/dashboard');
             } catch (err: unknown) {
-                console.error('Kakao login error:', err);
                 isProcessing.current = false;
                 setError(getErrorMessage(err, '카카오 로그인에 실패했습니다.'));
             }

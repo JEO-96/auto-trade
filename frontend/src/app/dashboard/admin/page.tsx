@@ -369,21 +369,21 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div className="glass-panel p-5 rounded-2xl">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">전체 사용자</h3>
+                        <h3 className="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">전체 사용자</h3>
                         <Users className="w-4 h-4 text-gray-500" />
                     </div>
                     <p className="text-2xl font-bold text-white">{users.length}</p>
                 </div>
                 <div className="glass-panel p-5 rounded-2xl">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">승인 대기</h3>
+                        <h3 className="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">승인 대기</h3>
                         <Clock className="w-4 h-4 text-amber-400/40" />
                     </div>
                     <p className="text-2xl font-bold text-amber-400">{pendingCount}</p>
                 </div>
                 <div className="glass-panel p-5 rounded-2xl">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">활성 사용자</h3>
+                        <h3 className="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">활성 사용자</h3>
                         <UserCheck className="w-4 h-4 text-secondary/40" />
                     </div>
                     <p className="text-2xl font-bold text-secondary">
@@ -392,7 +392,7 @@ export default function AdminPage() {
                 </div>
                 <div className="glass-panel p-5 rounded-2xl">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">비활성</h3>
+                        <h3 className="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">비활성</h3>
                         <UserX className="w-4 h-4 text-red-400/40" />
                     </div>
                     <p className="text-2xl font-bold text-red-400">
@@ -436,7 +436,7 @@ export default function AdminPage() {
                             >
                                 {tab.label}
                                 {tab.count !== undefined && (
-                                    <span className={`ml-1.5 px-1.5 py-0.5 rounded text-[10px] ${
+                                    <span className={`ml-1.5 px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${
                                         activeTab === tab.key
                                             ? 'bg-primary/20 text-primary'
                                             : 'bg-white/[0.02] text-gray-500'
@@ -467,12 +467,12 @@ export default function AdminPage() {
                     <table className="w-full" role="table">
                         <thead>
                             <tr className="border-b border-white/[0.04]">
-                                <th scope="col" className="text-left px-6 py-4 text-[10px] text-gray-500 font-semibold uppercase tracking-wider">ID</th>
-                                <th scope="col" className="text-left px-6 py-4 text-[10px] text-gray-500 font-semibold uppercase tracking-wider">사용자</th>
-                                <th scope="col" className="text-left px-6 py-4 text-[10px] text-gray-500 font-semibold uppercase tracking-wider">이메일</th>
-                                <th scope="col" className="text-left px-6 py-4 text-[10px] text-gray-500 font-semibold uppercase tracking-wider">가입일</th>
-                                <th scope="col" className="text-left px-6 py-4 text-[10px] text-gray-500 font-semibold uppercase tracking-wider">상태</th>
-                                <th scope="col" className="text-right px-6 py-4 text-[10px] text-gray-500 font-semibold uppercase tracking-wider">작업</th>
+                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">ID</th>
+                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">사용자</th>
+                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">이메일</th>
+                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">가입일</th>
+                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">상태</th>
+                                <th scope="col" className="text-right px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">작업</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -489,7 +489,7 @@ export default function AdminPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-[10px] font-bold border border-white/[0.06] text-gray-400">
+                                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-[10px] sm:text-xs font-bold border border-white/[0.06] text-gray-400">
                                                     {getInitials(user.nickname ?? undefined, user.email ?? undefined)}
                                                 </div>
                                                 <div>
@@ -596,13 +596,13 @@ export default function AdminPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-semibold text-white">{user.nickname || '-'}</p>
-                                            <p className="text-[11px] text-gray-500">{user.email}</p>
+                                            <p className="text-[11px] sm:text-xs text-gray-500">{user.email}</p>
                                         </div>
                                     </div>
                                     {getStatusBadge(user)}
                                 </div>
 
-                                <div className="flex items-center gap-4 text-[11px] text-gray-500 mb-3">
+                                <div className="flex items-center gap-4 text-[11px] sm:text-xs text-gray-500 mb-3">
                                     <span>ID: #{user.id}</span>
                                     <span>가입: {formatDateCompact(user.created_at ?? '')}</span>
                                     {user.is_admin && (

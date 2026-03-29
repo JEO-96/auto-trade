@@ -49,9 +49,12 @@ module.exports = {
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out forwards',
-        'fade-in-up': 'fadeInUp 0.4s ease-out forwards',
+        'fade-in-up': 'fadeInUp 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards',
+        'slide-in-left': 'slideInLeft 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards',
+        'scale-in': 'scaleIn 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards',
         'glow-pulse': 'glowPulse 3s infinite ease-in-out',
         'float': 'float 6s infinite ease-in-out',
+        'live-dot': 'liveDot 2s infinite ease-in-out',
       },
       keyframes: {
         fadeIn: {
@@ -59,8 +62,16 @@ module.exports = {
           '100%': { opacity: '1' },
         },
         fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideInLeft: {
+          '0%': { opacity: '0', transform: 'translateX(-16px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
         },
         glowPulse: {
           '0%, 100%': { opacity: '0.4' },
@@ -69,6 +80,10 @@ module.exports = {
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-20px)' },
+        },
+        liveDot: {
+          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+          '50%': { opacity: '0.4', transform: 'scale(0.85)' },
         },
       },
       boxShadow: {

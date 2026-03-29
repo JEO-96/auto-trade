@@ -15,7 +15,7 @@ export default function StatCard({ title, value, subtitle, icon, accentColor = '
 
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-gray-500 text-[11px] font-semibold uppercase tracking-wider">{title}</h3>
+                    <h3 className="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">{title}</h3>
                     {icon && <div className="text-white/20 group-hover:text-white/50 transition-colors">{icon}</div>}
                 </div>
 

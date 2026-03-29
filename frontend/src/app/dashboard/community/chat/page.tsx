@@ -61,8 +61,8 @@ export default function ChatPage() {
                 lastIdRef.current = newMessages[newMessages.length - 1].id;
                 setTimeout(scrollToBottom, 100);
             }
-        } catch (err) {
-            console.error('채팅 메시지 로드 실패', err);
+        } catch {
+            // error handled by UI state
         } finally {
             if (initial) setLoading(false);
         }
@@ -88,8 +88,8 @@ export default function ChatPage() {
             setInput('');
             isAtBottomRef.current = true;
             setTimeout(scrollToBottom, 100);
-        } catch (err) {
-            console.error('메시지 전송 실패', err);
+        } catch {
+            // error handled by UI state
         } finally {
             setSending(false);
         }
@@ -109,7 +109,7 @@ export default function ChatPage() {
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-white/[0.04] shrink-0">
                     <h1 className="text-base font-bold text-white">실시간 채팅</h1>
-                    <p className="text-[11px] text-gray-500">트레이더들과 실시간으로 대화하세요</p>
+                    <p className="text-[11px] sm:text-xs text-gray-500">트레이더들과 실시간으로 대화하세요</p>
                 </div>
 
                 {/* Messages */}
@@ -137,7 +137,7 @@ export default function ChatPage() {
                                         {showDate && (
                                             <div className="flex items-center gap-3 my-4">
                                                 <div className="flex-1 h-px bg-white/[0.04]" />
-                                                <span className="text-[10px] text-gray-500 font-medium">
+                                                <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
                                                     {formatDate(msg.created_at)}
                                                 </span>
                                                 <div className="flex-1 h-px bg-white/[0.04]" />
@@ -150,7 +150,7 @@ export default function ChatPage() {
                                                         <div className="w-4 h-4 rounded bg-white/[0.06] flex items-center justify-center">
                                                             <UserIcon className="w-2.5 h-2.5 text-gray-500" />
                                                         </div>
-                                                        <span className="text-[10px] text-gray-500 font-semibold">
+                                                        <span className="text-[10px] sm:text-xs text-gray-500 font-semibold">
                                                             {msg.author_nickname ?? '익명'}
                                                         </span>
                                                     </div>

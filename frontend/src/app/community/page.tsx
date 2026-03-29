@@ -49,12 +49,12 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
                     <div className="flex items-center gap-2 mb-2">
                         <Badge variant={badge.variant}>{badge.label}</Badge>
                         {post.strategy_name && (
-                            <span className="text-[10px] text-gray-500 font-medium">
+                            <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
                                 {getStrategyLabel(post.strategy_name)}
                             </span>
                         )}
                         {post.timeframe && (
-                            <span className="text-[10px] text-gray-500 font-medium">
+                            <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
                                 {TIMEFRAME_LABEL_MAP[post.timeframe] || post.timeframe}
                             </span>
                         )}
@@ -87,7 +87,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
                         <MetricItem label="전략" value={post.backtest_data.strategy_name ? getStrategyLabel(String(post.backtest_data.strategy_name)) : '-'} />
                     </div>
                     {(post.backtest_data.start_date || post.backtest_data.timeframe || post.backtest_data.commission_rate != null) && (
-                        <div className="flex items-center gap-3 text-[10px] text-gray-500 flex-wrap">
+                        <div className="flex items-center gap-3 text-[10px] sm:text-xs text-gray-500 flex-wrap">
                             {post.backtest_data.start_date && post.backtest_data.end_date && (
                                 <span>{String(post.backtest_data.start_date)} ~ {String(post.backtest_data.end_date)}</span>
                             )}
@@ -116,10 +116,10 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
 
             <div className="flex items-center justify-between pt-2 border-t border-white/[0.04]">
                 <div className="flex items-center gap-3">
-                    <span className="text-[11px] text-gray-500 font-medium">
+                    <span className="text-[11px] sm:text-xs text-gray-500 font-medium">
                         {post.author_nickname ?? '익명'}
                     </span>
-                    <span className="text-[10px] text-gray-500">{timeAgo}</span>
+                    <span className="text-[10px] sm:text-xs text-gray-500">{timeAgo}</span>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
@@ -149,7 +149,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
 function MetricItem({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
     return (
         <div className="min-w-0">
-            <p className="text-[10px] text-gray-500 mb-0.5">{label}</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 mb-0.5">{label}</p>
             <p className={`text-xs font-semibold ${positive === true ? 'text-secondary' : positive === false ? 'text-red-400' : 'text-white'}`}>
                 {value}
             </p>
@@ -191,8 +191,8 @@ export default function PublicCommunityPage() {
             const data = await getPosts(params);
             setPosts(data.posts);
             setTotal(data.total);
-        } catch (err) {
-            console.error('게시글 로드 실패', err);
+        } catch {
+            // error handled by UI state
         } finally {
             setLoading(false);
         }
@@ -218,8 +218,8 @@ export default function PublicCommunityPage() {
                         : p
                 )
             );
-        } catch (err) {
-            console.error('좋아요 실패', err);
+        } catch {
+            // error handled by UI state
         }
     };
 

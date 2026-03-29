@@ -9,10 +9,10 @@ interface EmptyStateProps {
 export default function EmptyState({ icon, title, description }: EmptyStateProps) {
     return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 text-gray-700">{icon}</div>
-            <p className="text-base font-semibold text-gray-400">{title}</p>
+            <div className="mb-4 text-th-text-muted/40">{icon}</div>
+            <p className="text-base font-semibold text-th-text-secondary">{title}</p>
             {description && (
-                <p className="text-sm text-gray-600 mt-1">{description}</p>
+                <p className="text-sm text-th-text-muted mt-1">{description}</p>
             )}
         </div>
     );

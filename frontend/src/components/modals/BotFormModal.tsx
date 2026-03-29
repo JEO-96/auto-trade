@@ -134,7 +134,7 @@ export default function BotFormModal({
                                                 : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10 hover:text-gray-300'
                                         }`}
                                     >
-                                        {s.split('/')[0]} <span className="opacity-40 text-[10px]">/ KRW</span>
+                                        {s.split('/')[0]} <span className="opacity-40 text-[10px] sm:text-xs">/ KRW</span>
                                     </button>
                                 );
                             })}
@@ -149,7 +149,7 @@ export default function BotFormModal({
                                     key={tab.value}
                                     type="button"
                                     onClick={() => setTfFilter(tab.value)}
-                                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
+                                    className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold transition-all border ${
                                         tfFilter === tab.value
                                             ? 'bg-primary/10 border-primary/30 text-primary'
                                             : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:text-gray-300'
@@ -201,7 +201,7 @@ export default function BotFormModal({
                         <label className="text-xs text-gray-500 font-medium mb-1.5 block">캔들 주기</label>
                         <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 flex items-center gap-2">
                             <span className="text-sm font-semibold text-primary">{TIMEFRAME_LABEL_MAP[formData.timeframe] || formData.timeframe}</span>
-                            <span className="text-[10px] text-gray-500">(전략에 의해 자동 설정)</span>
+                            <span className="text-[10px] sm:text-xs text-gray-500">(전략에 의해 자동 설정)</span>
                         </div>
                     </div>
 
@@ -236,7 +236,7 @@ export default function BotFormModal({
                                             : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10'
                                 }`}
                             >
-                                실매매 {!isAdmin && <span className="text-[10px] opacity-60">(준비중)</span>}
+                                실매매 {!isAdmin && <span className="text-[10px] sm:text-xs opacity-60">(준비중)</span>}
                             </button>
                         </div>
                         {!isAdmin && formData.paper_trading_mode && (
