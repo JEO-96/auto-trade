@@ -44,7 +44,7 @@ export default function DashboardPage() {
     const toast = useToast();
     const { user } = useAuth();
     const { botStrategies } = useStrategies();
-    const { symbols: availableSymbols } = useMarkets();
+    const { symbols: availableSymbols, pinnedCount } = useMarkets();
 
     // Bot list state
     const [bots, setBots] = useState<BotConfig[]>([]);
@@ -343,6 +343,7 @@ export default function DashboardPage() {
                 availableKrw={availableKrw}
                 strategies={botStrategies}
                 availableSymbols={availableSymbols}
+                pinnedCount={pinnedCount}
                 isAdmin={!!user?.is_admin}
                 onSubmit={handleFormSubmit}
                 onClose={() => setShowBotModal(false)}

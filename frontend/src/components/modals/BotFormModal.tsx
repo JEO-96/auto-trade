@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit3, AlertTriangle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { SelectInput } from '@/components/ui/Input';
+import SymbolPicker from '@/components/ui/SymbolPicker';
 import ModalWrapper, { ModalHeader } from '@/components/ui/ModalWrapper';
 import { BOT_STRATEGIES, EXCHANGES, getStrategyTimeframe, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe, TIMEFRAME_LABEL_MAP } from '@/lib/constants';
 import { getUserStrategies } from '@/lib/api/strategies';
@@ -33,6 +34,8 @@ export interface BotFormModalProps {
     strategies?: StrategyItem[];
     /** 거래소에서 가져온 심볼 목록 */
     availableSymbols?: string[];
+    /** 주요 코인 개수 (상단 고정) */
+    pinnedCount?: number;
     /** 관리자 여부 (실매매는 관리자만 허용) */
     isAdmin?: boolean;
     onSubmit: (e: React.FormEvent) => void;
@@ -50,6 +53,7 @@ export default function BotFormModal({
     availableKrw,
     strategies,
     availableSymbols,
+    pinnedCount,
     isAdmin = false,
     onSubmit,
     onClose,
@@ -112,37 +116,12 @@ export default function BotFormModal({
                         ))}
                     </SelectInput>
 
-                    <div>
-                        <label className="text-xs text-th-text-muted font-medium mb-2 block">
-                            거래 심볼 <span className="text-th-text-muted">&mdash; 복수 선택 가능 ({formData.symbols.length}개 선택)</span>
-                        </label>
-                        <div className="grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                            {(availableSymbols ?? ['BTC/KRW', 'ETH/KRW', 'SOL/KRW', 'XRP/KRW']).map(s => {
-                                const isSelected = formData.symbols.includes(s);
-                                return (
-                                    <button
-                                        key={s}
-                                        type="button"
-                                        onClick={() => {
-                                            onFormChange({
-                                                ...formData,
-                                                symbols: isSelected
-                                                    ? formData.symbols.filter(sym => sym !== s)
-                                                    : [...formData.symbols, s],
-                                            });
-                                        }}
-                                        className={`py-2 rounded-lg text-xs font-semibold transition-all border ${
-                                            isSelected
-                                                ? 'bg-primary/10 border-primary/30 text-primary'
-                                                : 'bg-th-card border-th-border text-th-text-muted hover:border-th-border hover:text-th-text-secondary'
-                                        }`}
-                                    >
-                                        {s.replace('/KRW', '')}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    <SymbolPicker
+                        symbols={availableSymbols ?? ['BTC/KRW', 'ETH/KRW', 'SOL/KRW', 'XRP/KRW']}
+                        selected={formData.symbols}
+                        pinnedCount={pinnedCount}
+                        onChange={(syms) => onFormChange({ ...formData, symbols: syms })}
+                    />
 
                     <div>
                         <label className="text-xs text-th-text-muted font-medium mb-2 block">전략</label>

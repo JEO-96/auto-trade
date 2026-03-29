@@ -8,6 +8,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import PageContainer from '@/components/ui/PageContainer';
 import { useToast } from '@/components/ui/Toast';
+import SymbolPicker from '@/components/ui/SymbolPicker';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import { BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel, getStrategyTimeframe, TIMEFRAME_LABEL_MAP, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe, STRATEGY_DEFAULTS } from '@/lib/constants';
 import { useMarkets } from '@/lib/useMarkets';
@@ -23,7 +24,7 @@ import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryIt
 export default function BacktestPage() {
     const toast = useToast();
     const { backtestStrategies } = useStrategies();
-    const { symbols: availableSymbols } = useMarkets();
+    const { symbols: availableSymbols, pinnedCount } = useMarkets();
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<BacktestResult | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -904,22 +905,13 @@ export default function BacktestPage() {
                         <form onSubmit={runBacktest} className="space-y-6">
                             {/* Assets */}
                             <div>
-                                <label className="text-xs text-th-text-muted font-medium mb-2 block">분석 대상 자산</label>
-                                <div className="grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                                    {availableSymbols.map(s => (
-                                        <button
-                                            key={s}
-                                            type="button"
-                                            onClick={() => toggleSymbol(s)}
-                                            className={`py-2 rounded-lg text-xs font-semibold transition-all border ${form.symbols.includes(s)
-                                                ? 'bg-primary/10 border-primary/30 text-primary'
-                                                : 'bg-th-card border-th-border text-th-text-muted hover:border-th-border'
-                                                }`}
-                                        >
-                                            {s.replace('/KRW', '')}
-                                        </button>
-                                    ))}
-                                </div>
+                                <SymbolPicker
+                                    symbols={availableSymbols}
+                                    selected={form.symbols}
+                                    pinnedCount={pinnedCount}
+                                    onChange={(syms) => setForm(prev => ({ ...prev, symbols: syms }))}
+                                    label="분석 대상 자산"
+                                />
                             </div>
 
                             {/* Strategy */}
