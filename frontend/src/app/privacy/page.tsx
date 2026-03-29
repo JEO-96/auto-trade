@@ -11,45 +11,45 @@ export default function PrivacyPage() {
                     <Logo size="md" />
                 </div>
 
-                <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors mb-8">
+                <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-th-text-muted hover:text-th-text-secondary transition-colors mb-8">
                     <ArrowLeft className="w-3.5 h-3.5" />
                     돌아가기
                 </Link>
 
-                <h1 className="text-2xl font-bold text-white mb-2">개인정보처리방침</h1>
-                <p className="text-xs text-gray-500 mb-10">최종 업데이트: 2026년 3월</p>
+                <h1 className="text-2xl font-bold text-th-text mb-2">개인정보처리방침</h1>
+                <p className="text-xs text-th-text-muted mb-10">최종 업데이트: 2026년 3월</p>
 
-                <div className="space-y-8 text-sm text-gray-400 leading-relaxed">
+                <div className="space-y-8 text-sm text-th-text-secondary leading-relaxed">
 
                     <section>
-                        <h2 className="text-base font-semibold text-white mb-3">제1조 (개인정보의 처리 목적)</h2>
+                        <h2 className="text-base font-semibold text-th-text mb-3">제1조 (개인정보의 처리 목적)</h2>
                         <p className="mb-3">Backtested(이하 &quot;서비스&quot;) 제공을 위해 다음의 목적으로 개인정보를 처리합니다.</p>
                         <ul className="space-y-2 list-disc list-inside">
-                            <li><strong className="text-gray-400">회원가입 및 관리:</strong> 본인 식별, 서비스 이용 자격 확인, 부정 이용 방지</li>
-                            <li><strong className="text-gray-400">서비스 제공:</strong> 모의투자 봇 운영, 백테스트 실행, 커뮤니티 기능 제공</li>
-                            <li><strong className="text-gray-400">알림 서비스:</strong> 텔레그램을 통한 매매 신호 및 봇 상태 알림</li>
-                            <li><strong className="text-gray-400">고객 지원:</strong> 문의 응대, 공지사항 전달</li>
+                            <li><strong className="text-th-text-secondary">회원가입 및 관리:</strong> 본인 식별, 서비스 이용 자격 확인, 부정 이용 방지</li>
+                            <li><strong className="text-th-text-secondary">서비스 제공:</strong> 모의투자 봇 운영, 백테스트 실행, 커뮤니티 기능 제공</li>
+                            <li><strong className="text-th-text-secondary">알림 서비스:</strong> 텔레그램을 통한 매매 신호 및 봇 상태 알림</li>
+                            <li><strong className="text-th-text-secondary">고객 지원:</strong> 문의 응대, 공지사항 전달</li>
                         </ul>
                     </section>
 
                     <section>
-                        <h2 className="text-base font-semibold text-white mb-3">제2조 (수집하는 개인정보 항목)</h2>
+                        <h2 className="text-base font-semibold text-th-text mb-3">제2조 (수집하는 개인정보 항목)</h2>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-white/[0.06]">
-                                        <th className="py-2 pr-4 text-gray-400 font-medium">수집 시점</th>
-                                        <th className="py-2 pr-4 text-gray-400 font-medium">수집 항목</th>
-                                        <th className="py-2 text-gray-400 font-medium">수집 방법</th>
+                                    <tr className="border-b border-th-border">
+                                        <th className="py-2 pr-4 text-th-text-secondary font-medium">수집 시점</th>
+                                        <th className="py-2 pr-4 text-th-text-secondary font-medium">수집 항목</th>
+                                        <th className="py-2 text-th-text-secondary font-medium">수집 방법</th>
                                     </tr>
                                 </thead>
-                                <tbody className="text-gray-400">
-                                    <tr className="border-b border-white/[0.04]">
+                                <tbody className="text-th-text-secondary">
+                                    <tr className="border-b border-th-border-light">
                                         <td className="py-2 pr-4">회원가입</td>
                                         <td className="py-2 pr-4">이메일, 닉네임, 카카오 계정 식별자</td>
                                         <td className="py-2">카카오 OAuth</td>
                                     </tr>
-                                    <tr className="border-b border-white/[0.04]">
+                                    <tr className="border-b border-th-border-light">
                                         <td className="py-2 pr-4">알림 연동</td>
                                         <td className="py-2 pr-4">텔레그램 Chat ID</td>
                                         <td className="py-2">이용자 직접 입력</td>
@@ -65,16 +65,16 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-base font-semibold text-white mb-3">제3조 (개인정보의 보유 및 이용 기간)</h2>
+                        <h2 className="text-base font-semibold text-th-text mb-3">제3조 (개인정보의 보유 및 이용 기간)</h2>
                         <ul className="space-y-2 list-disc list-inside">
-                            <li><strong className="text-gray-400">회원 정보:</strong> 회원 탈퇴 시까지 (탈퇴 후 즉시 파기)</li>
-                            <li><strong className="text-gray-400">모의투자 기록:</strong> 서비스 이용 기간 동안 보관</li>
-                            <li><strong className="text-gray-400">접속 로그:</strong> 통신비밀보호법에 따라 3개월 보관</li>
+                            <li><strong className="text-th-text-secondary">회원 정보:</strong> 회원 탈퇴 시까지 (탈퇴 후 즉시 파기)</li>
+                            <li><strong className="text-th-text-secondary">모의투자 기록:</strong> 서비스 이용 기간 동안 보관</li>
+                            <li><strong className="text-th-text-secondary">접속 로그:</strong> 통신비밀보호법에 따라 3개월 보관</li>
                         </ul>
                     </section>
 
                     <section>
-                        <h2 className="text-base font-semibold text-white mb-3">제4조 (개인정보의 제3자 제공)</h2>
+                        <h2 className="text-base font-semibold text-th-text mb-3">제4조 (개인정보의 제3자 제공)</h2>
                         <p className="mb-3">회사는 원칙적으로 이용자의 개인정보를 외부에 제공하지 않습니다. 다만, 다음의 경우는 예외로 합니다.</p>
                         <ul className="space-y-2 list-disc list-inside">
                             <li>이용자가 사전에 동의한 경우</li>
@@ -83,17 +83,17 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-base font-semibold text-white mb-3">제5조 (개인정보 처리 위탁)</h2>
+                        <h2 className="text-base font-semibold text-th-text mb-3">제5조 (개인정보 처리 위탁)</h2>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-white/[0.06]">
-                                        <th className="py-2 pr-4 text-gray-400 font-medium">수탁업체</th>
-                                        <th className="py-2 text-gray-400 font-medium">위탁 업무</th>
+                                    <tr className="border-b border-th-border">
+                                        <th className="py-2 pr-4 text-th-text-secondary font-medium">수탁업체</th>
+                                        <th className="py-2 text-th-text-secondary font-medium">위탁 업무</th>
                                     </tr>
                                 </thead>
-                                <tbody className="text-gray-400">
-                                    <tr className="border-b border-white/[0.04]">
+                                <tbody className="text-th-text-secondary">
+                                    <tr className="border-b border-th-border-light">
                                         <td className="py-2 pr-4">Amazon Web Services (AWS)</td>
                                         <td className="py-2">데이터 저장 및 서버 호스팅</td>
                                     </tr>
@@ -107,7 +107,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-base font-semibold text-white mb-3">제6조 (개인정보의 안전성 확보 조치)</h2>
+                        <h2 className="text-base font-semibold text-th-text mb-3">제6조 (개인정보의 안전성 확보 조치)</h2>
                         <ul className="space-y-2 list-disc list-inside">
                             <li>모든 통신은 SSL/TLS(HTTPS)로 암호화됩니다.</li>
                             <li>JWT 기반 인증으로 무단 접근을 방지합니다.</li>
@@ -116,7 +116,7 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-base font-semibold text-white mb-3">제7조 (이용자의 권리)</h2>
+                        <h2 className="text-base font-semibold text-th-text mb-3">제7조 (이용자의 권리)</h2>
                         <p className="mb-3">이용자는 언제든지 다음의 권리를 행사할 수 있습니다.</p>
                         <ul className="space-y-2 list-disc list-inside">
                             <li>개인정보 열람, 정정, 삭제 요청</li>
@@ -127,22 +127,22 @@ export default function PrivacyPage() {
                     </section>
 
                     <section>
-                        <h2 className="text-base font-semibold text-white mb-3">제8조 (개인정보 보호책임자)</h2>
-                        <div className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-1">
-                            <p><span className="text-gray-400">성명:</span> 주은오</p>
-                            <p><span className="text-gray-400">직위:</span> 대표</p>
-                            <p><span className="text-gray-400">이메일:</span> seal5945@gmail.com</p>
+                        <h2 className="text-base font-semibold text-th-text mb-3">제8조 (개인정보 보호책임자)</h2>
+                        <div className="p-4 bg-th-card border border-th-border rounded-xl space-y-1">
+                            <p><span className="text-th-text-secondary">성명:</span> 주은오</p>
+                            <p><span className="text-th-text-secondary">직위:</span> 대표</p>
+                            <p><span className="text-th-text-secondary">이메일:</span> seal5945@gmail.com</p>
                         </div>
                     </section>
 
                     <section>
-                        <h2 className="text-base font-semibold text-white mb-3">제9조 (방침의 변경)</h2>
+                        <h2 className="text-base font-semibold text-th-text mb-3">제9조 (방침의 변경)</h2>
                         <p>본 방침은 관련 법령 및 서비스 정책의 변경에 따라 수정될 수 있으며, 변경 시 서비스 내 공지사항을 통해 안내합니다.</p>
                     </section>
 
                 </div>
 
-                <div className="mt-12 pt-8 border-t border-white/[0.04] text-xs text-gray-500 text-center">
+                <div className="mt-12 pt-8 border-t border-th-border-light text-xs text-th-text-muted text-center">
                     <p>© {new Date().getFullYear()} Backtested. All rights reserved.</p>
                 </div>
             </div>

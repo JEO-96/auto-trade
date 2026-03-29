@@ -31,7 +31,7 @@ function StarRating({ rating }: { rating: number }) {
             {[1, 2, 3, 4, 5].map((i) => (
                 <Star
                     key={i}
-                    className={`w-3.5 h-3.5 ${i <= rating ? 'text-amber-400 fill-amber-400' : 'text-gray-500'}`}
+                    className={`w-3.5 h-3.5 ${i <= rating ? 'text-amber-400 fill-amber-400' : 'text-th-text-muted'}`}
                 />
             ))}
         </div>
@@ -49,19 +49,19 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
                     <div className="flex items-center gap-2 mb-2">
                         <Badge variant={badge.variant}>{badge.label}</Badge>
                         {post.strategy_name && (
-                            <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                            <span className="text-[10px] sm:text-xs text-th-text-muted font-medium">
                                 {getStrategyLabel(post.strategy_name)}
                             </span>
                         )}
                         {post.timeframe && (
-                            <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                            <span className="text-[10px] sm:text-xs text-th-text-muted font-medium">
                                 {TIMEFRAME_LABEL_MAP[post.timeframe] || post.timeframe}
                             </span>
                         )}
                     </div>
                     <Link
                         href={`${basePath}/post?id=${post.id}`}
-                        className="text-white font-bold text-sm hover:text-primary transition-colors line-clamp-1"
+                        className="text-th-text font-bold text-sm hover:text-primary transition-colors line-clamp-1"
                     >
                         {post.title}
                     </Link>
@@ -72,11 +72,11 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
             </div>
 
             {post.content && (
-                <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">{post.content}</p>
+                <p className="text-xs text-th-text-secondary leading-relaxed line-clamp-2">{post.content}</p>
             )}
 
             {post.post_type === 'backtest_share' && post.backtest_data && (
-                <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.04] space-y-2">
+                <div className="p-3 bg-white/[0.02] rounded-xl border border-th-border-light space-y-2">
                     <div className="grid grid-cols-3 gap-3">
                         <MetricItem
                             label="모의 수익률"
@@ -87,7 +87,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
                         <MetricItem label="전략" value={post.backtest_data.strategy_name ? getStrategyLabel(String(post.backtest_data.strategy_name)) : '-'} />
                     </div>
                     {(post.backtest_data.start_date || post.backtest_data.timeframe || post.backtest_data.commission_rate != null) && (
-                        <div className="flex items-center gap-3 text-[10px] sm:text-xs text-gray-500 flex-wrap">
+                        <div className="flex items-center gap-3 text-[10px] sm:text-xs text-th-text-muted flex-wrap">
                             {post.backtest_data.start_date && post.backtest_data.end_date && (
                                 <span>{String(post.backtest_data.start_date)} ~ {String(post.backtest_data.end_date)}</span>
                             )}
@@ -103,7 +103,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
             )}
 
             {post.post_type === 'performance_share' && post.performance_data && (
-                <div className="grid grid-cols-3 gap-3 p-3 bg-white/[0.02] rounded-xl border border-white/[0.04]">
+                <div className="grid grid-cols-3 gap-3 p-3 bg-white/[0.02] rounded-xl border border-th-border-light">
                     <MetricItem
                         label="총 PnL"
                         value={`₩${Number(post.performance_data.total_pnl).toLocaleString()}`}
@@ -114,20 +114,20 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
                 </div>
             )}
 
-            <div className="flex items-center justify-between pt-2 border-t border-white/[0.04]">
+            <div className="flex items-center justify-between pt-2 border-t border-th-border-light">
                 <div className="flex items-center gap-3">
-                    <span className="text-[11px] sm:text-xs text-gray-500 font-medium">
+                    <span className="text-[11px] sm:text-xs text-th-text-muted font-medium">
                         {post.author_nickname ?? '익명'}
                     </span>
-                    <span className="text-[10px] sm:text-xs text-gray-500">{timeAgo}</span>
+                    <span className="text-[10px] sm:text-xs text-th-text-muted">{timeAgo}</span>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => isLoggedIn ? onLikeToggle(post.id) : undefined}
                         title={isLoggedIn ? undefined : '로그인이 필요합니다'}
                         className={`flex items-center gap-1 text-xs transition-colors ${
-                            !isLoggedIn ? 'text-gray-500 cursor-default' :
-                            post.is_liked ? 'text-red-400' : 'text-gray-500 hover:text-red-400'
+                            !isLoggedIn ? 'text-th-text-muted cursor-default' :
+                            post.is_liked ? 'text-red-400' : 'text-th-text-muted hover:text-red-400'
                         }`}
                     >
                         <Heart className={`w-3.5 h-3.5 ${post.is_liked ? 'fill-red-400' : ''}`} />
@@ -135,7 +135,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
                     </button>
                     <Link
                         href={`${basePath}/post?id=${post.id}`}
-                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary transition-colors"
+                        className="flex items-center gap-1 text-xs text-th-text-muted hover:text-primary transition-colors"
                     >
                         <MessageCircle className="w-3.5 h-3.5" />
                         {post.comment_count}
@@ -149,8 +149,8 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
 function MetricItem({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
     return (
         <div className="min-w-0">
-            <p className="text-[10px] sm:text-xs text-gray-500 mb-0.5">{label}</p>
-            <p className={`text-xs font-semibold ${positive === true ? 'text-secondary' : positive === false ? 'text-red-400' : 'text-white'}`}>
+            <p className="text-[10px] sm:text-xs text-th-text-muted mb-0.5">{label}</p>
+            <p className={`text-xs font-semibold ${positive === true ? 'text-secondary' : positive === false ? 'text-red-400' : 'text-th-text'}`}>
                 {value}
             </p>
         </div>
@@ -229,8 +229,8 @@ export default function PublicCommunityPage() {
         <>
             <header className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white mb-1">커뮤니티</h1>
-                    <p className="text-sm text-gray-500">전략 공유, 백테스트 결과, 모의투자 수익률을 공유하세요</p>
+                    <h1 className="text-2xl font-bold text-th-text mb-1">커뮤니티</h1>
+                    <p className="text-sm text-th-text-muted">전략 공유, 백테스트 결과, 모의투자 수익률을 공유하세요</p>
                 </div>
                 <div className="flex items-center gap-2">
                     {isAuthenticated ? (
@@ -268,7 +268,7 @@ export default function PublicCommunityPage() {
                         className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                             activeTab === tab.value
                                 ? 'bg-primary/10 text-primary border border-primary/20'
-                                : 'text-gray-500 hover:text-white hover:bg-white/[0.03] border border-transparent'
+                                : 'text-th-text-muted hover:text-th-text hover:bg-th-card border border-transparent'
                         }`}
                     >
                         {tab.icon}
@@ -307,17 +307,17 @@ export default function PublicCommunityPage() {
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={page === 1}
-                                className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.03] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                className="p-2 rounded-lg text-th-text-muted hover:text-th-text hover:bg-th-card disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                             >
                                 <ChevronLeft className="w-4 h-4" />
                             </button>
-                            <span className="text-xs text-gray-400 font-medium px-3">
+                            <span className="text-xs text-th-text-secondary font-medium px-3">
                                 {page} / {totalPages}
                             </span>
                             <button
                                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                 disabled={page === totalPages}
-                                className="p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.03] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                className="p-2 rounded-lg text-th-text-muted hover:text-th-text hover:bg-th-card disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                             >
                                 <ChevronRight className="w-4 h-4" />
                             </button>

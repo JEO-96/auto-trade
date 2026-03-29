@@ -56,7 +56,7 @@ const DialogContent = forwardRef<
                 {...props}
             >
                 <div className="flex items-center justify-center min-h-full px-4 py-4">
-                    <div className={cn('w-full bg-[#0d1117] border border-white/[0.08] rounded-2xl shadow-2xl', maxWidth)}>
+                    <div className={cn('w-full bg-th-modal border border-th-border rounded-2xl shadow-2xl', maxWidth)}>
                         {children}
                     </div>
                 </div>
@@ -88,7 +88,7 @@ function DialogHeader({
             <div className="flex items-center gap-3">
                 {icon}
                 {title && (
-                    <DialogPrimitive.Title className="text-base font-bold text-white">
+                    <DialogPrimitive.Title className="text-base font-bold text-th-text">
                         {title}
                     </DialogPrimitive.Title>
                 )}
@@ -97,12 +97,12 @@ function DialogHeader({
                 <button
                     onClick={onClose}
                     aria-label="닫기"
-                    className="text-gray-500 hover:text-gray-300 transition-colors rounded-lg p-1"
+                    className="text-th-text-muted hover:text-th-text-secondary transition-colors rounded-lg p-1"
                 >
                     <X className="w-5 h-5" />
                 </button>
             ) : (
-                <DialogPrimitive.Close className="text-gray-500 hover:text-gray-300 transition-colors rounded-lg p-1">
+                <DialogPrimitive.Close className="text-th-text-muted hover:text-th-text-secondary transition-colors rounded-lg p-1">
                     <X className="w-5 h-5" />
                     <span className="sr-only">닫기</span>
                 </DialogPrimitive.Close>

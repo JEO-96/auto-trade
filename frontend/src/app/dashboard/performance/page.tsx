@@ -83,7 +83,7 @@ export default function PerformancePage() {
             <PageContainer>
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold tracking-tight">성과 분석</h1>
-                    <p className="text-gray-500 text-sm mt-1">봇의 매매 성과를 분석합니다</p>
+                    <p className="text-th-text-muted text-sm mt-1">봇의 매매 성과를 분석합니다</p>
                 </div>
                 <EmptyState
                     icon={<BarChart2 className="w-12 h-12" />}
@@ -102,12 +102,12 @@ export default function PerformancePage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">성과 분석</h1>
-                    <p className="text-gray-500 text-sm mt-1">봇의 매매 성과를 분석합니다</p>
+                    <p className="text-th-text-muted text-sm mt-1">봇의 매매 성과를 분석합니다</p>
                 </div>
                 <select
                     value={selectedBotId ?? ''}
                     onChange={(e) => setSelectedBotId(Number(e.target.value))}
-                    className="bg-surface border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors"
+                    className="bg-surface border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-th-text focus:outline-none focus:border-primary/50 transition-colors"
                 >
                     {bots.map((bot) => (
                         <option key={bot.id} value={bot.id}>
@@ -146,7 +146,7 @@ export default function PerformancePage() {
                             value={`${performance.win_rate}%`}
                             icon={<Target className="w-5 h-5" />}
                             subtitle={
-                                <span className="text-gray-500">{performance.total_trades}건 거래</span>
+                                <span className="text-th-text-muted">{performance.total_trades}건 거래</span>
                             }
                         />
                         <StatCard
@@ -157,7 +157,7 @@ export default function PerformancePage() {
                         <StatCard
                             title="최대 드로다운"
                             value={
-                                <span className={performance.max_drawdown < 0 ? 'text-red-400' : 'text-gray-400'}>
+                                <span className={performance.max_drawdown < 0 ? 'text-red-400' : 'text-th-text-secondary'}>
                                     {performance.max_drawdown}%
                                 </span>
                             }
@@ -168,7 +168,7 @@ export default function PerformancePage() {
 
                     {/* 누적 PnL 차트 */}
                     <div className="glass-panel rounded-2xl p-6 mb-6">
-                        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">누적 손익</h2>
+                        <h2 className="text-sm font-semibold text-th-text-secondary uppercase tracking-wider mb-4">누적 손익</h2>
                         <div className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={performance.daily_pnl}>
@@ -212,7 +212,7 @@ export default function PerformancePage() {
 
                     {/* 일별 PnL 막대 차트 */}
                     <div className="glass-panel rounded-2xl p-6 mb-6">
-                        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">일별 손익</h2>
+                        <h2 className="text-sm font-semibold text-th-text-secondary uppercase tracking-wider mb-4">일별 손익</h2>
                         <div className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={performance.daily_pnl}>
@@ -258,19 +258,19 @@ export default function PerformancePage() {
                     {/* 주별 PnL 테이블 */}
                     {performance.weekly_pnl.length > 0 && (
                         <div className="glass-panel rounded-2xl p-6">
-                            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">주별 손익 요약</h2>
+                            <h2 className="text-sm font-semibold text-th-text-secondary uppercase tracking-wider mb-4">주별 손익 요약</h2>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b border-white/[0.06]">
-                                            <th className="text-left py-3 px-4 text-gray-500 font-semibold">주차</th>
-                                            <th className="text-right py-3 px-4 text-gray-500 font-semibold">손익</th>
+                                            <th className="text-left py-3 px-4 text-th-text-muted font-semibold">주차</th>
+                                            <th className="text-right py-3 px-4 text-th-text-muted font-semibold">손익</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {performance.weekly_pnl.map((w) => (
-                                            <tr key={w.week} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors">
-                                                <td className="py-3 px-4 text-white">{w.week}</td>
+                                            <tr key={w.week} className="border-b border-th-border-light hover:bg-th-card transition-colors">
+                                                <td className="py-3 px-4 text-th-text">{w.week}</td>
                                                 <td className={`py-3 px-4 text-right font-medium ${w.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                                     {w.pnl >= 0 ? '+' : ''}{w.pnl.toLocaleString()}원
                                                 </td>

@@ -191,8 +191,8 @@ export default function AdminPage() {
                     <div className="w-16 h-16 mx-auto mb-6 bg-red-500/10 rounded-2xl flex items-center justify-center">
                         <Shield className="w-8 h-8 text-red-400" />
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">접근 권한이 없습니다</h2>
-                    <p className="text-sm text-gray-500 mb-6">
+                    <h2 className="text-xl font-bold text-th-text mb-2">접근 권한이 없습니다</h2>
+                    <p className="text-sm text-th-text-muted mb-6">
                         이 페이지는 관리자만 접근할 수 있습니다.
                     </p>
                     <Button
@@ -219,16 +219,16 @@ export default function AdminPage() {
             {/* Header */}
             <header className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold mb-1 text-white flex items-center gap-2.5">
+                    <h1 className="text-2xl font-bold mb-1 text-th-text flex items-center gap-2.5">
                         <Shield className="w-6 h-6 text-primary" />
                         관리자 패널
                     </h1>
-                    <p className="text-sm text-gray-500">사용자 및 시스템 설정을 관리합니다.</p>
+                    <p className="text-sm text-th-text-muted">사용자 및 시스템 설정을 관리합니다.</p>
                 </div>
                 <button
                     onClick={handleRefresh}
                     disabled={refreshing}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/[0.02] border border-white/[0.06] text-sm text-gray-400 hover:bg-white/[0.03] transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-th-card border border-th-border text-sm text-th-text-secondary hover:bg-th-hover transition-colors disabled:opacity-50"
                     aria-label="새로고침"
                 >
                     <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -258,7 +258,7 @@ export default function AdminPage() {
                             icon={<Bot className="w-4 h-4" />}
                             accentColor="from-accent/10"
                             subtitle={
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                <div className="flex items-center gap-2 text-xs text-th-text-muted">
                                     <span className="text-orange-400">실매매 {dashboard.bots.live_bots}</span>
                                     <span>·</span>
                                     <span>모의 {dashboard.bots.paper_bots}</span>
@@ -288,24 +288,24 @@ export default function AdminPage() {
                         <div className="glass-panel p-5 rounded-2xl">
                             <div className="flex items-center gap-2 mb-4">
                                 <Bot className="w-4 h-4 text-primary" />
-                                <h3 className="text-sm font-semibold text-white">봇 현황</h3>
+                                <h3 className="text-sm font-semibold text-th-text">봇 현황</h3>
                             </div>
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs text-gray-500">전체 봇 설정</span>
-                                    <span className="text-sm font-semibold text-white">{dashboard.bots.total_configs}</span>
+                                    <span className="text-xs text-th-text-muted">전체 봇 설정</span>
+                                    <span className="text-sm font-semibold text-th-text">{dashboard.bots.total_configs}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs text-gray-500">현재 실행중</span>
+                                    <span className="text-xs text-th-text-muted">현재 실행중</span>
                                     <span className="text-sm font-semibold text-primary">{dashboard.bots.running_now}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs text-gray-500">실매매 봇</span>
+                                    <span className="text-xs text-th-text-muted">실매매 봇</span>
                                     <span className="text-sm font-semibold text-orange-400">{dashboard.bots.live_bots}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs text-gray-500">모의투자 봇</span>
-                                    <span className="text-sm font-semibold text-gray-400">{dashboard.bots.paper_bots}</span>
+                                    <span className="text-xs text-th-text-muted">모의투자 봇</span>
+                                    <span className="text-sm font-semibold text-th-text-secondary">{dashboard.bots.paper_bots}</span>
                                 </div>
                             </div>
                         </div>
@@ -314,11 +314,11 @@ export default function AdminPage() {
                         <div className="glass-panel p-5 rounded-2xl">
                             <div className="flex items-center gap-2 mb-4">
                                 <Activity className="w-4 h-4 text-primary" />
-                                <h3 className="text-sm font-semibold text-white">시스템 상태</h3>
+                                <h3 className="text-sm font-semibold text-th-text">시스템 상태</h3>
                             </div>
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                                    <span className="text-xs text-th-text-muted flex items-center gap-1.5">
                                         <Database className="w-3 h-3" />
                                         DB 연결
                                     </span>
@@ -335,21 +335,21 @@ export default function AdminPage() {
                                     )}
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                                    <span className="text-xs text-th-text-muted flex items-center gap-1.5">
                                         <Bot className="w-3 h-3" />
                                         활성 봇
                                     </span>
-                                    <span className="text-sm font-semibold text-white">{dashboard.system.active_bot_count}</span>
+                                    <span className="text-sm font-semibold text-th-text">{dashboard.system.active_bot_count}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                                    <span className="text-xs text-th-text-muted flex items-center gap-1.5">
                                         <TrendingUp className="w-3 h-3" />
                                         총 거래
                                     </span>
-                                    <span className="text-sm font-semibold text-white">{dashboard.trades.total_trades.toLocaleString()}</span>
+                                    <span className="text-sm font-semibold text-th-text">{dashboard.trades.total_trades.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                                    <span className="text-xs text-th-text-muted flex items-center gap-1.5">
                                         <TrendingUp className="w-3 h-3" />
                                         총 손익
                                     </span>
@@ -369,21 +369,21 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div className="glass-panel p-5 rounded-2xl">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">전체 사용자</h3>
-                        <Users className="w-4 h-4 text-gray-500" />
+                        <h3 className="text-th-text-muted text-[11px] sm:text-xs font-semibold uppercase tracking-wider">전체 사용자</h3>
+                        <Users className="w-4 h-4 text-th-text-muted" />
                     </div>
-                    <p className="text-2xl font-bold text-white">{users.length}</p>
+                    <p className="text-2xl font-bold text-th-text">{users.length}</p>
                 </div>
                 <div className="glass-panel p-5 rounded-2xl">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">승인 대기</h3>
+                        <h3 className="text-th-text-muted text-[11px] sm:text-xs font-semibold uppercase tracking-wider">승인 대기</h3>
                         <Clock className="w-4 h-4 text-amber-400/40" />
                     </div>
                     <p className="text-2xl font-bold text-amber-400">{pendingCount}</p>
                 </div>
                 <div className="glass-panel p-5 rounded-2xl">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">활성 사용자</h3>
+                        <h3 className="text-th-text-muted text-[11px] sm:text-xs font-semibold uppercase tracking-wider">활성 사용자</h3>
                         <UserCheck className="w-4 h-4 text-secondary/40" />
                     </div>
                     <p className="text-2xl font-bold text-secondary">
@@ -392,7 +392,7 @@ export default function AdminPage() {
                 </div>
                 <div className="glass-panel p-5 rounded-2xl">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-gray-500 text-[11px] sm:text-xs font-semibold uppercase tracking-wider">비활성</h3>
+                        <h3 className="text-th-text-muted text-[11px] sm:text-xs font-semibold uppercase tracking-wider">비활성</h3>
                         <UserX className="w-4 h-4 text-red-400/40" />
                     </div>
                     <p className="text-2xl font-bold text-red-400">
@@ -421,7 +421,7 @@ export default function AdminPage() {
                 {/* Tabs + Search */}
                 <div className="p-4 md:p-6 pb-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     {/* Tabs */}
-                    <nav aria-label="사용자 필터 탭" className="flex gap-1 bg-white/[0.02] p-1 rounded-lg" role="tablist">
+                    <nav aria-label="사용자 필터 탭" className="flex gap-1 bg-th-card p-1 rounded-lg" role="tablist">
                         {tabs.map(tab => (
                             <button
                                 key={tab.key}
@@ -430,8 +430,8 @@ export default function AdminPage() {
                                 onClick={() => setActiveTab(tab.key)}
                                 className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
                                     activeTab === tab.key
-                                        ? 'bg-white/[0.03] text-white'
-                                        : 'text-gray-500 hover:text-gray-300'
+                                        ? 'bg-th-hover text-th-text'
+                                        : 'text-th-text-muted hover:text-th-text-secondary'
                                 }`}
                             >
                                 {tab.label}
@@ -439,7 +439,7 @@ export default function AdminPage() {
                                     <span className={`ml-1.5 px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${
                                         activeTab === tab.key
                                             ? 'bg-primary/20 text-primary'
-                                            : 'bg-white/[0.02] text-gray-500'
+                                            : 'bg-th-card text-th-text-muted'
                                     }`}>
                                         {tab.count}
                                     </span>
@@ -450,13 +450,13 @@ export default function AdminPage() {
 
                     {/* Search */}
                     <div className="relative w-full md:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-muted" />
                         <input
                             type="text"
                             placeholder="이름, 이메일, ID 검색..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-white/[0.02] border border-white/[0.06] rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-primary/40 transition-colors"
+                            className="w-full pl-9 pr-4 py-2 bg-th-card border border-th-border rounded-lg text-sm text-th-text placeholder-gray-500 focus:outline-none focus:border-primary/40 transition-colors"
                             aria-label="사용자 검색"
                         />
                     </div>
@@ -466,13 +466,13 @@ export default function AdminPage() {
                 <div className="hidden md:block overflow-x-auto">
                     <table className="w-full" role="table">
                         <thead>
-                            <tr className="border-b border-white/[0.04]">
-                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">ID</th>
-                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">사용자</th>
-                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">이메일</th>
-                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">가입일</th>
-                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">상태</th>
-                                <th scope="col" className="text-right px-6 py-4 text-[10px] sm:text-xs text-gray-500 font-semibold uppercase tracking-wider">작업</th>
+                            <tr className="border-b border-th-border-light">
+                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-th-text-muted font-semibold uppercase tracking-wider">ID</th>
+                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-th-text-muted font-semibold uppercase tracking-wider">사용자</th>
+                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-th-text-muted font-semibold uppercase tracking-wider">이메일</th>
+                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-th-text-muted font-semibold uppercase tracking-wider">가입일</th>
+                                <th scope="col" className="text-left px-6 py-4 text-[10px] sm:text-xs text-th-text-muted font-semibold uppercase tracking-wider">상태</th>
+                                <th scope="col" className="text-right px-6 py-4 text-[10px] sm:text-xs text-th-text-muted font-semibold uppercase tracking-wider">작업</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -482,18 +482,18 @@ export default function AdminPage() {
                                 return (
                                     <tr
                                         key={user.id}
-                                        className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors"
+                                        className="border-b border-th-border-light hover:bg-th-hover transition-colors"
                                     >
                                         <td className="px-6 py-4">
-                                            <span className="text-xs font-mono text-gray-500">#{user.id}</span>
+                                            <span className="text-xs font-mono text-th-text-muted">#{user.id}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-[10px] sm:text-xs font-bold border border-white/[0.06] text-gray-400">
+                                                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-[10px] sm:text-xs font-bold border border-th-border text-th-text-secondary">
                                                     {getInitials(user.nickname ?? undefined, user.email ?? undefined)}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-semibold text-white">{user.nickname || '-'}</p>
+                                                    <p className="text-sm font-semibold text-th-text">{user.nickname || '-'}</p>
                                                     {user.is_admin && (
                                                         <span className="text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">ADMIN</span>
                                                     )}
@@ -501,10 +501,10 @@ export default function AdminPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-sm text-gray-400">{user.email}</span>
+                                            <span className="text-sm text-th-text-secondary">{user.email}</span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="text-xs text-gray-500">{formatDateCompact(user.created_at ?? '')}</span>
+                                            <span className="text-xs text-th-text-muted">{formatDateCompact(user.created_at ?? '')}</span>
                                         </td>
                                         <td className="px-6 py-4">
                                             {getStatusBadge(user)}
@@ -587,22 +587,22 @@ export default function AdminPage() {
                         return (
                             <div
                                 key={user.id}
-                                className="p-4 bg-white/[0.02] rounded-xl border border-white/[0.04]"
+                                className="p-4 bg-th-card rounded-xl border border-th-border-light"
                             >
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-xs font-bold border border-white/[0.06] text-gray-400">
+                                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-xs font-bold border border-th-border text-th-text-secondary">
                                             {getInitials(user.nickname ?? undefined, user.email ?? undefined)}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-semibold text-white">{user.nickname || '-'}</p>
-                                            <p className="text-[11px] sm:text-xs text-gray-500">{user.email}</p>
+                                            <p className="text-sm font-semibold text-th-text">{user.nickname || '-'}</p>
+                                            <p className="text-[11px] sm:text-xs text-th-text-muted">{user.email}</p>
                                         </div>
                                     </div>
                                     {getStatusBadge(user)}
                                 </div>
 
-                                <div className="flex items-center gap-4 text-[11px] sm:text-xs text-gray-500 mb-3">
+                                <div className="flex items-center gap-4 text-[11px] sm:text-xs text-th-text-muted mb-3">
                                     <span>ID: #{user.id}</span>
                                     <span>가입: {formatDateCompact(user.created_at ?? '')}</span>
                                     {user.is_admin && (

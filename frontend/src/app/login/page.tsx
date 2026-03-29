@@ -20,11 +20,11 @@ export default function LoginPage() {
 
     // Show blank screen while checking auth or if already authenticated (prevents flash)
     if (isLoading || isAuthenticated) {
-        return <div className="min-h-screen bg-[#020617]" />;
+        return <div className="min-h-screen bg-background" />;
     }
 
     return (
-        <div className="min-h-screen flex relative overflow-hidden bg-[#020617] animate-fade-in">
+        <div className="min-h-screen flex relative overflow-hidden bg-background animate-fade-in">
             {/* Left - Branding */}
             <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-12">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.06] to-accent/[0.04]" />
@@ -35,12 +35,12 @@ export default function LoginPage() {
                         <Logo size="lg" />
                     </div>
 
-                    <h1 className="text-3xl font-bold tracking-tight mb-4 leading-snug text-white">
+                    <h1 className="text-3xl font-bold tracking-tight mb-4 leading-snug text-th-text">
                         백테스트로 검증하고,<br />
                         <span className="text-gradient-primary">수익으로 증명합니다</span>
                     </h1>
 
-                    <p className="text-gray-400 leading-relaxed text-sm">
+                    <p className="text-th-text-secondary leading-relaxed text-sm">
                         전략을 직접 검증하고 모의투자로 실력을 키워보세요.
                         베타 기간 중 무료로 모든 기능을 이용할 수 있습니다.
                     </p>
@@ -52,9 +52,9 @@ export default function LoginPage() {
                             { label: '리스크 관리', value: '자동 손절' },
                             { label: '백테스팅', value: '포트폴리오' },
                         ].map((item) => (
-                            <div key={item.label} className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.04]">
-                                <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{item.label}</p>
-                                <p className="text-sm font-bold text-white">{item.value}</p>
+                            <div key={item.label} className="p-3 rounded-xl bg-th-card border border-th-border-light">
+                                <p className="text-[10px] sm:text-xs font-semibold text-th-text-muted uppercase tracking-wider mb-1">{item.label}</p>
+                                <p className="text-sm font-bold text-th-text">{item.value}</p>
                             </div>
                         ))}
                     </div>
@@ -70,8 +70,8 @@ export default function LoginPage() {
                     </div>
 
                     <div className="mb-8">
-                        <h2 className="text-2xl font-bold mb-2 text-white">로그인</h2>
-                        <p className="text-sm text-gray-400">카카오 계정으로 간편하게 시작하세요.</p>
+                        <h2 className="text-2xl font-bold mb-2 text-th-text">로그인</h2>
+                        <p className="text-sm text-th-text-secondary">카카오 계정으로 간편하게 시작하세요.</p>
                     </div>
 
                     {/* 투자 위험 고지 */}
@@ -90,7 +90,7 @@ export default function LoginPage() {
                             onChange={(e) => setTermsAgreed(e.target.checked)}
                             className="mt-0.5 w-4 h-4 accent-primary cursor-pointer shrink-0"
                         />
-                        <span className="text-xs text-gray-500 leading-relaxed group-hover:text-gray-300 transition-colors">
+                        <span className="text-xs text-th-text-muted leading-relaxed group-hover:text-th-text-secondary transition-colors">
                             <Link href="/terms" target="_blank" className="text-primary hover:underline">서비스 이용약관</Link>을 읽었으며, 투자 위험 고지에 동의합니다.
                         </span>
                     </label>
@@ -103,14 +103,14 @@ export default function LoginPage() {
                         <p className="text-xs text-amber-500/70 mt-2 text-center">약관에 동의해야 로그인할 수 있습니다.</p>
                     )}
 
-                    <p className="text-xs text-gray-500 mt-6 leading-relaxed text-center">
+                    <p className="text-xs text-th-text-muted mt-6 leading-relaxed text-center">
                         첫 로그인 시 자동으로 가입됩니다.
                     </p>
 
                     {/* 개발 전용 테스트 로그인 */}
                     {process.env.NODE_ENV === 'development' && (
-                        <div className="mt-6 p-4 rounded-xl border border-dashed border-white/[0.06] bg-white/[0.03]">
-                            <p className="text-[10px] sm:text-xs text-gray-500 font-mono uppercase mb-3">Dev Only</p>
+                        <div className="mt-6 p-4 rounded-xl border border-dashed border-white/[0.06] bg-th-card">
+                            <p className="text-[10px] sm:text-xs text-th-text-muted font-mono uppercase mb-3">Dev Only</p>
                             <div className="flex gap-2">
                                 <button
                                     type="button"
@@ -138,8 +138,8 @@ export default function LoginPage() {
                         </div>
                     )}
 
-                    <div className="mt-10 pt-6 border-t border-white/[0.04]">
-                        <Link href="/" className="text-xs text-gray-500 hover:text-gray-400 transition-colors">
+                    <div className="mt-10 pt-6 border-t border-th-border-light">
+                        <Link href="/" className="text-xs text-th-text-muted hover:text-th-text-secondary transition-colors">
                             ← 메인으로 돌아가기
                         </Link>
                     </div>

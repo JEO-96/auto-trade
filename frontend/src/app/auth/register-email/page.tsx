@@ -45,7 +45,7 @@ export default function RegisterEmailPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0B0F19]">
+        <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="w-full max-w-md p-8 rounded-2xl border border-th-border bg-th-card">
                 <div className="mb-8 text-center">
                     <h1 className="text-2xl font-bold text-th-text mb-2">이메일 등록</h1>

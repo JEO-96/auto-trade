@@ -29,11 +29,11 @@ export default function DashboardLayout({
 
     return (
         <AuthGuard>
-            <div className="min-h-screen bg-background text-white flex overflow-hidden relative">
+            <div className="min-h-screen bg-background text-th-text flex overflow-hidden relative">
                 {/* Mobile Menu Toggle - 닫힌 상태에서만 표시 */}
                 <button
                     onClick={() => setIsMobileMenuOpen(true)}
-                    className={`lg:hidden fixed top-4 right-4 z-50 p-2.5 bg-surface/80 backdrop-blur-xl border border-white/[0.06] rounded-xl text-gray-400 hover:text-white hover:bg-surface hover:border-white/[0.1] active:scale-95 transition-all duration-200 ${isMobileMenuOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
+                    className={`lg:hidden fixed top-4 right-4 z-50 p-2.5 bg-surface/80 backdrop-blur-xl border border-white/[0.06] rounded-xl text-th-text-secondary hover:text-th-text hover:bg-surface hover:border-white/[0.1] active:scale-95 transition-all duration-200 ${isMobileMenuOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
                     aria-label="메뉴 열기"
                 >
                     <Menu className="w-5 h-5" />
@@ -56,7 +56,7 @@ export default function DashboardLayout({
                                 {/* 사이드바 내부 닫기 버튼 */}
                                 <button
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="lg:hidden p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.06] active:scale-95 transition-all duration-200"
+                                    className="lg:hidden p-2 rounded-lg text-th-text-muted hover:text-th-text hover:bg-white/[0.06] active:scale-95 transition-all duration-200"
                                     aria-label="메뉴 닫기"
                                 >
                                     <X className="w-5 h-5" />
@@ -92,18 +92,18 @@ export default function DashboardLayout({
                                 {initials}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate text-white group-hover:text-primary transition-colors">{displayName}</p>
-                                <p className="text-[10px] sm:text-xs text-gray-500 truncate">
+                                <p className="text-sm font-semibold truncate text-th-text group-hover:text-primary transition-colors">{displayName}</p>
+                                <p className="text-[10px] sm:text-xs text-th-text-muted truncate">
                                     {user?.email || ''}
                                 </p>
                             </div>
-                            <UserCircle className="w-4 h-4 text-gray-600 group-hover:text-primary transition-colors shrink-0" />
+                            <UserCircle className="w-4 h-4 text-th-text-muted group-hover:text-primary transition-colors shrink-0" />
                         </Link>
 
                         <button
                             onClick={logout}
                             aria-label="로그아웃"
-                            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-gray-500 hover:text-red-400 hover:bg-red-500/[0.06] rounded-lg transition-colors mt-1"
+                            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-th-text-muted hover:text-red-400 hover:bg-red-500/[0.06] rounded-lg transition-colors mt-1"
                         >
                             <LogOut className="w-4 h-4" />
                             <span className="text-xs font-semibold">로그아웃</span>

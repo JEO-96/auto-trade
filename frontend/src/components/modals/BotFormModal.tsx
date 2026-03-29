@@ -110,8 +110,8 @@ export default function BotFormModal({
                     </SelectInput>
 
                     <div>
-                        <label className="text-xs text-gray-500 font-medium mb-2 block">
-                            심볼 (Symbol) <span className="text-gray-500">&mdash; 복수 선택 가능</span>
+                        <label className="text-xs text-th-text-muted font-medium mb-2 block">
+                            심볼 (Symbol) <span className="text-th-text-muted">&mdash; 복수 선택 가능</span>
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                             {SYMBOLS.map(s => {
@@ -131,7 +131,7 @@ export default function BotFormModal({
                                         className={`py-2.5 rounded-xl text-xs font-semibold transition-all border ${
                                             isSelected
                                                 ? 'bg-primary/10 border-primary/30 text-primary'
-                                                : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10 hover:text-gray-300'
+                                                : 'bg-white/[0.02] border-white/[0.06] text-th-text-muted hover:border-white/10 hover:text-th-text-secondary'
                                         }`}
                                     >
                                         {s.split('/')[0]} <span className="opacity-40 text-[10px] sm:text-xs">/ KRW</span>
@@ -142,7 +142,7 @@ export default function BotFormModal({
                     </div>
 
                     <div>
-                        <label className="text-xs text-gray-500 font-medium mb-2 block">전략 (Strategy)</label>
+                        <label className="text-xs text-th-text-muted font-medium mb-2 block">전략 (Strategy)</label>
                         <div className="flex gap-1 mb-2">
                             {STRATEGY_TIMEFRAME_TABS.map(tab => (
                                 <button
@@ -152,7 +152,7 @@ export default function BotFormModal({
                                     className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold transition-all border ${
                                         tfFilter === tab.value
                                             ? 'bg-primary/10 border-primary/30 text-primary'
-                                            : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:text-gray-300'
+                                            : 'bg-white/[0.02] border-white/[0.06] text-th-text-muted hover:text-th-text-secondary'
                                     }`}
                                 >
                                     {tab.label}
@@ -198,16 +198,16 @@ export default function BotFormModal({
 
                     {/* 캔들 주기 (자동 설정) */}
                     <div>
-                        <label className="text-xs text-gray-500 font-medium mb-1.5 block">캔들 주기</label>
-                        <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl px-4 py-3 flex items-center gap-2">
+                        <label className="text-xs text-th-text-muted font-medium mb-1.5 block">캔들 주기</label>
+                        <div className="bg-white/[0.02] border border-th-border-light rounded-xl px-4 py-3 flex items-center gap-2">
                             <span className="text-sm font-semibold text-primary">{TIMEFRAME_LABEL_MAP[formData.timeframe] || formData.timeframe}</span>
-                            <span className="text-[10px] sm:text-xs text-gray-500">(전략에 의해 자동 설정)</span>
+                            <span className="text-[10px] sm:text-xs text-th-text-muted">(전략에 의해 자동 설정)</span>
                         </div>
                     </div>
 
                     {/* Trading mode toggle */}
                     <div>
-                        <label className="text-xs text-gray-500 font-medium mb-2 block">매매 모드</label>
+                        <label className="text-xs text-th-text-muted font-medium mb-2 block">매매 모드</label>
                         <div className="grid grid-cols-2 gap-2">
                             <button
                                 type="button"
@@ -215,7 +215,7 @@ export default function BotFormModal({
                                 className={`py-3 rounded-xl text-sm font-semibold transition-all border ${
                                     formData.paper_trading_mode
                                         ? 'bg-primary/10 border-primary/30 text-primary'
-                                        : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10'
+                                        : 'bg-white/[0.02] border-white/[0.06] text-th-text-muted hover:border-white/10'
                                 }`}
                             >
                                 모의투자
@@ -232,8 +232,8 @@ export default function BotFormModal({
                                     !formData.paper_trading_mode
                                         ? 'bg-red-500/10 border-red-500/30 text-red-400'
                                         : liveDisabled
-                                            ? 'bg-white/[0.02] border-white/[0.04] text-gray-500 cursor-not-allowed'
-                                            : 'bg-white/[0.02] border-white/[0.06] text-gray-500 hover:border-white/10'
+                                            ? 'bg-white/[0.02] border-th-border-light text-th-text-muted cursor-not-allowed'
+                                            : 'bg-white/[0.02] border-white/[0.06] text-th-text-muted hover:border-white/10'
                                 }`}
                             >
                                 실매매 {!isAdmin && <span className="text-[10px] sm:text-xs opacity-60">(준비중)</span>}
@@ -268,16 +268,16 @@ export default function BotFormModal({
 
                     {/* Capital */}
                     <div>
-                        <label className="text-xs text-gray-500 font-medium mb-1.5 block">
+                        <label className="text-xs text-th-text-muted font-medium mb-1.5 block">
                             운용 자본 (KRW)
                             {!formData.paper_trading_mode && availableKrw !== undefined && (
-                                <span className="ml-2 text-gray-500">
+                                <span className="ml-2 text-th-text-muted">
                                     보유 현금: {Math.floor(availableKrw).toLocaleString()}원
                                 </span>
                             )}
                         </label>
                         <div className="relative">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">&#8361;</div>
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-th-text-muted font-semibold text-sm">&#8361;</div>
                             <input
                                 type="text"
                                 inputMode="numeric"
@@ -286,7 +286,7 @@ export default function BotFormModal({
                                     const val = e.target.value.replace(/[^0-9]/g, '');
                                     onFormChange({ ...formData, allocated_capital: val ? Number(val) : 0 });
                                 }}
-                                className={`w-full bg-white/[0.02] border rounded-xl pl-10 pr-4 py-3 text-sm font-bold text-white focus:border-primary/30 transition-colors font-mono ${
+                                className={`w-full bg-white/[0.02] border rounded-xl pl-10 pr-4 py-3 text-sm font-bold text-th-text focus:border-primary/30 transition-colors font-mono ${
                                     !formData.paper_trading_mode && availableKrw !== undefined && formData.allocated_capital > Math.floor(availableKrw)
                                         ? 'border-red-500/40'
                                         : 'border-white/[0.06]'

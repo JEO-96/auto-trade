@@ -111,9 +111,9 @@ function DonutChart({ assets, totalValue }: { assets: AssetWithValue[]; totalVal
                             className="w-2.5 h-2.5 rounded-full shrink-0"
                             style={{ backgroundColor: seg.color }}
                         />
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-th-text-secondary">
                             {seg.currency}{' '}
-                            <span className="text-gray-500">
+                            <span className="text-th-text-muted">
                                 {(seg.ratio * 100).toFixed(1)}%
                             </span>
                         </span>
@@ -153,12 +153,12 @@ export default function AssetDetailModal({ isOpen, onClose, balances }: AssetDet
                         <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
                             <PieChart className="w-5 h-5 text-primary" />
                         </div>
-                        <h2 className="text-base font-bold text-white">자산 상세보기</h2>
+                        <h2 className="text-base font-bold text-th-text">자산 상세보기</h2>
                     </div>
                     <button
                         onClick={onClose}
                         aria-label="닫기"
-                        className="text-gray-500 hover:text-gray-300 transition-colors"
+                        className="text-th-text-muted hover:text-th-text-secondary transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -168,16 +168,16 @@ export default function AssetDetailModal({ isOpen, onClose, balances }: AssetDet
                 <div className="overflow-y-auto flex-1 p-6 space-y-6">
                     {/* Total portfolio value */}
                     <div className="glass-panel rounded-xl p-5 text-center">
-                        <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
+                        <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-th-text-muted mb-1">
                             총 자산 평가액
                         </p>
                         <div className="flex items-center justify-center gap-2">
                             <TrendingUp className="w-5 h-5 text-secondary" />
-                            <span className="text-2xl font-bold text-white">
+                            <span className="text-2xl font-bold text-th-text">
                                 {formatKRW(totalValue)}
                             </span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-th-text-muted mt-1">
                             {assets.length}개 자산 보유
                         </p>
                     </div>
@@ -195,19 +195,19 @@ export default function AssetDetailModal({ isOpen, onClose, balances }: AssetDet
                                 <table className="w-full text-left" role="table">
                                     <thead>
                                         <tr className="border-b border-white/[0.06]">
-                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2">
+                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-th-text-muted pb-2 pr-2">
                                                 자산
                                             </th>
-                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2 text-right">
+                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-th-text-muted pb-2 pr-2 text-right">
                                                 보유량
                                             </th>
-                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2 text-right hidden sm:table-cell">
+                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-th-text-muted pb-2 pr-2 text-right hidden sm:table-cell">
                                                 가용
                                             </th>
-                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 pb-2 pr-2 text-right hidden sm:table-cell">
+                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-th-text-muted pb-2 pr-2 text-right hidden sm:table-cell">
                                                 평균 매수가
                                             </th>
-                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500 pb-2 text-right">
+                                            <th className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-th-text-muted pb-2 text-right">
                                                 평가 금액
                                             </th>
                                         </tr>
@@ -221,7 +221,7 @@ export default function AssetDetailModal({ isOpen, onClose, balances }: AssetDet
                                             return (
                                                 <tr
                                                     key={a.currency}
-                                                    className="border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.03] transition-colors"
+                                                    className="border-b border-th-border-light last:border-b-0 hover:bg-th-card transition-colors"
                                                 >
                                                     <td className="py-2.5 pr-2">
                                                         <div className="flex items-center gap-2">
@@ -232,27 +232,27 @@ export default function AssetDetailModal({ isOpen, onClose, balances }: AssetDet
                                                                         CHART_COLORS[i % CHART_COLORS.length],
                                                                 }}
                                                             />
-                                                            <span className="text-xs font-bold text-white">
+                                                            <span className="text-xs font-bold text-th-text">
                                                                 {a.currency}
                                                             </span>
                                                         </div>
                                                     </td>
                                                     <td className="py-2.5 pr-2 text-right">
-                                                        <span className="text-xs font-medium text-gray-400 font-mono">
+                                                        <span className="text-xs font-medium text-th-text-secondary font-mono">
                                                             {a.currency === 'KRW'
                                                                 ? formatKRW(a.total)
                                                                 : formatCryptoAmount(a.total)}
                                                         </span>
                                                     </td>
                                                     <td className="py-2.5 pr-2 text-right hidden sm:table-cell">
-                                                        <span className="text-xs text-gray-500 font-mono">
+                                                        <span className="text-xs text-th-text-muted font-mono">
                                                             {a.currency === 'KRW'
                                                                 ? formatKRW(a.free)
                                                                 : formatCryptoAmount(a.free)}
                                                         </span>
                                                     </td>
                                                     <td className="py-2.5 pr-2 text-right hidden sm:table-cell">
-                                                        <span className="text-xs text-gray-500 font-mono">
+                                                        <span className="text-xs text-th-text-muted font-mono">
                                                             {a.avgBuyPrice != null
                                                                 ? formatKRW(a.avgBuyPrice)
                                                                 : '-'}
@@ -260,10 +260,10 @@ export default function AssetDetailModal({ isOpen, onClose, balances }: AssetDet
                                                     </td>
                                                     <td className="py-2.5 text-right">
                                                         <div>
-                                                            <span className="text-xs font-bold text-white font-mono">
+                                                            <span className="text-xs font-bold text-th-text font-mono">
                                                                 {formatKRW(a.estimatedKRW)}
                                                             </span>
-                                                            <span className="text-[10px] sm:text-xs text-gray-500 ml-1.5">
+                                                            <span className="text-[10px] sm:text-xs text-th-text-muted ml-1.5">
                                                                 {pct}%
                                                             </span>
                                                         </div>
@@ -276,7 +276,7 @@ export default function AssetDetailModal({ isOpen, onClose, balances }: AssetDet
                             </div>
 
                             {assets.length === 0 && (
-                                <p className="text-sm text-gray-500 text-center py-8">
+                                <p className="text-sm text-th-text-muted text-center py-8">
                                     보유 자산이 없습니다.
                                 </p>
                             )}

@@ -76,16 +76,16 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.04]">
                 <div className="flex items-center gap-3">
-                    <h2 className="text-sm font-bold text-white">
+                    <h2 className="text-sm font-bold text-th-text">
                         {allCompleted ? '설정 완료!' : '시작 가이드'}
                     </h2>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-th-text-muted">
                         {completedCount}/{steps.length} 완료
                     </span>
                 </div>
                 <button
                     onClick={handleDismiss}
-                    className="text-gray-500 hover:text-gray-300 transition-colors text-xs flex items-center gap-1"
+                    className="text-th-text-muted hover:text-th-text-secondary transition-colors text-xs flex items-center gap-1"
                     aria-label="가이드 닫기"
                 >
                     <X className="w-3.5 h-3.5" />
@@ -115,7 +115,7 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
                                 'flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors',
                                 step.completed
                                     ? 'bg-emerald-500/15 text-emerald-400'
-                                    : 'bg-white/[0.02] text-gray-500 group-hover:text-gray-300',
+                                    : 'bg-white/[0.02] text-th-text-muted group-hover:text-th-text-secondary',
                             ].join(' ')}
                         >
                             {step.completed ? (
@@ -128,7 +128,7 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
                         {/* Text */}
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                <span className="text-[10px] sm:text-xs font-bold text-th-text-muted uppercase tracking-wider">
                                     Step {index + 1}
                                 </span>
                                 {step.completed && (
@@ -139,18 +139,18 @@ export default function OnboardingGuide({ hasKeys, hasBacktests, hasBots }: Onbo
                             </div>
                             <p className={[
                                 'text-sm font-medium mt-0.5',
-                                step.completed ? 'text-gray-500' : 'text-white',
+                                step.completed ? 'text-th-text-muted' : 'text-th-text',
                             ].join(' ')}>
                                 {step.title}
                             </p>
-                            <p className="text-xs text-gray-500 mt-0.5 truncate">
+                            <p className="text-xs text-th-text-muted mt-0.5 truncate">
                                 {step.description}
                             </p>
                         </div>
 
                         {/* Arrow */}
                         {!step.completed && (
-                            <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0" />
+                            <ChevronRight className="w-4 h-4 text-th-text-muted group-hover:text-th-text-secondary transition-colors flex-shrink-0" />
                         )}
                     </button>
                 ))}

@@ -57,7 +57,7 @@ export default function KakaoCallbackPage() {
     }, [searchParams, refreshUser, router]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0B0F19]">
+        <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="text-center">
                 {error ? (
                     <div className="space-y-4">

@@ -10,7 +10,7 @@ export default function CommunityLayout({ children }: { children: React.ReactNod
     const { isAuthenticated, isLoading } = useAuth();
 
     return (
-        <div className="min-h-screen bg-background text-white">
+        <div className="min-h-screen bg-background text-th-text">
             {/* Top Navigation */}
             <header className="sticky top-0 z-40 bg-surface/60 backdrop-blur-2xl border-b border-white/[0.04]">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -23,7 +23,7 @@ export default function CommunityLayout({ children }: { children: React.ReactNod
                             isAuthenticated ? (
                                 <Link
                                     href="/dashboard"
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/[0.03] transition-colors"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-th-text-secondary hover:text-th-text hover:bg-white/[0.03] transition-colors"
                                 >
                                     <LayoutDashboard className="w-3.5 h-3.5" />
                                     대시보드

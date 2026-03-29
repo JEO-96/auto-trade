@@ -31,7 +31,7 @@ function RankBadge({ rank }: { rank: number }) {
     if (rank === 2) {
         return (
             <div className="w-8 h-8 rounded-full bg-gray-400/15 border border-gray-400/30 flex items-center justify-center">
-                <Medal className="w-4 h-4 text-gray-400" />
+                <Medal className="w-4 h-4 text-th-text-secondary" />
             </div>
         );
     }
@@ -43,8 +43,8 @@ function RankBadge({ rank }: { rank: number }) {
         );
     }
     return (
-        <div className="w-8 h-8 rounded-full bg-white/[0.02] flex items-center justify-center">
-            <span className="text-xs font-bold text-gray-500">{rank}</span>
+        <div className="w-8 h-8 rounded-full bg-th-card flex items-center justify-center">
+            <span className="text-xs font-bold text-th-text-muted">{rank}</span>
         </div>
     );
 }
@@ -92,17 +92,17 @@ export default function LeaderboardPage() {
         <div className="p-4 pt-6 pr-5 lg:p-8 max-w-6xl mx-auto space-y-8">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2.5">
+                <h1 className="text-2xl font-bold text-th-text flex items-center gap-2.5">
                     <Trophy className="w-6 h-6 text-yellow-400" />
                     리더보드
                 </h1>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-th-text-muted mt-1">
                     모의투자 수익률 순위와 전략별 성과를 확인하세요
                 </p>
             </div>
 
             {/* Period Tabs */}
-            <div className="flex gap-1 bg-white/[0.02] rounded-xl p-1 w-fit border border-white/[0.04]">
+            <div className="flex gap-1 bg-th-card rounded-xl p-1 w-fit border border-th-border-light">
                 {PERIOD_TABS.map((tab) => (
                     <button
                         key={tab.value}
@@ -110,7 +110,7 @@ export default function LeaderboardPage() {
                         className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                             period === tab.value
                                 ? 'bg-primary/10 text-primary border border-primary/20'
-                                : 'text-gray-500 hover:text-white hover:bg-white/[0.03]'
+                                : 'text-th-text-muted hover:text-th-text hover:bg-th-hover'
                         }`}
                     >
                         {tab.label}
@@ -119,9 +119,9 @@ export default function LeaderboardPage() {
             </div>
 
             {/* Leaderboard Table */}
-            <div className="bg-surface/60 backdrop-blur-xl rounded-2xl border border-white/[0.04] overflow-hidden">
-                <div className="px-6 py-4 border-b border-white/[0.04]">
-                    <h2 className="text-base font-bold text-white">모의투자 수익률 랭킹</h2>
+            <div className="bg-surface/60 backdrop-blur-xl rounded-2xl border border-th-border-light overflow-hidden">
+                <div className="px-6 py-4 border-b border-th-border-light">
+                    <h2 className="text-base font-bold text-th-text">모의투자 수익률 랭킹</h2>
                 </div>
 
                 {loading ? (
@@ -129,16 +129,16 @@ export default function LeaderboardPage() {
                         <LoadingSpinner />
                     </div>
                 ) : rankings.length === 0 ? (
-                    <div className="text-center py-16 text-gray-500">
-                        <BarChart2 className="w-10 h-10 mx-auto mb-3 text-gray-500" />
+                    <div className="text-center py-16 text-th-text-muted">
+                        <BarChart2 className="w-10 h-10 mx-auto mb-3 text-th-text-muted" />
                         <p className="text-sm">아직 랭킹 데이터가 없습니다</p>
-                        <p className="text-xs text-gray-500 mt-1">최소 5건 이상의 거래가 필요합니다</p>
+                        <p className="text-xs text-th-text-muted mt-1">최소 5건 이상의 거래가 필요합니다</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="text-xs text-gray-500 uppercase tracking-wider">
+                                <tr className="text-xs text-th-text-muted uppercase tracking-wider">
                                     <th className="px-6 py-3 text-left font-semibold">순위</th>
                                     <th className="px-4 py-3 text-left font-semibold">트레이더</th>
                                     <th className="px-4 py-3 text-left font-semibold">전략</th>
@@ -149,22 +149,22 @@ export default function LeaderboardPage() {
                                     <th className="px-4 py-3 text-center font-semibold">유형</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/[0.04]">
+                            <tbody className="divide-y divide-th-border-light">
                                 {rankings.map((entry) => (
                                     <tr
                                         key={`${entry.rank}-${entry.nickname}`}
-                                        className="hover:bg-white/[0.03] transition-colors"
+                                        className="hover:bg-th-hover transition-colors"
                                     >
                                         <td className="px-6 py-3.5">
                                             <RankBadge rank={entry.rank} />
                                         </td>
                                         <td className="px-4 py-3.5">
-                                            <span className="text-sm font-semibold text-white">
+                                            <span className="text-sm font-semibold text-th-text">
                                                 {entry.nickname}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3.5">
-                                            <span className="text-xs font-medium text-gray-400 bg-white/[0.02] px-2.5 py-1 rounded-md">
+                                            <span className="text-xs font-medium text-th-text-secondary bg-th-card px-2.5 py-1 rounded-md">
                                                 {getStrategyLabel(entry.strategy_name)}
                                             </span>
                                         </td>
@@ -180,7 +180,7 @@ export default function LeaderboardPage() {
                                                 }`}>
                                                     {formatPnl(entry.total_pnl)}
                                                 </span>
-                                                <span className="text-[10px] sm:text-xs text-gray-500 ml-0.5">KRW</span>
+                                                <span className="text-[10px] sm:text-xs text-th-text-muted ml-0.5">KRW</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-3.5 text-right">
@@ -191,12 +191,12 @@ export default function LeaderboardPage() {
                                             </span>
                                         </td>
                                         <td className="px-4 py-3.5 text-right">
-                                            <span className="text-sm font-medium text-gray-400 tabular-nums">
+                                            <span className="text-sm font-medium text-th-text-secondary tabular-nums">
                                                 {entry.win_rate}%
                                             </span>
                                         </td>
                                         <td className="px-4 py-3.5 text-right">
-                                            <span className="text-sm text-gray-400 tabular-nums">
+                                            <span className="text-sm text-th-text-secondary tabular-nums">
                                                 {entry.total_trades}
                                             </span>
                                         </td>
@@ -219,7 +219,7 @@ export default function LeaderboardPage() {
 
             {/* Strategy Rankings */}
             <div>
-                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-th-text mb-4 flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-primary" />
                     전략별 성과
                 </h2>
@@ -229,8 +229,8 @@ export default function LeaderboardPage() {
                         <LoadingSpinner />
                     </div>
                 ) : strategies.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500 bg-surface/60 backdrop-blur-xl rounded-2xl border border-white/[0.04]">
-                        <TrendingUp className="w-10 h-10 mx-auto mb-3 text-gray-500" />
+                    <div className="text-center py-12 text-th-text-muted bg-surface/60 backdrop-blur-xl rounded-2xl border border-th-border-light">
+                        <TrendingUp className="w-10 h-10 mx-auto mb-3 text-th-text-muted" />
                         <p className="text-sm">아직 전략 성과 데이터가 없습니다</p>
                     </div>
                 ) : (
@@ -238,13 +238,13 @@ export default function LeaderboardPage() {
                         {strategies.map((strategy) => (
                             <div
                                 key={strategy.strategy_name}
-                                className="bg-surface/60 backdrop-blur-xl rounded-2xl border border-white/[0.04] p-5 hover:border-white/[0.08] transition-colors"
+                                className="bg-surface/60 backdrop-blur-xl rounded-2xl border border-th-border-light p-5 hover:border-th-border transition-colors"
                             >
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-sm font-bold text-white">
+                                    <h3 className="text-sm font-bold text-th-text">
                                         {strategy.strategy_label}
                                     </h3>
-                                    <div className="flex items-center gap-1.5 text-gray-500">
+                                    <div className="flex items-center gap-1.5 text-th-text-muted">
                                         <Users className="w-3.5 h-3.5" />
                                         <span className="text-xs font-medium">{strategy.total_users}명</span>
                                     </div>
@@ -252,7 +252,7 @@ export default function LeaderboardPage() {
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-0.5">평균 모의 수익률</p>
+                                        <p className="text-[10px] sm:text-xs text-th-text-muted uppercase tracking-wider mb-0.5">평균 모의 수익률</p>
                                         <p className={`text-lg font-bold tabular-nums ${
                                             strategy.avg_return_rate >= 0 ? 'text-emerald-400' : 'text-red-400'
                                         }`}>
@@ -260,13 +260,13 @@ export default function LeaderboardPage() {
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-0.5">평균 승률</p>
-                                        <p className="text-lg font-bold text-white tabular-nums">
+                                        <p className="text-[10px] sm:text-xs text-th-text-muted uppercase tracking-wider mb-0.5">평균 승률</p>
+                                        <p className="text-lg font-bold text-th-text tabular-nums">
                                             {strategy.avg_win_rate}%
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-0.5">최고 모의 수익률</p>
+                                        <p className="text-[10px] sm:text-xs text-th-text-muted uppercase tracking-wider mb-0.5">최고 모의 수익률</p>
                                         <p className={`text-sm font-bold tabular-nums ${
                                             strategy.best_return_rate >= 0 ? 'text-emerald-400' : 'text-red-400'
                                         }`}>
@@ -274,8 +274,8 @@ export default function LeaderboardPage() {
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wider mb-0.5">총 거래</p>
-                                        <p className="text-sm font-bold text-gray-400 tabular-nums">
+                                        <p className="text-[10px] sm:text-xs text-th-text-muted uppercase tracking-wider mb-0.5">총 거래</p>
+                                        <p className="text-sm font-bold text-th-text-secondary tabular-nums">
                                             {strategy.total_trades.toLocaleString()}건
                                         </p>
                                     </div>
