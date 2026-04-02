@@ -10,12 +10,26 @@ from settings import settings
 logger = logging.getLogger("okx_futures")
 
 
-def create_okx_client() -> ccxt.okx:
-    """OKX 선물 클라이언트 생성 (USDT-M Swap)"""
+def create_okx_client(credentials: dict | None = None) -> ccxt.okx:
+    """OKX 선물 클라이언트 생성 (USDT-M Swap)
+
+    Args:
+        credentials: {"api_key", "secret_key", "passphrase"} — DB에서 로드된 키.
+                      None이면 settings(.env)에서 로드.
+    """
+    if credentials:
+        api_key = credentials["api_key"]
+        secret = credentials["secret_key"]
+        passphrase = credentials["passphrase"]
+    else:
+        api_key = settings.okx_api_key
+        secret = settings.okx_secret_key
+        passphrase = settings.okx_passphrase
+
     exchange = ccxt.okx({
-        "apiKey": settings.okx_api_key,
-        "secret": settings.okx_secret_key,
-        "password": settings.okx_passphrase,  # OKX는 password 필드에 passphrase
+        "apiKey": api_key,
+        "secret": secret,
+        "password": passphrase,  # OKX는 password 필드에 passphrase
         "options": {
             "defaultType": "swap",       # 무기한 선물
         },

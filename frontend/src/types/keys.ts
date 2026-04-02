@@ -8,6 +8,7 @@ export interface ExchangeKeyCreateRequest {
     exchange_name: string;
     api_key: string;
     api_secret: string;
+    passphrase?: string;
 }
 
 export interface BalanceItem {

@@ -90,6 +90,7 @@ class ExchangeKeyCreate(BaseModel):
     exchange_name: str
     api_key: str
     api_secret: str
+    passphrase: str | None = None  # OKX 등 passphrase 필요 거래소
 
 class ExchangeKeyResponse(BaseModel):
     id: int

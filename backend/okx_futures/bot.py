@@ -54,9 +54,13 @@ MAX_POSITIONS = 2
 class OKXFuturesBot:
     """OKX 선물 멀티심볼 자동매매 봇"""
 
-    def __init__(self):
-        self.exchange = create_okx_client()
-        # 심볼별 전략 인스턴스
+    def __init__(self, credentials: dict | None = None):
+        """
+        Args:
+            credentials: {"api_key", "secret_key", "passphrase"} — DB에서 로드된 키.
+                          None이면 .env(settings.py)에서 로드.
+        """
+        self.exchange = create_okx_client(credentials=credentials)
         self.strategies: dict[str, SmartTrendFuturesStrategy] = {
             sym: SmartTrendFuturesStrategy() for sym in SYMBOLS
         }

@@ -23,6 +23,39 @@ from settings import settings
 
 models.Base.metadata.create_all(bind=database.engine)
 
+logger = logging.getLogger(__name__)
+
+
+def _load_okx_credentials() -> dict | None:
+    """OKX API 키를 DB(관리자) 또는 .env에서 로드. 없으면 None."""
+    from crypto_utils import decrypt_key
+
+    # 1) DB에서 관리자의 OKX 키 조회
+    with database.get_db_session() as db:
+        okx_key = db.query(models.ExchangeKey).filter(
+            models.ExchangeKey.exchange_name == "okx"
+        ).first()
+        if okx_key and okx_key.passphrase_encrypted:
+            try:
+                return {
+                    "api_key": decrypt_key(okx_key.api_key_encrypted),
+                    "secret_key": decrypt_key(okx_key.api_secret_encrypted),
+                    "passphrase": decrypt_key(okx_key.passphrase_encrypted),
+                }
+            except Exception as e:
+                logger.warning(f"OKX DB 키 복호화 실패: {e}")
+
+    # 2) .env fallback
+    from settings import settings as app_settings
+    if app_settings.okx_api_key and app_settings.okx_passphrase:
+        return {
+            "api_key": app_settings.okx_api_key,
+            "secret_key": app_settings.okx_secret_key,
+            "passphrase": app_settings.okx_passphrase,
+        }
+
+    return None
+
 limiter = Limiter(key_func=get_remote_address)
 
 
@@ -31,13 +64,13 @@ async def lifespan(app: FastAPI):
     # Startup: 업비트 봇 자동 복구
     await bot_manager.recover_active_bots()
 
-    # Startup: OKX 선물 봇 (API 키 설정된 경우만)
+    # Startup: OKX 선물 봇 (DB 또는 .env에서 키 로드)
     okx_bot = None
     okx_task = None
-    from settings import settings as app_settings
-    if app_settings.okx_api_key and app_settings.okx_passphrase:
+    okx_creds = _load_okx_credentials()
+    if okx_creds:
         try:
-            okx_bot = OKXFuturesBot()
+            okx_bot = OKXFuturesBot(credentials=okx_creds)
             okx_bot.initialize()
             okx_task = asyncio.create_task(okx_bot.run_loop())
             logger.info("OKX 선물 봇 시작됨 (업비트 봇과 동시 운영)")
@@ -84,8 +117,6 @@ app.include_router(admin.router)
 app.include_router(community.router)
 app.include_router(strategies.router)
 app.include_router(settings_router.router)
-
-logger = logging.getLogger(__name__)
 
 
 @app.exception_handler(Exception)

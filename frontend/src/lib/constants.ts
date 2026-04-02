@@ -3,12 +3,17 @@ export const SYMBOLS = ['BTC/KRW', 'ETH/KRW', 'SOL/KRW', 'XRP/KRW'] as const;
 export const EXCHANGES = [
     { value: 'upbit', label: '업비트 (Upbit)' },
     { value: 'bithumb', label: '빗썸 (Bithumb)' },
+    { value: 'okx', label: 'OKX (선물)' },
 ] as const;
+
+/** passphrase가 필요한 거래소 */
+export const EXCHANGES_WITH_PASSPHRASE = ['okx'] as const;
 
 export const BOT_STRATEGIES = [
     { value: 'trend_rider_4h_v1', label: '트렌드 라이더 V1 (4시간)', status: 'confirmed' as const },
     { value: 'trend_rider_4h_v2', label: '트렌드 라이더 V2 (4시간)', status: 'confirmed' as const },
     { value: 'trend_rider_4h_v3', label: '트렌드 라이더 V3 (4시간)', status: 'testing' as const },
+    { value: 'trend_rider_4h_v4', label: '트렌드 라이더 V4 범용 (4시간)', status: 'testing' as const },
     { value: 'momentum_basic_1h', label: '모멘텀 기본 (1시간)', status: 'testing' as const },
     { value: 'momentum_basic_4h', label: '모멘텀 기본 (4시간)', status: 'testing' as const },
     { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)', status: 'testing' as const },
@@ -28,6 +33,7 @@ export const BOT_STRATEGIES = [
     { value: 'multi_signal_15m', label: '멀티시그널 (15분)', status: 'testing' as const },
     { value: 'trend_follower_15m', label: '추세추종 (15분)', status: 'testing' as const },
     { value: 'signal_test_15m', label: '매매 테스트 (15분)', status: 'testing' as const },
+    { value: 'surge_catcher_15m', label: '급등 포착기 (15분)', status: 'testing' as const },
 ] as const;
 
 /** 백테스트 전용 전략 */
@@ -35,6 +41,7 @@ export const STRATEGIES = [
     { value: 'trend_rider_4h_v1', label: '트렌드 라이더 V1 (4시간)', status: 'confirmed' as const },
     { value: 'trend_rider_4h_v2', label: '트렌드 라이더 V2 (4시간)', status: 'confirmed' as const },
     { value: 'trend_rider_4h_v3', label: '트렌드 라이더 V3 (4시간)', status: 'testing' as const },
+    { value: 'trend_rider_4h_v4', label: '트렌드 라이더 V4 범용 (4시간)', status: 'testing' as const },
     { value: 'momentum_basic_1h', label: '모멘텀 기본 (1시간)', status: 'testing' as const },
     { value: 'momentum_basic_4h', label: '모멘텀 기본 (4시간)', status: 'testing' as const },
     { value: 'momentum_basic_1d', label: '모멘텀 기본 (1일)', status: 'testing' as const },
@@ -54,6 +61,7 @@ export const STRATEGIES = [
     { value: 'multi_signal_15m', label: '멀티시그널 (15분)', status: 'testing' as const },
     { value: 'trend_follower_15m', label: '추세추종 (15분)', status: 'testing' as const },
     { value: 'signal_test_15m', label: '매매 테스트 (15분)', status: 'testing' as const },
+    { value: 'surge_catcher_15m', label: '급등 포착기 (15분)', status: 'testing' as const },
 ] as const;
 
 export const BOT_TIMEFRAMES = [
@@ -205,6 +213,7 @@ export const STRATEGY_DEFAULTS: Record<string, {
     'trend_rider_4h_v1': { sl: 0.05, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 50, adx_threshold: 15, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
     'trend_rider_4h_v2': { sl: 0.05, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 50, adx_threshold: 15, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
     'trend_rider_4h_v3': { sl: 0.035, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 55, adx_threshold: 12, volume_multiplier: 0.8, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'trend_rider_4h_v4': { sl: 0.07, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 45, adx_threshold: 20, volume_multiplier: 1.2, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 70, atr_period: 14 },
     'scalper_15m': { sl: 0.02, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 30, adx_threshold: 25, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
     'trend_follower_15m': { sl: 0.025, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 40, adx_threshold: 18, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
     // 고정 SL/TP 전략
@@ -225,4 +234,5 @@ export const STRATEGY_DEFAULTS: Record<string, {
     'quick_swing_15m': { sl: 0.015, tp: 0.15, trailing: false, rsi_period: 14, rsi_threshold: 45, adx_threshold: 18, volume_multiplier: 1.0, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
     'multi_signal_15m': { sl: 0.018, tp: 0.12, trailing: false, rsi_period: 14, rsi_threshold: 50, adx_threshold: 25, volume_multiplier: 1.2, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
     'signal_test_15m': { sl: 0.02, tp: 0.10, trailing: false, rsi_period: 14, rsi_threshold: 45, adx_threshold: 20, volume_multiplier: 1.2, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 78, atr_period: 14 },
+    'surge_catcher_15m': { sl: 0.025, tp: null, trailing: true, rsi_period: 14, rsi_threshold: 40, adx_threshold: 15, volume_multiplier: 2.5, macd_fast: 12, macd_slow: 26, macd_signal: 9, rsi_upper_limit: 85, atr_period: 14 },
 };

@@ -34,6 +34,7 @@ class ExchangeKey(Base):
     exchange_name = Column(String, default="upbit")
     api_key_encrypted = Column(String, nullable=False)
     api_secret_encrypted = Column(String, nullable=False)
+    passphrase_encrypted = Column(String, nullable=True)  # OKX 등 passphrase 필요 거래소
 
     owner = relationship("User", back_populates="api_keys")
 

@@ -19,16 +19,20 @@ def add_exchange_key(key_data: schemas.ExchangeKeyCreate, current_user: models.U
         models.ExchangeKey.exchange_name == key_data.exchange_name
     ).first()
 
+    passphrase_enc = encrypt_key(key_data.passphrase) if key_data.passphrase else None
+
     if existing_key:
         existing_key.api_key_encrypted = encrypt_key(key_data.api_key)
         existing_key.api_secret_encrypted = encrypt_key(key_data.api_secret)
+        existing_key.passphrase_encrypted = passphrase_enc
         db_key = existing_key
     else:
         db_key = models.ExchangeKey(
             user_id=current_user.id,
             exchange_name=key_data.exchange_name,
             api_key_encrypted=encrypt_key(key_data.api_key),
-            api_secret_encrypted=encrypt_key(key_data.api_secret)
+            api_secret_encrypted=encrypt_key(key_data.api_secret),
+            passphrase_encrypted=passphrase_enc,
         )
         db.add(db_key)
 

@@ -9,7 +9,7 @@ import ConfirmationModal from '@/components/modals/ConfirmationModal';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import { useToast } from '@/components/ui/Toast';
 import { getKeys, saveKey, deleteKey } from '@/lib/api/keys';
-import { EXCHANGES } from '@/lib/constants';
+import { EXCHANGES, EXCHANGES_WITH_PASSPHRASE } from '@/lib/constants';
 import type { ExchangeKeyPreview } from '@/types/keys';
 
 export default function ApiKeysPage() {
@@ -19,7 +19,10 @@ export default function ApiKeysPage() {
     const [exchangeName, setExchangeName] = useState('upbit');
     const [apiKey, setApiKey] = useState('');
     const [apiSecret, setApiSecret] = useState('');
+    const [passphrase, setPassphrase] = useState('');
     const [showSecret, setShowSecret] = useState(false);
+
+    const needsPassphrase = (EXCHANGES_WITH_PASSPHRASE as readonly string[]).includes(exchangeName);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState<number | null>(null);
     const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
@@ -66,10 +69,12 @@ export default function ApiKeysPage() {
                 exchange_name: exchangeName,
                 api_key: apiKey,
                 api_secret: apiSecret,
+                ...(needsPassphrase && passphrase ? { passphrase } : {}),
             });
             toast.success(isUpdate ? 'API 키가 업데이트되었습니다.' : 'API 키가 안전하게 저장되었습니다.');
             setApiKey('');
             setApiSecret('');
+            setPassphrase('');
             fetchKeys();
         } catch {
             toast.error('저장 실패. 로그인 상태인지 확인해 주세요.');
@@ -180,6 +185,23 @@ export default function ApiKeysPage() {
                             </p>
                         </div>
 
+                        {needsPassphrase && (
+                            <div>
+                                <label className="text-xs text-th-text-muted font-medium mb-1.5 block">Passphrase</label>
+                                <input
+                                    type="password"
+                                    value={passphrase}
+                                    onChange={(e) => setPassphrase(e.target.value)}
+                                    required
+                                    placeholder="API 키 생성 시 설정한 Passphrase"
+                                    className="w-full bg-th-card border border-th-border rounded-xl p-3 text-sm focus:border-primary/30 transition-colors"
+                                />
+                                <p className="text-[10px] sm:text-xs text-th-text-muted mt-1.5">
+                                    OKX API 키 생성 시 직접 설정한 비밀구문입니다.
+                                </p>
+                            </div>
+                        )}
+
                         <Button
                             type="submit"
                             variant="primary"
@@ -288,6 +310,15 @@ export default function ApiKeysPage() {
                                     <ExternalLink className="w-3.5 h-3.5 text-primary" />
                                     빗썸 API 관리
                                 </a>
+                                <a
+                                    href="https://www.okx.com/account/my-api"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-th-card hover:bg-th-hover text-th-text px-4 py-2 rounded-lg border border-th-border flex items-center gap-2 transition-colors text-xs font-medium"
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                                    OKX API 관리
+                                </a>
                             </div>
                             <div className="space-y-3">
                                 {/* 업비트 발급 가이드 */}
@@ -311,6 +342,18 @@ export default function ApiKeysPage() {
                                         <li>권한 설정: <strong className="text-th-text">거래 기능 사용</strong>, <strong className="text-th-text">조회</strong> 체크 <span className="text-red-400">(출금 체크 금지)</span></li>
                                         <li><strong className="text-th-text">허용 IP</strong>에 서버 IP 입력: <code className="text-primary bg-th-card px-1 rounded text-[10px] sm:text-xs">13.124.235.43</code></li>
                                         <li>본인인증 후 <strong className="text-th-text">API Key(Connect Key)</strong>와 <strong className="text-th-text">Secret Key</strong> 복사</li>
+                                    </ol>
+                                </div>
+
+                                {/* OKX 발급 가이드 */}
+                                <div className="p-4 bg-th-card rounded-xl border border-th-border-light">
+                                    <h4 className="text-xs font-semibold text-th-text mb-2.5">OKX API 발급 방법 (선물)</h4>
+                                    <ol className="text-xs text-th-text-secondary space-y-1.5 list-decimal pl-4">
+                                        <li><a href="https://www.okx.com/account/my-api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OKX API 관리</a> 페이지 접속</li>
+                                        <li><strong className="text-th-text">API 키 만들기</strong> 클릭</li>
+                                        <li><strong className="text-th-text">Passphrase</strong> 직접 설정 (잊어버리면 재발급 필요)</li>
+                                        <li>권한: <strong className="text-th-text">읽기</strong> + <strong className="text-th-text">거래</strong> 체크 <span className="text-red-400">(출금 체크 금지)</span></li>
+                                        <li><strong className="text-th-text">API Key</strong>, <strong className="text-th-text">Secret Key</strong>, <strong className="text-th-text">Passphrase</strong> 3개 모두 입력</li>
                                     </ol>
                                 </div>
 
