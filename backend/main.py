@@ -16,6 +16,7 @@ setup_error_monitoring()
 import bot_manager
 import database
 import models
+from okx_futures.bot import OKXFuturesBot
 from routers import admin, auth, backtest, bots, community, keys, strategies
 from routers import settings as settings_router
 from settings import settings
@@ -27,10 +28,38 @@ limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: 이전에 가동 중이던 봇 자동 복구
+    # Startup: 업비트 봇 자동 복구
     await bot_manager.recover_active_bots()
+
+    # Startup: OKX 선물 봇 (API 키 설정된 경우만)
+    okx_bot = None
+    okx_task = None
+    from settings import settings as app_settings
+    if app_settings.okx_api_key and app_settings.okx_passphrase:
+        try:
+            okx_bot = OKXFuturesBot()
+            okx_bot.initialize()
+            okx_task = asyncio.create_task(okx_bot.run_loop())
+            logger.info("OKX 선물 봇 시작됨 (업비트 봇과 동시 운영)")
+        except Exception as e:
+            logger.error(f"OKX 선물 봇 시작 실패: {e}")
+    else:
+        logger.info("OKX API 키 미설정 — OKX 봇 비활성")
+
     yield
-    # Shutdown: 모든 봇 안전 종료 (포지션 DB 보존)
+
+    # Shutdown: OKX 봇 종료
+    if okx_bot:
+        okx_bot.stop()
+        if okx_task:
+            okx_task.cancel()
+            try:
+                await okx_task
+            except asyncio.CancelledError:
+                pass
+        logger.info("OKX 선물 봇 종료됨")
+
+    # Shutdown: 업비트 봇 안전 종료
     await bot_manager.graceful_shutdown()
 
 
