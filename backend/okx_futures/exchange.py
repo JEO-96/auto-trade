@@ -87,7 +87,7 @@ def set_leverage(
 ):
     """레버리지 설정"""
     try:
-        exchange.set_leverage(leverage, symbol, params={"mgnMode": "isolated"})
+        exchange.set_leverage(leverage, symbol, params={"mgnMode": "isolated", "posSide": "net"})
         logger.info(f"레버리지 {leverage}x 설정 완료: {symbol}")
     except Exception as e:
         logger.warning(f"레버리지 설정 실패 (이미 설정됐을 수 있음): {e}")

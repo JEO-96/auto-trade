@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -31,19 +32,21 @@ def _load_okx_credentials() -> dict | None:
     from crypto_utils import decrypt_key
 
     # 1) DB에서 관리자의 OKX 키 조회
-    with database.get_db_session() as db:
-        okx_key = db.query(models.ExchangeKey).filter(
-            models.ExchangeKey.exchange_name == "okx"
-        ).first()
-        if okx_key and okx_key.passphrase_encrypted:
-            try:
-                return {
-                    "api_key": decrypt_key(okx_key.api_key_encrypted),
-                    "secret_key": decrypt_key(okx_key.api_secret_encrypted),
-                    "passphrase": decrypt_key(okx_key.passphrase_encrypted),
-                }
-            except Exception as e:
-                logger.warning(f"OKX DB 키 복호화 실패: {e}")
+    try:
+        with database.get_db_session() as db:
+            okx_key = db.query(models.ExchangeKey).filter(
+                models.ExchangeKey.exchange_name == "okx"
+            ).first()
+            if okx_key:
+                passphrase_enc = getattr(okx_key, "passphrase_encrypted", None)
+                if passphrase_enc:
+                    return {
+                        "api_key": decrypt_key(okx_key.api_key_encrypted),
+                        "secret_key": decrypt_key(okx_key.api_secret_encrypted),
+                        "passphrase": decrypt_key(passphrase_enc),
+                    }
+    except Exception as e:
+        logger.warning(f"OKX DB 키 조회 실패 (컬럼 미존재 가능): {e}")
 
     # 2) .env fallback
     from settings import settings as app_settings
