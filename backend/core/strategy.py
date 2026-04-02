@@ -21,6 +21,8 @@ from core.strategies.quick_swing_1h import QuickSwing1hStrategy
 from core.strategies.trend_rider_4h_v1 import TrendRider4hV1Strategy
 from core.strategies.trend_rider_4h_v2 import TrendRider4hV2Strategy
 from core.strategies.trend_rider_4h_v3 import TrendRider4hV3Strategy
+from core.strategies.trend_rider_4h_v4 import TrendRider4hV4Strategy
+from core.strategies.volatility_breakout_4h import VolatilityBreakout4hStrategy
 from core.strategies.wide_swing_1d import WideSwing1dStrategy
 
 # 15분봉 전략
@@ -29,6 +31,10 @@ from core.strategies.quick_swing_15m import QuickSwing15mStrategy
 from core.strategies.multi_signal_15m import MultiSignal15mStrategy
 from core.strategies.trend_follower_15m import TrendFollower15mStrategy
 from core.strategies.signal_test_15m import SignalTest15mStrategy
+from core.strategies.surge_catcher_15m import SurgeCatcher15mStrategy
+
+# OKX 선물 전략
+from okx_futures.strategy import SmartTrendFuturesStrategy
 
 # Strategy name -> class mapping
 STRATEGY_MAP = {
@@ -75,6 +81,8 @@ STRATEGY_MAP = {
     "trend_rider_4h_v1": TrendRider4hV1Strategy,
     "trend_rider_4h_v2": TrendRider4hV2Strategy,
     "trend_rider_4h_v3": TrendRider4hV3Strategy,
+    "trend_rider_4h_v4": TrendRider4hV4Strategy,
+    "volatility_breakout_4h": VolatilityBreakout4hStrategy,
     "steady_compounder_1d": WideSwing1dStrategy,
     "wide_swing_1d": WideSwing1dStrategy,
 
@@ -84,6 +92,10 @@ STRATEGY_MAP = {
     "multi_signal_15m": MultiSignal15mStrategy,
     "trend_follower_15m": TrendFollower15mStrategy,
     "signal_test_15m": SignalTest15mStrategy,
+    "surge_catcher_15m": SurgeCatcher15mStrategy,
+
+    # OKX 선물 전략
+    "ultimate_ensemble_1h": SmartTrendFuturesStrategy,
 }
 
 DEFAULT_STRATEGY = "momentum_stable_1h"

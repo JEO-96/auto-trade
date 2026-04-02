@@ -67,6 +67,7 @@ FETCH_BACKOFF_MAX_SECONDS: int = 30        # 재시도 대기 최대 시간 (초
 EXCHANGE_LABELS: dict[str, str] = {
     'upbit': '업비트 (Upbit)',
     'bithumb': '빗썸 (Bithumb)',
+    'okx': 'OKX (선물)',
 }
 
 # ──────────────────────────────────────────────
@@ -109,6 +110,7 @@ STRATEGY_LABELS: dict[str, str] = {
     'trend_rider_4h_v1': '트렌드 라이더 V1 (4시간)',
     'trend_rider_4h_v2': '트렌드 라이더 V2 (4시간)',
     'trend_rider_4h_v3': '트렌드 라이더 V3 (4시간)',
+    'trend_rider_4h_v4': '트렌드 라이더 V4 범용 (4시간)',
     'steady_compounder_1d': '와이드 스윙 (1일)',
     'wide_swing_1d': '와이드 스윙 (1일)',
     # 15분봉 전략
@@ -117,6 +119,9 @@ STRATEGY_LABELS: dict[str, str] = {
     'multi_signal_15m': '멀티시그널 (15분)',
     'trend_follower_15m': '추세추종 (15분)',
     'signal_test_15m': '매매 테스트 (15분)',
+    'surge_catcher_15m': '급등 포착기 (15분)',
+    # OKX 선물 전략
+    'ultimate_ensemble_1h': '얼티밋 앙상블 (1시간/선물)',
 }
 
 # ──────────────────────────────────────────────
@@ -129,6 +134,7 @@ STRATEGY_DEFINITIONS: list[dict] = [
     {"value": "trend_rider_4h_v1", "label": "트렌드 라이더 V1 (4시간)", "is_public": True, "status": "confirmed"},
     {"value": "trend_rider_4h_v2", "label": "트렌드 라이더 V2 (4시간)", "is_public": True, "status": "confirmed"},
     {"value": "trend_rider_4h_v3", "label": "트렌드 라이더 V3 (4시간)", "is_public": True, "status": "testing"},
+    {"value": "trend_rider_4h_v4", "label": "트렌드 라이더 V4 범용 (4시간)", "is_public": True, "status": "testing"},
     {"value": "momentum_basic_1h", "label": "모멘텀 기본 (1시간)", "is_public": True, "status": "testing"},
     {"value": "momentum_basic_4h", "label": "모멘텀 기본 (4시간)", "is_public": True, "status": "testing"},
     {"value": "momentum_basic_1d", "label": "모멘텀 기본 (1일)", "is_public": True, "status": "testing"},
@@ -148,6 +154,9 @@ STRATEGY_DEFINITIONS: list[dict] = [
     {"value": "multi_signal_15m", "label": "멀티시그널 (15분)", "is_public": True, "status": "testing"},
     {"value": "trend_follower_15m", "label": "추세추종 (15분)", "is_public": True, "status": "testing"},
     {"value": "signal_test_15m", "label": "매매 테스트 (15분)", "is_public": True, "status": "testing"},
+    {"value": "surge_catcher_15m", "label": "급등 포착기 (15분)", "is_public": True, "status": "testing"},
+    # OKX 선물 전략
+    {"value": "ultimate_ensemble_1h", "label": "얼티밋 앙상블 (1시간/선물)", "is_public": True, "status": "testing"},
 ]
 
 # 백테스트 전용 별칭 (더 이상 사용하지 않지만 하위 호환용)

@@ -34,6 +34,8 @@ export const BOT_STRATEGIES = [
     { value: 'trend_follower_15m', label: '추세추종 (15분)', status: 'testing' as const },
     { value: 'signal_test_15m', label: '매매 테스트 (15분)', status: 'testing' as const },
     { value: 'surge_catcher_15m', label: '급등 포착기 (15분)', status: 'testing' as const },
+    // OKX 선물 전략
+    { value: 'ultimate_ensemble_1h', label: '얼티밋 앙상블 (1시간/선물)', status: 'testing' as const },
 ] as const;
 
 /** 백테스트 전용 전략 */
@@ -62,6 +64,8 @@ export const STRATEGIES = [
     { value: 'trend_follower_15m', label: '추세추종 (15분)', status: 'testing' as const },
     { value: 'signal_test_15m', label: '매매 테스트 (15분)', status: 'testing' as const },
     { value: 'surge_catcher_15m', label: '급등 포착기 (15분)', status: 'testing' as const },
+    // OKX 선물 전략
+    { value: 'ultimate_ensemble_1h', label: '얼티밋 앙상블 (1시간/선물)', status: 'testing' as const },
 ] as const;
 
 export const BOT_TIMEFRAMES = [
