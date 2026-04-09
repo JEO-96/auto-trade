@@ -84,6 +84,12 @@ class DataFetcher:
             # 3. 빠진 타임스탬프 확인
             missing_timestamps = expected_timestamps - existing_timestamps
 
+            # 3-1. 최근 2개 캔들은 항상 재조회 (미완성 상태에서 캐시된 거래량 갱신)
+            # 마감 전 캐시된 캔들의 volume이 극소값으로 고정되는 문제 방지
+            sorted_expected = sorted(expected_timestamps)
+            recent_candles_to_refresh = set(sorted_expected[-2:]) if len(sorted_expected) >= 2 else set(sorted_expected)
+            missing_timestamps = missing_timestamps | recent_candles_to_refresh
+
             if not missing_timestamps:
                 # DB에 전부 있음 → 그대로 반환
                 logger.info("DB cache complete for %s %s (%d candles). No API call needed.",
@@ -95,11 +101,11 @@ class DataFetcher:
             missing_sorted = sorted(missing_timestamps)
             gaps = self._find_gaps(missing_sorted, duration_ms)
 
-            logger.info("DB cache for %s %s: %d/%d candles cached, %d missing in %d gap(s). Fetching...",
+            logger.info("DB cache for %s %s: %d/%d candles cached, %d missing (+%d refreshed) in %d gap(s). Fetching...",
                        symbol, timeframe, len(existing_timestamps), len(expected_timestamps),
-                       len(missing_timestamps), len(gaps))
+                       len(missing_timestamps - recent_candles_to_refresh), len(recent_candles_to_refresh), len(gaps))
 
-            # 5. Gap 구간 API fetch + DB 저장
+            # 5. Gap 구간 API fetch + DB 저장 (upsert → 기존 데이터 갱신됨)
             for gap_since, gap_until in gaps:
                 api_data = self._fetch_from_api_robust(symbol, timeframe, None, gap_since, gap_until)
                 if api_data:

@@ -1,6 +1,7 @@
 """
 OKX 선물 거래소 클라이언트 — CCXT 기반
 """
+import time
 import ccxt
 import pandas as pd
 import logging
@@ -43,13 +44,25 @@ def fetch_ohlcv(
     symbol: str = "BTC/USDT:USDT",
     timeframe: str = "1h",
     limit: int = 300,
+    retries: int = 3,
 ) -> pd.DataFrame:
-    """OHLCV 데이터 조회 → DataFrame 변환"""
-    bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
-    df = pd.DataFrame(bars, columns=["timestamp", "open", "high", "low", "close", "volume"])
-    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
-    df.set_index("timestamp", inplace=True)
-    return df
+    """OHLCV 데이터 조회 → DataFrame 변환 (네트워크 에러 시 재시도)"""
+    for attempt in range(retries):
+        try:
+            bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
+            df = pd.DataFrame(bars, columns=["timestamp", "open", "high", "low", "close", "volume"])
+            df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+            df.set_index("timestamp", inplace=True)
+            return df
+        except (ccxt.NetworkError, ccxt.RequestTimeout) as e:
+            if attempt < retries - 1:
+                wait = 2 ** (attempt + 1)
+                logger.warning("fetch_ohlcv(%s) 네트워크 에러, %ds 후 재시도 (%d/%d): %s",
+                             symbol, wait, attempt + 1, retries, e)
+                time.sleep(wait)
+            else:
+                logger.error("fetch_ohlcv(%s) %d회 재시도 실패: %s", symbol, retries, e)
+                raise
 
 
 def get_balance(exchange: ccxt.okx) -> dict:
@@ -63,21 +76,32 @@ def get_balance(exchange: ccxt.okx) -> dict:
     }
 
 
-def get_position(exchange: ccxt.okx, symbol: str = "BTC/USDT:USDT") -> dict | None:
-    """현재 열린 포지션 조회"""
-    positions = exchange.fetch_positions([symbol])
-    for pos in positions:
-        size = float(pos.get("contracts", 0) or 0)
-        if size > 0:
-            return {
-                "side": pos["side"],           # "long" / "short"
-                "size": size,
-                "entry_price": float(pos["entryPrice"] or 0),
-                "unrealized_pnl": float(pos.get("unrealizedPnl", 0) or 0),
-                "leverage": int(pos.get("leverage", 1) or 1),
-                "liquidation_price": float(pos.get("liquidationPrice", 0) or 0),
-            }
-    return None
+def get_position(exchange: ccxt.okx, symbol: str = "BTC/USDT:USDT", retries: int = 3) -> dict | None:
+    """현재 열린 포지션 조회 (네트워크 에러 시 재시도)"""
+    for attempt in range(retries):
+        try:
+            positions = exchange.fetch_positions([symbol])
+            for pos in positions:
+                size = float(pos.get("contracts", 0) or 0)
+                if size > 0:
+                    return {
+                        "side": pos["side"],           # "long" / "short"
+                        "size": size,
+                        "entry_price": float(pos["entryPrice"] or 0),
+                        "unrealized_pnl": float(pos.get("unrealizedPnl", 0) or 0),
+                        "leverage": int(pos.get("leverage", 1) or 1),
+                        "liquidation_price": float(pos.get("liquidationPrice", 0) or 0),
+                    }
+            return None
+        except (ccxt.NetworkError, ccxt.RequestTimeout) as e:
+            if attempt < retries - 1:
+                wait = 2 ** (attempt + 1)
+                logger.warning("get_position(%s) 네트워크 에러, %ds 후 재시도 (%d/%d): %s",
+                             symbol, wait, attempt + 1, retries, e)
+                time.sleep(wait)
+            else:
+                logger.error("get_position(%s) %d회 재시도 실패: %s", symbol, retries, e)
+                raise
 
 
 def set_leverage(

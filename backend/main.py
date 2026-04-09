@@ -67,33 +67,15 @@ async def lifespan(app: FastAPI):
     # Startup: 업비트 봇 자동 복구
     await bot_manager.recover_active_bots()
 
-    # Startup: OKX 선물 봇 (DB 또는 .env에서 키 로드)
-    okx_bot = None
-    okx_task = None
-    okx_creds = _load_okx_credentials()
-    if okx_creds:
-        try:
-            okx_bot = OKXFuturesBot(credentials=okx_creds)
-            okx_bot.initialize()
-            okx_task = asyncio.create_task(okx_bot.run_loop())
-            logger.info("OKX 선물 봇 시작됨 (업비트 봇과 동시 운영)")
-        except Exception as e:
-            logger.error(f"OKX 선물 봇 시작 실패: {e}")
-    else:
-        logger.info("OKX API 키 미설정 — OKX 봇 비활성")
+    # OKX 선물 봇 — 자동시작 비활성화
+    # 수동 활성화 필요 시 이 블록 주석 해제
+    # okx_creds = _load_okx_credentials()
+    # if okx_creds:
+    #     okx_bot = OKXFuturesBot(credentials=okx_creds)
+    #     okx_bot.initialize()
+    #     okx_task = asyncio.create_task(okx_bot.run_loop())
 
     yield
-
-    # Shutdown: OKX 봇 종료
-    if okx_bot:
-        okx_bot.stop()
-        if okx_task:
-            okx_task.cancel()
-            try:
-                await okx_task
-            except asyncio.CancelledError:
-                pass
-        logger.info("OKX 선물 봇 종료됨")
 
     # Shutdown: 업비트 봇 안전 종료
     await bot_manager.graceful_shutdown()
