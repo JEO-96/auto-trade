@@ -276,9 +276,14 @@ export default function BotFormModal({
                                 placeholder="0"
                             />
                         </div>
-                        {!formData.paper_trading_mode && availableKrw !== undefined && formData.allocated_capital > Math.floor(availableKrw) && (
+                        {!formData.paper_trading_mode && availableKrw !== undefined && availableKrw > 0 && formData.allocated_capital > Math.floor(availableKrw) && (
                             <p className="mt-1.5 text-xs text-red-400">
                                 보유 현금({Math.floor(availableKrw).toLocaleString()}원)보다 큰 금액은 입력할 수 없습니다.
+                            </p>
+                        )}
+                        {!formData.paper_trading_mode && availableKrw !== undefined && availableKrw === 0 && formData.allocated_capital === 0 && (
+                            <p className="mt-1.5 text-xs text-blue-400">
+                                KRW 잔고가 없어도 봇을 생성할 수 있습니다. 봇 시작 시 거래소에 보유 중인 코인을 자동으로 감지하여 관리합니다.
                             </p>
                         )}
                     </div>
@@ -300,7 +305,7 @@ export default function BotFormModal({
                             className="flex-1"
                             type="submit"
                             loading={formLoading}
-                            disabled={!formData.paper_trading_mode && availableKrw !== undefined && formData.allocated_capital > Math.floor(availableKrw)}
+                            disabled={!formData.paper_trading_mode && availableKrw !== undefined && availableKrw > 0 && formData.allocated_capital > Math.floor(availableKrw)}
                         >
                             {mode === 'create' ? '생성' : '저장'}
                         </Button>

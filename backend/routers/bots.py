@@ -144,10 +144,10 @@ def create_bot(
     _validate_symbol(req.symbol)
     _validate_timeframe(req.timeframe)
 
-    if req.allocated_capital <= 0:
+    if req.allocated_capital < 0:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Allocated capital must be positive.",
+            detail="Allocated capital must be non-negative.",
         )
 
     # 커스텀 전략 검증
