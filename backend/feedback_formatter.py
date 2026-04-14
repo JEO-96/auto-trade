@@ -178,20 +178,71 @@ def format_bot_fatal_error(
 def format_holding_signal(
     symbol: str,
     curr_price: float,
+    entry_price: float,
     pnl_pct: float,
+    pnl_abs: float,
+    stop_loss: float,
+    take_profit: float | None,
     sl_dist: float,
-    tp_dist: float,
-    rsi_str: str,
-    macd_str: str,
-    vol_str: str,
+    tp_dist: float | None,
+    rsi_val: float | None,
+    prev_rsi_val: float | None,
+    macd_rising: bool,
+    vol_ratio: float,
 ) -> str:
-    """보유 중 종목 신호 상세."""
+    """보유 중 종목 신호 상세 (SL/TP 절대가 + 청산 압박 지표 포함)."""
     pnl_emoji = "🟢" if pnl_pct >= 0 else "🔴"
+
+    # SL/TP 라인
+    sl_line = f"  🛑 SL: {stop_loss:,.0f} (남은 -{sl_dist:.1f}%)"
+    if take_profit is not None and tp_dist is not None:
+        tp_line = f"  🎯 TP: {take_profit:,.0f} (남은 +{tp_dist:.1f}%)"
+    else:
+        tp_line = "  🎯 TP: 트레일링 (제한 없음)"
+
+    # 청산 압박 지표
+    pressure_lines: list[str] = []
+
+    # RSI
+    if rsi_val is not None:
+        if rsi_val > 75:
+            rsi_note = "⚠️ 극과매수"
+        elif rsi_val > 70:
+            rsi_note = "⚠️ 과매수 구간"
+            if prev_rsi_val is not None and rsi_val < prev_rsi_val:
+                rsi_note += " + 하락 전환"
+        else:
+            rsi_note = "✅ 정상"
+        pressure_lines.append(f"  RSI {rsi_val:.1f}: {rsi_note}")
+    else:
+        pressure_lines.append("  RSI: N/A")
+
+    # MACD
+    if macd_rising:
+        pressure_lines.append("  MACD: 상승 중 ✅")
+    else:
+        pressure_lines.append("  MACD: ⚠️ 하락 전환")
+
+    # 거래량
+    if vol_ratio > 0:
+        if vol_ratio < 0.5:
+            vol_note = f"⚠️ 급감 ({vol_ratio:.1f}x)"
+        elif vol_ratio >= 1.5:
+            vol_note = f"🔥 급증 ({vol_ratio:.1f}x)"
+        else:
+            vol_note = f"✅ 보통 ({vol_ratio:.1f}x)"
+        pressure_lines.append(f"  거래량: {vol_note}")
+
+    pressure_str = "\n".join(pressure_lines)
+
     return (
-        f"📊 {symbol}\n"
-        f"  보유중 | 현재가: {curr_price:,.0f}\n"
-        f"  {pnl_emoji} 손익: {pnl_pct:+.2f}% | SL까지: {sl_dist:.1f}% | TP까지: {tp_dist:.1f}%\n"
-        f"  RSI: {rsi_str} | MACD: {macd_str} | 거래량: {vol_str}"
+        f"📦 {symbol}\n"
+        f"  보유중 | 현재가: {curr_price:,.0f} | 진입가: {entry_price:,.0f}\n"
+        f"  {pnl_emoji} 손익: {pnl_pct:+.2f}% ({pnl_abs:+,.0f} KRW)\n"
+        f"{sl_line}\n"
+        f"{tp_line}\n"
+        f"  ── 청산 압박 ──\n"
+        f"{pressure_str}"
     )
 
 

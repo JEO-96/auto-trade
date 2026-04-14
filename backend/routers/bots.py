@@ -294,10 +294,17 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
         krw_free = float(balance.get("KRW", {}).get("free", 0))
 
         if bot.allocated_capital > krw_free:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"운용 자본({bot.allocated_capital:,.0f}원)이 {exchange_label} 보유 현금({krw_free:,.0f}원)보다 큽니다. 금액을 줄여주세요.",
+            # 봇 심볼에 해당하는 코인 보유 중이면 허용 (봇이 기존 포지션을 감지하여 관리)
+            bot_symbols = parse_symbols(bot.symbol)
+            has_coin_holdings = any(
+                float(balance.get(sym.split('/')[0], {}).get('free', 0) or 0) > 0
+                for sym in bot_symbols
             )
+            if not has_coin_holdings:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"운용 자본({bot.allocated_capital:,.0f}원)이 {exchange_label} 보유 현금({krw_free:,.0f}원)보다 큽니다. 금액을 줄여주세요.",
+                )
 
     task = asyncio.create_task(bot_manager.run_bot_loop(bot_id))
     bot_manager.active_bots[bot_id] = task

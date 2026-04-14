@@ -160,14 +160,14 @@ def _process_symbol_entry(
         )
         return liquid_capital, None
 
-    # 실매매: 매수 직전 거래소 실제 KRW 잔고 조회 (추가 입금 반영)
+    # 실매매: 매수 직전 거래소 실제 KRW 잔고 조회 (입금/외부 매수 모두 반영)
     if not paper_trading and execution.exchange:
         try:
             balance = execution.exchange.fetch_balance()
             real_krw_free = float(balance.get('KRW', {}).get('free', 0) or 0)
-            if real_krw_free > liquid_capital:
+            if abs(real_krw_free - liquid_capital) > 100:  # 100원 이상 차이 시 동기화
                 logger.info(
-                    "[Bot %d] 거래소 잔고(%.0f) > 내부 자본(%.0f) — 추가 입금 감지, 동기화",
+                    "[Bot %d] 거래소 잔고(%.0f) ≠ 내부 자본(%.0f) — 동기화",
                     bot_config_id, real_krw_free, liquid_capital,
                 )
                 liquid_capital = real_krw_free
@@ -501,6 +501,33 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                 trade_occurred: bool = False  # 이번 tick에서 매매 발생 여부
                 latest_closed_candle_ts: object = None  # 이번 tick의 마지막 마감 캔들 타임스탬프
 
+                # 실매매: 매 tick마다 외부 보유 코인 감지 (봇 실행 중 수동 매수 감지)
+                if not paper_trading:
+                    untracked_symbols = [s for s in symbols if s not in active_positions]
+                    if untracked_symbols:
+                        new_holdings = await asyncio.get_running_loop().run_in_executor(
+                            None, lambda: execution.detect_existing_holdings(untracked_symbols)
+                        )
+                        if new_holdings:
+                            _sl_pct = getattr(strategy, 'backtest_sl_pct', 0.015)
+                            _tp_pct = getattr(strategy, 'backtest_tp_pct', 0.03)
+                            for _sym, _info in new_holdings.items():
+                                _avg = _info['avg_buy_price']
+                                _qty = _info['amount']
+                                _sl = _avg * (1 - _sl_pct) if _sl_pct else _avg * 0.9
+                                _tp = _avg * (1 + _tp_pct) if _tp_pct else _avg * 1.5
+                                active_positions[_sym] = {
+                                    'position_amount': _qty,
+                                    'entry_price': _avg,
+                                    'stop_loss': _sl,
+                                    'take_profit': _tp,
+                                }
+                                logger.info(
+                                    "[Bot %d] 외부 보유 감지: %s qty=%.6f avg=%.0f SL=%.0f TP=%.0f",
+                                    bot_config_id, _sym, _qty, _avg, _sl, _tp,
+                                )
+                            save_positions_to_db(bot_config_id, active_positions)
+
                 # First pass: Fetch data for all symbols and update equity
                 for symbol in symbols:
                     # Use async wrapper to avoid blocking the event loop with time.sleep()
@@ -587,14 +614,38 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                             # 백테스트와 동일: 트레일링 스탑 미사용 (고정 SL/TP)
 
                             # 보유 중 상태 피드백
-                            pnl_pct = ((curr_price - pos['entry_price']) / pos['entry_price'] * 100) if pos['entry_price'] > 0 else 0
-                            sl_dist = ((curr_price - pos['stop_loss']) / curr_price * 100) if curr_price > 0 else 0
-                            tp_dist = ((pos['take_profit'] - curr_price) / curr_price * 100) if curr_price > 0 else 0
-                            rsi_str = f"{rsi_val:.1f}" if rsi_val is not None and not pd.isna(rsi_val) else "N/A"
-                            macd_str = "상승" if (macd_val is not None and macds_val is not None and not pd.isna(macd_val) and not pd.isna(macds_val) and macd_val > macds_val) else "하락"
-                            vol_str = f"{vol_ratio:.1f}x" if vol_ratio and not pd.isna(vol_ratio) else "N/A"
+                            _entry = pos['entry_price']
+                            _sl = pos['stop_loss']
+                            _tp = pos.get('take_profit')  # None 가능 (트레일링 전략)
+                            _qty = pos['position_amount']
+                            pnl_pct = ((curr_price - _entry) / _entry * 100) if _entry > 0 else 0
+                            pnl_abs = (curr_price - _entry) * _qty
+                            sl_dist = ((curr_price - _sl) / curr_price * 100) if curr_price > 0 else 0
+                            tp_dist = ((_tp - curr_price) / curr_price * 100) if (_tp and curr_price > 0) else None
+
+                            # 이전 캔들 RSI (하락 전환 감지용)
+                            prev_rsi_val: float | None = None
+                            if current_idx >= 1:
+                                prev_data = df.iloc[current_idx - 1]
+                                _prev_rsi = prev_data.get(rsi_col, None)
+                                if _prev_rsi is not None and not pd.isna(_prev_rsi):
+                                    prev_rsi_val = float(_prev_rsi)
+
+                            _rsi_float = float(rsi_val) if rsi_val is not None and not pd.isna(rsi_val) else None
+                            _macd_rising = bool(
+                                macd_val is not None and macds_val is not None
+                                and not pd.isna(macd_val) and not pd.isna(macds_val)
+                                and macd_val > macds_val
+                            )
+                            _vol_ratio = float(vol_ratio) if vol_ratio and not pd.isna(vol_ratio) else 0.0
+
                             signal_details.append(format_holding_signal(
-                                symbol, curr_price, pnl_pct, sl_dist, tp_dist, rsi_str, macd_str, vol_str,
+                                symbol, curr_price, _entry,
+                                pnl_pct, pnl_abs,
+                                _sl, _tp,
+                                sl_dist, tp_dist,
+                                _rsi_float, prev_rsi_val,
+                                _macd_rising, _vol_ratio,
                             ))
                     else:
                         # C. Entry Check (포지션 수 제한 + 쿨다운 체크)

@@ -142,11 +142,11 @@ class ExecutionEngine:
             logger.info("[PAPER] BUY executed for %s at %.2f (slip %.3f%%). Amount: %.4f", symbol, fill_price, slippage * 100, amount)
             return {"status": "success", "price": fill_price, "amount": amount}
         else:
-            # Upbit 시장가 매수: price를 함께 전달해야 cost(=amount*price)를 계산함
-            _amount = amount
-            _price = price
+            # Upbit 시장가 매수: KRW 금액(cost)을 직접 전달해야 시장가로 처리됨
+            # qty+price를 함께 전달하면 지정가(limit)로 처리되어 잔고 부족 에러 발생
+            _cost = amount_usd  # KRW 금액
             order = self._retry_order(
-                lambda: self.exchange.create_order(symbol, 'market', 'buy', _amount, _price),
+                lambda: self.exchange.create_order(symbol, 'market', 'buy', _cost),
                 symbol,
             )
             if order is None:
@@ -155,7 +155,8 @@ class ExecutionEngine:
             executed_price = self._resolve_executed_price(order, price)
             filled = order.get('filled')
             if filled is None or filled <= 0:
-                filled = amount
+                # cost / executed_price로 수량 추정
+                filled = amount_usd / executed_price if executed_price > 0 else amount
             logger.info("[LIVE] BUY Order Successful! ID: %s, Price: %.2f, Amount: %.4f",
                         order.get('id', 'N/A'), executed_price, filled)
             return {"status": "success", "price": executed_price, "amount": float(filled)}
