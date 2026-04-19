@@ -83,18 +83,30 @@ def _process_symbol_exit(
     bot_config_id: int,
     user_id: int,
     liquid_capital: float,
+    strategy: Any,
     paper_trading: bool = True,
 ) -> tuple[float, bool]:
     """
     Check stop-loss / take-profit and execute sell if triggered.
     Returns (updated_liquid_capital, was_exited).
+
+    트레일링 모드 (strategy.backtest_trailing=True): 현재가 기준 (1-sl_pct)으로 SL을
+    끌어올리고 TP 체크는 건너뜀 (백테스트의 vectorbt sl_trail=True와 동치).
     """
+    # 트레일링 스탑 업데이트 (백테스트와 동일: 고점 대비 sl_pct 하락 시 청산)
+    use_trailing: bool = bool(getattr(strategy, 'backtest_trailing', False))
+    if use_trailing:
+        sl_pct: float = float(getattr(strategy, 'backtest_sl_pct', 0.05) or 0.05)
+        new_sl: float = curr_price * (1 - sl_pct)
+        if new_sl > pos.get('stop_loss', 0):
+            pos['stop_loss'] = new_sl
+
     exit_price: Optional[float] = None
     reason: str = ""
     if curr_price <= pos['stop_loss']:
         exit_price = curr_price
-        reason = "Stop Loss"
-    elif curr_price >= pos['take_profit']:
+        reason = "Trailing Stop" if use_trailing else "Stop Loss"
+    elif not use_trailing and curr_price >= pos['take_profit']:
         exit_price = curr_price
         reason = "Take Profit"
 
@@ -147,10 +159,18 @@ def _process_symbol_entry(
     logger.info("[Bot %d] *** BUY SIGNAL for %s! ***", bot_config_id, symbol)
 
     # 백테스트와 동일: 고정 비율 SL/TP 사용 (backtest_sl_pct / backtest_tp_pct)
+    # 트레일링 모드: TP 없이 SL을 매 tick 끌어올려 추세 끝까지 추종.
     sl_pct = getattr(strategy, 'backtest_sl_pct', 0.015)
     tp_pct = getattr(strategy, 'backtest_tp_pct', 0.03)
+    use_trailing = bool(getattr(strategy, 'backtest_trailing', False))
+
     sl = curr_price * (1 - sl_pct) if sl_pct is not None else curr_price * 0.9
-    tp = curr_price * (1 + tp_pct) if tp_pct is not None else curr_price * 1.5
+    # 트레일링 모드이거나 tp_pct=None이면 TP를 비활성화(_process_symbol_exit 에서 미체크).
+    # DB의 take_profit은 NOT NULL이므로 절대 닿지 않을 sentinel(현재가의 10배)로 저장.
+    if use_trailing or tp_pct is None:
+        tp = curr_price * 10
+    else:
+        tp = curr_price * (1 + tp_pct)
 
     # Validate that exit levels are sensible (not NaN, SL < price < TP)
     if pd.isna(sl) or pd.isna(tp) or sl >= curr_price or tp <= curr_price:
@@ -190,6 +210,9 @@ def _process_symbol_entry(
     entry_price: float = res["price"]
     qty = res.get("amount", qty)
     liquid_capital -= (qty * entry_price)
+    # 트레일링 모드 진입 시 SL을 실제 체결가 기준으로 재설정 (슬리피지 반영)
+    if use_trailing and sl_pct is not None:
+        sl = entry_price * (1 - sl_pct)
     position: dict = {
         'position_amount': qty,
         'entry_price': entry_price,
@@ -197,7 +220,9 @@ def _process_symbol_entry(
         'take_profit': tp,
     }
     save_trade_log(bot_config_id, symbol, "BUY", entry_price, qty, "Portfolio Entry")
-    msg = format_buy_notification(symbol, entry_price, qty, sl, tp)
+    # 트레일링 모드면 알림에 TP=None 전달 → "TP 없음 (트레일링)" 표시
+    notify_tp: float | None = None if (use_trailing or tp_pct is None) else tp
+    msg = format_buy_notification(symbol, entry_price, qty, sl, notify_tp)
     _send_trade_notification(user_id, msg)
 
     return liquid_capital, position
@@ -378,18 +403,48 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
         holdings = execution.detect_existing_holdings(symbols)
         sl_pct = getattr(strategy, 'backtest_sl_pct', 0.015)
         tp_pct = getattr(strategy, 'backtest_tp_pct', 0.03)
+        use_trailing_init = bool(getattr(strategy, 'backtest_trailing', False))
 
         for sym, info in holdings.items():
-            if sym in active_positions:
-                # 이미 DB에 포지션이 있으면 스킵 (서버 재시작 복구 케이스)
-                logger.info("[Bot %d] %s already in DB positions, skipping exchange detection", bot_config_id, sym)
-                continue
-
             avg_price: float = info['avg_buy_price']
             amount: float = info['amount']
             sl = avg_price * (1 - sl_pct) if sl_pct else avg_price * 0.9
-            tp = avg_price * (1 + tp_pct) if tp_pct else avg_price * 1.5
+            # 트레일링/무제한 TP 모드: 절대 닿지 않을 sentinel 저장 (NOT NULL 대응)
+            if use_trailing_init or tp_pct is None:
+                tp = avg_price * 10
+            else:
+                tp = avg_price * (1 + tp_pct)
 
+            if sym in active_positions:
+                # 거래소가 진실의 근원 — 사용자가 봇 외부에서 추가 매수/일부 매도한
+                # 경우 DB의 entry/qty가 stale해질 수 있으므로 거래소 값으로 동기화.
+                existing = active_positions[sym]
+                entry_changed = abs(existing.get('entry_price', 0) - avg_price) > 1e-6
+                qty_changed = abs(existing.get('position_amount', 0) - amount) > 1e-8
+
+                if entry_changed or qty_changed:
+                    logger.info(
+                        "[Bot %d] Syncing %s with exchange: entry %.4f→%.4f, qty %.8f→%.8f",
+                        bot_config_id, sym,
+                        existing.get('entry_price', 0), avg_price,
+                        existing.get('position_amount', 0), amount,
+                    )
+                    active_positions[sym]['entry_price'] = avg_price
+                    active_positions[sym]['position_amount'] = amount
+                    # 트레일링 모드: 기존에 끌어올려진 SL이 있으면 유지 (더 높은 쪽).
+                    # 고정 모드: 새 평균가 기준으로 SL/TP 재계산.
+                    if use_trailing_init:
+                        # 기존 SL 유지 — 트레일링은 계속 끌어올려진 값이 유효함
+                        pass
+                    else:
+                        active_positions[sym]['stop_loss'] = sl
+                        active_positions[sym]['take_profit'] = tp
+                    detected_holdings[sym] = info  # 시작 알림에 표시
+                else:
+                    logger.info("[Bot %d] %s already in DB positions (in sync with exchange)", bot_config_id, sym)
+                continue
+
+            # 신규 감지
             active_positions[sym] = {
                 'position_amount': amount,
                 'entry_price': avg_price,
@@ -400,11 +455,11 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
             # 기존 보유 코인은 liquid_capital에서 차감하지 않음
             # (봇 시작 전에 별도로 매수한 것이므로 allocated_capital과 무관)
             logger.info(
-                "[Bot %d] Detected exchange holding %s: qty=%.6f, avg_price=%.0f, SL=%.0f, TP=%.0f",
+                "[Bot %d] Detected exchange holding %s: qty=%.6f, avg_price=%.4f, SL=%.4f, TP=%.4f",
                 bot_config_id, sym, amount, avg_price, sl, tp,
             )
 
-        # 감지된 포지션을 DB에 저장
+        # 감지/동기화된 포지션을 DB에 저장
         if detected_holdings:
             save_positions_to_db(bot_config_id, active_positions)
 
@@ -473,13 +528,15 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
         for sym, pos in active_positions.items():
             pos_lines.append(f"  {sym}: 진입가 {pos['entry_price']:,.0f}")
     if detected_holdings:
+        use_trailing_display = bool(getattr(strategy, 'backtest_trailing', False))
         for sym, info in detected_holdings.items():
             pos = active_positions.get(sym, {})
             sl = pos.get('stop_loss', 0)
             tp = pos.get('take_profit', 0)
+            tp_text = "TP — (트레일링)" if use_trailing_display else f"TP {tp:,.0f}"
             pos_lines.append(
                 f"  {sym}: 평균매수가 {info['avg_buy_price']:,.0f} / "
-                f"SL {sl:,.0f} / TP {tp:,.0f} (거래소 감지)"
+                f"SL {sl:,.0f} / {tp_text} (거래소 감지)"
             )
     _send_bot_status_notification(user_id, format_bot_start_notification(
         paper_trading, strategy_name, timeframe, exchange_name,
@@ -596,27 +653,30 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                     if symbol in active_positions:
                         pos = active_positions[symbol]
 
-                        # A. Exit Check
+                        # A. Exit Check (전략 기반 SL/TP + 트레일링 스탑 — 백테스트와 동일)
                         liquid_capital, was_exited = _process_symbol_exit(
                             symbol, pos, curr_price, execution,
                             bot_config_id, user_id, liquid_capital,
+                            strategy,
                             paper_trading=paper_trading,
                         )
                         if was_exited:
                             trade_occurred = True
-                            # 손절인 경우 쿨다운 적용
+                            # 손절/트레일링 청산인 경우 쿨다운 적용
                             if curr_price <= pos['stop_loss']:
                                 from datetime import timedelta
                                 cooldown_until[symbol] = datetime.now() + timedelta(seconds=STOP_LOSS_COOLDOWN_SECONDS)
                                 logger.info("[Bot %d] %s cooldown until %s after stop loss", bot_config_id, symbol, cooldown_until[symbol])
                             del active_positions[symbol]
                         else:
-                            # 백테스트와 동일: 트레일링 스탑 미사용 (고정 SL/TP)
+                            # 트레일링 모드: _process_symbol_exit 내부에서 pos['stop_loss']를 매 tick 끌어올림
 
                             # 보유 중 상태 피드백
                             _entry = pos['entry_price']
                             _sl = pos['stop_loss']
-                            _tp = pos.get('take_profit')  # None 가능 (트레일링 전략)
+                            # 트레일링 모드면 TP를 None으로 취급 (sentinel 값이 저장되어 있어도 무시)
+                            _trailing_mode = bool(getattr(strategy, 'backtest_trailing', False))
+                            _tp = None if _trailing_mode else pos.get('take_profit')
                             _qty = pos['position_amount']
                             pnl_pct = ((curr_price - _entry) / _entry * 100) if _entry > 0 else 0
                             pnl_abs = (curr_price - _entry) * _qty

@@ -39,19 +39,25 @@ def format_buy_notification(
     entry_price: float,
     qty: float,
     sl: float,
-    tp: float,
+    tp: float | None,
 ) -> str:
-    """매수 체결 알림 메시지."""
+    """매수 체결 알림 메시지. tp=None이면 트레일링 모드 (TP 미사용)."""
     sl_pct = abs((sl - entry_price) / entry_price * 100) if entry_price > 0 else 0
-    tp_pct = abs((tp - entry_price) / entry_price * 100) if entry_price > 0 else 0
+    if tp is None:
+        tp_line = "🎯 익절: — (트레일링 스탑)"
+        sl_line = f"🛑 트레일링SL: {sl:,.0f} (-{sl_pct:.1f}%, 고점 대비 추적)"
+    else:
+        tp_pct = abs((tp - entry_price) / entry_price * 100) if entry_price > 0 else 0
+        tp_line = f"🎯 익절: {tp:,.0f} (+{tp_pct:.1f}%)"
+        sl_line = f"🛑 손절: {sl:,.0f} (-{sl_pct:.1f}%)"
     return (
         f"📈 매수 체결\n"
         f"{SEPARATOR}\n"
         f"종목: {symbol}\n"
         f"체결가: {entry_price:,.0f} KRW\n"
         f"수량: {qty:.4f}\n"
-        f"🛑 손절: {sl:,.0f} (-{sl_pct:.1f}%)\n"
-        f"🎯 익절: {tp:,.0f} (+{tp_pct:.1f}%)"
+        f"{sl_line}\n"
+        f"{tp_line}"
     )
 
 
@@ -190,7 +196,8 @@ def format_holding_signal(
     macd_rising: bool,
     vol_ratio: float,
 ) -> str:
-    """보유 중 종목 신호 상세 (SL/TP 절대가 + 청산 압박 지표 포함)."""
+    """보유 중 종목 신호 상세 (SL/TP 절대가 + 청산 압박 지표 포함).
+    take_profit=None 또는 tp_dist=None이면 트레일링 모드 (TP 미사용)로 간주."""
     pnl_emoji = "🟢" if pnl_pct >= 0 else "🔴"
 
     # SL/TP 라인
