@@ -12,6 +12,7 @@ from constants import (
     EXCHANGE_LABELS,
     MAX_CONCURRENT_POSITIONS,
     MAX_CONSECUTIVE_ERRORS,
+    MIN_ORDER_KRW,
     STOP_LOSS_COOLDOWN_SECONDS,
     STRATEGY_LABELS,
 )
@@ -230,6 +231,16 @@ def _process_symbol_entry(
         return liquid_capital, None
 
     buy_amount: float = liquid_capital
+
+    # 실매매: Upbit 최소 주문액(5000원) 미달 시 skip
+    # insufficient_funds_bid 에러 루프 방지.
+    if not paper_trading and buy_amount < MIN_ORDER_KRW:
+        logger.info(
+            "[Bot %d] %s 매수 skip: 가용 자본 %.0f원이 최소 주문액 %.0f원 미만",
+            bot_config_id, symbol, buy_amount, MIN_ORDER_KRW,
+        )
+        return liquid_capital, None
+
     qty: float = buy_amount / curr_price
     if qty <= 0:
         return liquid_capital, None

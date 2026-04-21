@@ -51,6 +51,7 @@ RETRY_DELAY: int = 2  # seconds
 # 봇 루프 (Bot Loop)
 # ──────────────────────────────────────────────
 MAX_CONSECUTIVE_ERRORS: int = 10  # 연속 에러 시 봇 중단 임계값
+MIN_ORDER_KRW: float = 5100.0  # 실매매 최소 주문 금액 (Upbit 5000원 + 수수료/버퍼)
 
 # ──────────────────────────────────────────────
 # 데이터 페칭 (Data Fetcher)
