@@ -147,16 +147,47 @@ def _process_symbol_entry(
     user_id: int,
     total_equity: float,
     liquid_capital: float,
+    active_positions: dict,
     paper_trading: bool = True,
 ) -> tuple[float, Optional[dict]]:
     """
     Check buy signal and execute entry if triggered.
     Returns (updated_liquid_capital, new_position_dict_or_None).
+    실매매 중 거래소에 이미 해당 코인을 보유중이면 active_positions에 직접 등록 후 skip.
     """
     if not strategy.check_buy_signal(df, current_idx):
         return liquid_capital, None
 
     logger.info("[Bot %d] *** BUY SIGNAL for %s! ***", bot_config_id, symbol)
+
+    # 실매매: 매수 직전 거래소에 해당 코인이 이미 있는지 확인.
+    # 봇 실행 중 외부 매수나 init 이후 수동 매수된 경우 중복 매수/잔고 부족 방지.
+    if not paper_trading and execution.exchange:
+        try:
+            existing_holdings = execution.detect_existing_holdings([symbol])
+            if symbol in existing_holdings:
+                info = existing_holdings[symbol]
+                avg_price = info['avg_buy_price']
+                amount = info['amount']
+                sl_pct_existing = getattr(strategy, 'backtest_sl_pct', 0.015)
+                tp_pct_existing = getattr(strategy, 'backtest_tp_pct', 0.03)
+                use_trailing_existing = bool(getattr(strategy, 'backtest_trailing', False))
+                sl_existing = avg_price * (1 - sl_pct_existing) if sl_pct_existing else avg_price * 0.9
+                tp_existing = (avg_price * 10) if (use_trailing_existing or tp_pct_existing is None) \
+                    else avg_price * (1 + tp_pct_existing)
+                active_positions[symbol] = {
+                    'position_amount': amount,
+                    'entry_price': avg_price,
+                    'stop_loss': sl_existing,
+                    'take_profit': tp_existing,
+                }
+                logger.info(
+                    "[Bot %d] %s 이미 거래소 보유중(qty=%.6f, avg=%.0f) — 매수 skip, active_positions 등록",
+                    bot_config_id, symbol, amount, avg_price,
+                )
+                return liquid_capital, None
+        except Exception as e:
+            logger.warning("[Bot %d] 거래소 보유 코인 감지 실패: %s", bot_config_id, e)
 
     # 백테스트와 동일: 고정 비율 SL/TP 사용 (backtest_sl_pct / backtest_tp_pct)
     # 트레일링 모드: TP 없이 SL을 매 tick 끌어올려 추세 끝까지 추종.
@@ -718,7 +749,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                             liquid_capital, new_position = _process_symbol_entry(
                                 symbol, df, curr_price, current_idx, strategy,
                                 execution, bot_config_id, user_id,
-                                total_equity, liquid_capital, paper_trading,
+                                total_equity, liquid_capital, active_positions, paper_trading,
                             )
                             if new_position:
                                 trade_occurred = True
