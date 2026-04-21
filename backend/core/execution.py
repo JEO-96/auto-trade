@@ -29,6 +29,7 @@ class ExecutionEngine:
                     'apiKey': api_key,
                     'secret': api_secret,
                     'enableRateLimit': True,
+                    'options': {'createMarketBuyOrderRequiresPrice': False},
                 })
                 # Check connection
                 self.exchange.fetch_balance()
