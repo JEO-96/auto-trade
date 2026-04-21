@@ -79,9 +79,19 @@ def create_exchange(exchange_name: str, api_key: str, api_secret: str):
     import ccxt
 
     if exchange_name == "upbit":
-        return ccxt.upbit({"apiKey": api_key, "secret": api_secret, "enableRateLimit": True})
+        return ccxt.upbit({
+            "apiKey": api_key,
+            "secret": api_secret,
+            "enableRateLimit": True,
+            "options": {"createMarketBuyOrderRequiresPrice": False},
+        })
     elif exchange_name == "bithumb":
-        return ccxt.bithumb({"apiKey": api_key, "secret": api_secret, "enableRateLimit": True})
+        return ccxt.bithumb({
+            "apiKey": api_key,
+            "secret": api_secret,
+            "enableRateLimit": True,
+            "options": {"createMarketBuyOrderRequiresPrice": False},
+        })
     else:
         raise ValueError(f"Unsupported exchange: {exchange_name}")
 
