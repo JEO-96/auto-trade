@@ -10,6 +10,7 @@ import database
 import models
 from constants import (
     EXCHANGE_LABELS,
+    LIVE_FEE_BUFFER,
     MAX_CONCURRENT_POSITIONS,
     MAX_CONSECUTIVE_ERRORS,
     MIN_ORDER_KRW,
@@ -230,7 +231,9 @@ def _process_symbol_entry(
     if liquid_capital <= 0 or curr_price <= 0:
         return liquid_capital, None
 
-    buy_amount: float = liquid_capital
+    # 실매매: Upbit/Bithumb 시장가 수수료(0.05%)만큼 버퍼를 두어 insufficient_funds_bid 회피.
+    # 페이퍼 모드는 수수료가 없으므로 전액 사용.
+    buy_amount: float = liquid_capital * LIVE_FEE_BUFFER if not paper_trading else liquid_capital
 
     # 실매매: Upbit 최소 주문액(5000원) 미달 시 skip
     # insufficient_funds_bid 에러 루프 방지.
@@ -504,6 +507,22 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
         # 감지/동기화된 포지션을 DB에 저장
         if detected_holdings:
             save_positions_to_db(bot_config_id, active_positions)
+
+        # 실매매: 거래소 실제 KRW free 잔고로 liquid_capital 시드.
+        # allocated_capital(DB)이 0이거나 stale해도 시작 시점에 진실의 근원으로 동기화.
+        try:
+            balance = execution.exchange.fetch_balance()
+            real_krw_free = float(balance.get('KRW', {}).get('free', 0) or 0)
+            logger.info(
+                "[Bot %d] 시작 시점 거래소 잔고 시드: liquid_capital %.0f → %.0f",
+                bot_config_id, liquid_capital, real_krw_free,
+            )
+            liquid_capital = real_krw_free
+        except Exception as e:
+            logger.warning(
+                "[Bot %d] 시작 시점 잔고 조회 실패, allocated_capital 유지 (%.0f): %s",
+                bot_config_id, liquid_capital, e,
+            )
 
     set_bot_active(bot_config_id, True)
 
