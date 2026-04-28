@@ -5,7 +5,8 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import Button from '@/components/ui/Button';
-import Input, { SelectInput } from '@/components/ui/Input';
+import Input from '@/components/ui/Input';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/Select';
 import PageContainer from '@/components/ui/PageContainer';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -423,20 +424,20 @@ export default function PortfolioBacktestPage() {
                 <CardContent>
                     {/* Strategy selector */}
                     <div className="mb-4">
-                        <SelectInput
-                            type="select"
-                            label="전략"
-                            value={strategyName}
-                            onChange={(e) => setStrategyName(e.target.value)}
-                            disabled={loading}
-                        >
-                            {strategies.length === 0 && (
-                                <option value="dual_momentum_etf_v1">듀얼 모멘텀 v1 (KR+US)</option>
-                            )}
-                            {strategies.map(s => (
-                                <option key={s.name} value={s.name}>{s.label}</option>
-                            ))}
-                        </SelectInput>
+                        <label className="text-xs text-th-text-muted font-medium mb-1.5 block">전략</label>
+                        <Select value={strategyName} onValueChange={setStrategyName} disabled={loading}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="전략을 선택하세요" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {strategies.length === 0 && (
+                                    <SelectItem value="dual_momentum_etf_v1">듀얼 모멘텀 v1 (KR+US)</SelectItem>
+                                )}
+                                {strategies.map(s => (
+                                    <SelectItem key={s.name} value={s.name}>{s.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         {strategies.find(s => s.name === strategyName)?.description && (
                             <p className="mt-1.5 text-[10px] sm:text-xs text-th-text-muted">
                                 {strategies.find(s => s.name === strategyName)!.description}
@@ -446,42 +447,54 @@ export default function PortfolioBacktestPage() {
 
                     {/* Strategy params */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                        <SelectInput
-                            type="select"
-                            label="Lookback 기간"
-                            value={String(lookbackMonths)}
-                            onChange={(e) => setLookbackMonths(Number(e.target.value))}
-                            disabled={loading}
-                        >
-                            <option value={3}>3개월</option>
-                            <option value={6}>6개월</option>
-                            <option value={9}>9개월</option>
-                            <option value={12}>12개월 (기본)</option>
-                            <option value={18}>18개월</option>
-                            <option value={24}>24개월</option>
-                        </SelectInput>
-                        <SelectInput
-                            type="select"
-                            label="평가 모드"
-                            value={evaluationMode}
-                            onChange={(e) => setEvaluationMode(e.target.value as typeof evaluationMode)}
-                            disabled={loading}
-                        >
-                            <option value="preset">프리셋 그대로</option>
-                            <option value="sequential">Sequential (순차)</option>
-                            <option value="best_momentum">Best momentum (Antonacci)</option>
-                        </SelectInput>
-                        <SelectInput
-                            type="select"
-                            label="리밸런스 주기"
-                            value={rebalanceFreq}
-                            onChange={(e) => setRebalanceFreq(e.target.value as typeof rebalanceFreq)}
-                            disabled={loading}
-                        >
-                            <option value="monthly">월말 (기본)</option>
-                            <option value="quarterly">분기말</option>
-                            <option value="semiannual">반기말</option>
-                        </SelectInput>
+                        <div>
+                            <label className="text-xs text-th-text-muted font-medium mb-1.5 block">Lookback 기간</label>
+                            <Select
+                                value={String(lookbackMonths)}
+                                onValueChange={(v) => setLookbackMonths(Number(v))}
+                                disabled={loading}
+                            >
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="3">3개월</SelectItem>
+                                    <SelectItem value="6">6개월</SelectItem>
+                                    <SelectItem value="9">9개월</SelectItem>
+                                    <SelectItem value="12">12개월 (기본)</SelectItem>
+                                    <SelectItem value="18">18개월</SelectItem>
+                                    <SelectItem value="24">24개월</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <label className="text-xs text-th-text-muted font-medium mb-1.5 block">평가 모드</label>
+                            <Select
+                                value={evaluationMode}
+                                onValueChange={(v) => setEvaluationMode(v as typeof evaluationMode)}
+                                disabled={loading}
+                            >
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="preset">프리셋 그대로</SelectItem>
+                                    <SelectItem value="sequential">Sequential (순차)</SelectItem>
+                                    <SelectItem value="best_momentum">Best momentum (Antonacci)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <label className="text-xs text-th-text-muted font-medium mb-1.5 block">리밸런스 주기</label>
+                            <Select
+                                value={rebalanceFreq}
+                                onValueChange={(v) => setRebalanceFreq(v as typeof rebalanceFreq)}
+                                disabled={loading}
+                            >
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="monthly">월말 (기본)</SelectItem>
+                                    <SelectItem value="quarterly">분기말</SelectItem>
+                                    <SelectItem value="semiannual">반기말</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
