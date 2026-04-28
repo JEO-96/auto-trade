@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { BacktestFormParams, BacktestTaskStatus, BacktestHistoryItem, BacktestHistoryDetail, RunBacktestResponse, DualMomentumRequest, PortfolioBacktestResult, PortfolioHistoryItem, PortfolioHistoryDetail } from '@/types/backtest';
+import type { BacktestFormParams, BacktestTaskStatus, BacktestHistoryItem, BacktestHistoryDetail, RunBacktestResponse, DualMomentumRequest, PortfolioBacktestResult, PortfolioHistoryItem, PortfolioHistoryDetail, PortfolioStrategyInfo } from '@/types/backtest';
 import type { CommunityPost } from '@/types/community';
 
 export type { RunBacktestResponse } from '@/types/backtest';
@@ -32,6 +32,11 @@ export async function deletePortfolioHistory(
     historyId: number,
 ): Promise<void> {
     await api.delete(`/backtest/portfolio_history/${historyId}`);
+}
+
+export async function listPortfolioStrategies(): Promise<PortfolioStrategyInfo[]> {
+    const res = await api.get<PortfolioStrategyInfo[]>('/backtest/portfolio_strategies');
+    return res.data;
 }
 
 export async function runPortfolioBacktest(

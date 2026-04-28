@@ -109,6 +109,17 @@ export interface DualMomentumRequest {
     end_date: string;
     initial_capital: number;
     commission_rate?: number;
+    lookback_months?: number | null;
+    evaluation_mode?: 'sequential' | 'best_momentum' | null;
+    rebalance_freq?: 'monthly' | 'quarterly' | 'semiannual';
+}
+
+export interface PortfolioStrategyInfo {
+    name: string;
+    label: string;
+    description: string;
+    assets?: string[];
+    min_data_year?: number;
 }
 
 export interface PortfolioTrade {

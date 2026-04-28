@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 import models
 from core.portfolio_backtester import PortfolioBacktester
+from core.portfolio_strategy_registry import list_portfolio_strategies
 from dependencies import get_current_user, get_db
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,9 @@ class DualMomentumRequest(BaseModel):
     end_date: str = Field(..., description="YYYY-MM-DD")
     initial_capital: float = Field(default=10_000_000)
     commission_rate: float = Field(default=0.001)
+    lookback_months: Optional[int] = Field(default=None, ge=1, le=36)
+    evaluation_mode: Optional[str] = Field(default=None, description="sequential | best_momentum")
+    rebalance_freq: str = Field(default="monthly", description="monthly | quarterly | semiannual")
 
 
 class PortfolioHistoryItem(BaseModel):
@@ -54,6 +58,11 @@ def _save_history(
 ) -> int:
     """백테스트 결과를 BacktestHistory 테이블에 저장."""
     assets = result.get("assets", [])
+    custom = {
+        "lookback_months": req.lookback_months,
+        "evaluation_mode": req.evaluation_mode,
+        "rebalance_freq": req.rebalance_freq,
+    }
     history = models.BacktestHistory(
         user_id=user_id,
         title=None,
@@ -68,12 +77,43 @@ def _save_history(
         start_date=req.start_date,
         end_date=req.end_date,
         commission_rate=req.commission_rate,
-        custom_params=None,
+        custom_params=json.dumps(custom),
     )
     db.add(history)
     db.commit()
     db.refresh(history)
     return history.id
+
+
+_STRATEGY_INFO = {
+    "dual_momentum_etf_v1": {
+        "label": "듀얼 모멘텀 v1 (KR+US, sequential)",
+        "description": "069500/360750 + 153130. 069500 우선 평가 — 운영 기본값.",
+        "assets": ["069500", "360750", "153130"],
+        "min_data_year": 2020,
+    },
+    "dual_momentum_etf_v2": {
+        "label": "듀얼 모멘텀 v2 (KR+US, Antonacci 정합)",
+        "description": "069500/360750 + 153130. 위험자산 중 모멘텀 max 선택.",
+        "assets": ["069500", "360750", "153130"],
+        "min_data_year": 2020,
+    },
+    "dual_momentum_etf_kr_v1": {
+        "label": "듀얼 모멘텀 KR (069500 + 153130, 장기)",
+        "description": "국내 ETF + 채권 2자산. 2002년부터 장기 백테스트 가능.",
+        "assets": ["069500", "153130"],
+        "min_data_year": 2012,
+    },
+}
+
+
+@router.get("/portfolio_strategies")
+def list_strategies():
+    """사용 가능한 포트폴리오 전략 목록."""
+    return [
+        {"name": name, **_STRATEGY_INFO.get(name, {"label": name, "description": ""})}
+        for name in list_portfolio_strategies()
+    ]
 
 
 @router.post("/dual_momentum/")
@@ -86,6 +126,9 @@ def run_dual_momentum_backtest(
         tester = PortfolioBacktester(
             strategy_name=req.strategy_name,
             commission_rate=req.commission_rate,
+            lookback_months=req.lookback_months,
+            evaluation_mode=req.evaluation_mode,
+            rebalance_freq=req.rebalance_freq,
         )
         result = tester.run(
             start_date=req.start_date,

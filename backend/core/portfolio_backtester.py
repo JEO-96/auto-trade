@@ -19,14 +19,34 @@ logger = logging.getLogger(__name__)
 
 
 class PortfolioBacktester:
+    # 리밸런스 주기 → pandas freq alias 매핑
+    _REBALANCE_FREQ_MAP: Dict[str, List[str]] = {
+        "monthly": ["ME", "M"],   # 월말
+        "quarterly": ["QE", "Q"],  # 분기말
+        "semiannual": ["2QE", "2Q"],  # 반기말
+    }
+
     def __init__(
         self,
         strategy_name: str = "dual_momentum_etf_v1",
         commission_rate: float = 0.001,
+        lookback_months: Optional[int] = None,
+        evaluation_mode: Optional[str] = None,
+        rebalance_freq: str = "monthly",
     ) -> None:
         self.strategy_name = strategy_name
         self.commission_rate = float(commission_rate)
-        self.strategy = get_portfolio_strategy(strategy_name)
+        self.strategy = get_portfolio_strategy(
+            strategy_name,
+            lookback_months=lookback_months,
+            evaluation_mode=evaluation_mode,
+        )
+        if rebalance_freq not in self._REBALANCE_FREQ_MAP:
+            raise ValueError(
+                f"Unknown rebalance_freq: {rebalance_freq!r}. "
+                f"Available: {list(self._REBALANCE_FREQ_MAP.keys())}"
+            )
+        self.rebalance_freq = rebalance_freq
         self.fetcher = StockDataFetcher()
 
     # ─────────────────────────────────────────────────────
@@ -41,7 +61,8 @@ class PortfolioBacktester:
         db: Optional[Session] = None,
     ) -> dict:
         assets: List[str] = list(self.strategy.ASSETS)
-        lookback_buffer_days = 400  # 12개월 lookback 위해 1년 + 여유
+        # lookback_months에 비례하는 버퍼 (1.1배 + 60일 여유)
+        lookback_buffer_days = int(self.strategy.lookback_months * 30.5 * 1.1) + 60
 
         start_dt = pd.Timestamp(start_date).normalize()
         end_dt = pd.Timestamp(end_date).normalize()
@@ -58,7 +79,7 @@ class PortfolioBacktester:
                 logger.warning("PortfolioBacktester: %s 데이터 없음", asset)
             df_dict[asset] = df
 
-        rebalance_dates = self._month_end_dates(start_dt, end_dt)
+        rebalance_dates = self._rebalance_dates(start_dt, end_dt)
         if not rebalance_dates:
             return self._empty_result(initial_capital, assets)
 
@@ -176,7 +197,9 @@ class PortfolioBacktester:
         else:
             equity_curve.append(end_point)
 
-        metrics = self._compute_metrics(initial_capital, final_capital, equity_curve, start_dt, end_dt)
+        metrics = self._compute_metrics(
+            initial_capital, final_capital, equity_curve, start_dt, end_dt, self.rebalance_freq,
+        )
 
         return {
             "strategy_name": self.strategy_name,
@@ -198,14 +221,31 @@ class PortfolioBacktester:
     # Helpers
     # ─────────────────────────────────────────────────────
 
-    @staticmethod
-    def _month_end_dates(start_dt: pd.Timestamp, end_dt: pd.Timestamp) -> List[pd.Timestamp]:
-        """월말 일자 리스트. pandas 'ME' alias 우선, 호환 안되면 'M' fallback."""
-        try:
-            idx = pd.date_range(start=start_dt, end=end_dt, freq="ME")
-        except (ValueError, KeyError):
-            idx = pd.date_range(start=start_dt, end=end_dt, freq="M")
-        return [pd.Timestamp(d).normalize() for d in idx]
+    def _rebalance_dates(self, start_dt: pd.Timestamp, end_dt: pd.Timestamp) -> List[pd.Timestamp]:
+        """rebalance_freq에 따른 리밸런스 일자 리스트.
+
+        pandas ≥2.2에서는 'ME'/'QE' alias를 쓰고, 1.x에서는 'M'/'Q'로 fallback.
+        반기('2Q')는 분기 인덱스에서 짝수 분기만 추출.
+        """
+        if self.rebalance_freq == "semiannual":
+            for q_alias in self._REBALANCE_FREQ_MAP["quarterly"]:
+                try:
+                    idx = pd.date_range(start=start_dt, end=end_dt, freq=q_alias)
+                    break
+                except (ValueError, KeyError):
+                    idx = None
+            if idx is None or len(idx) == 0:
+                return []
+            # 분기 중 6/12월말만 (반기)
+            return [pd.Timestamp(d).normalize() for d in idx if d.month in (6, 12)]
+
+        for alias in self._REBALANCE_FREQ_MAP[self.rebalance_freq]:
+            try:
+                idx = pd.date_range(start=start_dt, end=end_dt, freq=alias)
+                return [pd.Timestamp(d).normalize() for d in idx]
+            except (ValueError, KeyError):
+                continue
+        return []
 
     @staticmethod
     def _price_at_or_before(df: Optional[pd.DataFrame], date: pd.Timestamp) -> Optional[float]:
@@ -236,6 +276,7 @@ class PortfolioBacktester:
         equity_curve: List[Dict[str, Any]],
         start_dt: pd.Timestamp,
         end_dt: pd.Timestamp,
+        rebalance_freq: str = "monthly",
     ) -> dict:
         total_return = (final_capital - initial_capital) / initial_capital if initial_capital else 0.0
 
@@ -255,8 +296,9 @@ class PortfolioBacktester:
             rets = np.diff(values) / values[:-1]
             rets = rets[np.isfinite(rets)]
             if len(rets) > 1 and rets.std(ddof=0) > 0:
-                # 월간 수익률 가정 → 연환산 √12
-                sharpe = float((rets.mean() / rets.std(ddof=0)) * math.sqrt(12))
+                # 리밸런스 주기별 연간 횟수 → Sharpe 연환산
+                periods_per_year = {"monthly": 12, "quarterly": 4, "semiannual": 2}.get(rebalance_freq, 12)
+                sharpe = float((rets.mean() / rets.std(ddof=0)) * math.sqrt(periods_per_year))
             else:
                 sharpe = 0.0
         else:

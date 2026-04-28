@@ -15,9 +15,10 @@ import {
     getPortfolioHistory,
     getPortfolioHistoryDetail,
     deletePortfolioHistory,
+    listPortfolioStrategies,
 } from '@/lib/api/backtest';
 import { formatKRW, getErrorMessage } from '@/lib/utils';
-import type { PortfolioBacktestResult, PortfolioHistoryItem } from '@/types/backtest';
+import type { PortfolioBacktestResult, PortfolioHistoryItem, PortfolioStrategyInfo } from '@/types/backtest';
 
 const ASSET_LABELS: Record<string, string> = {
     '069500': 'KODEX 200 (국내)',
@@ -49,9 +50,20 @@ export default function PortfolioBacktestPage() {
     const [endDate, setEndDate] = useState(today);
     const [initialCapital, setInitialCapital] = useState(10_000_000);
     const [commissionRate, setCommissionRate] = useState(0.001);
+    const [strategyName, setStrategyName] = useState('dual_momentum_etf_v1');
+    const [lookbackMonths, setLookbackMonths] = useState<number>(12);
+    const [evaluationMode, setEvaluationMode] = useState<'preset' | 'sequential' | 'best_momentum'>('preset');
+    const [rebalanceFreq, setRebalanceFreq] = useState<'monthly' | 'quarterly' | 'semiannual'>('monthly');
+    const [strategies, setStrategies] = useState<PortfolioStrategyInfo[]>([]);
 
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<PortfolioBacktestResult | null>(null);
+
+    useEffect(() => {
+        listPortfolioStrategies()
+            .then(setStrategies)
+            .catch(() => { /* 비차단 */ });
+    }, []);
 
     // 탭/히스토리 상태
     const [activeTab, setActiveTab] = useState<'run' | 'history'>('run');
@@ -125,11 +137,14 @@ export default function PortfolioBacktestPage() {
         setResult(null);
         try {
             const data = await runDualMomentumBacktest({
-                strategy_name: 'dual_momentum_etf_v1',
+                strategy_name: strategyName,
                 start_date: startDate,
                 end_date: endDate,
                 initial_capital: initialCapital,
                 commission_rate: commissionRate,
+                lookback_months: lookbackMonths,
+                evaluation_mode: evaluationMode === 'preset' ? null : evaluationMode,
+                rebalance_freq: rebalanceFreq,
             });
             setResult(data);
             toast.success('백테스트가 완료되었습니다.');
@@ -270,10 +285,79 @@ export default function PortfolioBacktestPage() {
                 <CardHeader>
                     <CardTitle>설정</CardTitle>
                     <CardDescription>
-                        069500(KODEX 200), 360750(TIGER 미국 S&P 500), 153130(KODEX 단기채권) 3종 ETF로 12개월 모멘텀 회전
+                        한국 ETF 듀얼 모멘텀 — 전략/lookback/리밸런스 주기 선택 가능
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
+                    {/* Strategy selector */}
+                    <div className="mb-4">
+                        <label className="block text-xs text-th-text-muted mb-1.5">전략</label>
+                        <select
+                            value={strategyName}
+                            onChange={(e) => setStrategyName(e.target.value)}
+                            disabled={loading}
+                            className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-th-text focus:border-primary/30 transition-colors"
+                        >
+                            {strategies.length === 0 && (
+                                <option value="dual_momentum_etf_v1">듀얼 모멘텀 v1 (KR+US)</option>
+                            )}
+                            {strategies.map(s => (
+                                <option key={s.name} value={s.name}>{s.label}</option>
+                            ))}
+                        </select>
+                        {strategies.find(s => s.name === strategyName)?.description && (
+                            <p className="mt-1.5 text-[10px] sm:text-xs text-th-text-muted">
+                                {strategies.find(s => s.name === strategyName)!.description}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Strategy params */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label className="block text-xs text-th-text-muted mb-1.5">Lookback 기간</label>
+                            <select
+                                value={lookbackMonths}
+                                onChange={(e) => setLookbackMonths(Number(e.target.value))}
+                                disabled={loading}
+                                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-th-text focus:border-primary/30 transition-colors"
+                            >
+                                <option value={3}>3개월</option>
+                                <option value={6}>6개월</option>
+                                <option value={9}>9개월</option>
+                                <option value={12}>12개월 (기본)</option>
+                                <option value={18}>18개월</option>
+                                <option value={24}>24개월</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-th-text-muted mb-1.5">평가 모드</label>
+                            <select
+                                value={evaluationMode}
+                                onChange={(e) => setEvaluationMode(e.target.value as typeof evaluationMode)}
+                                disabled={loading}
+                                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-th-text focus:border-primary/30 transition-colors"
+                            >
+                                <option value="preset">프리셋 그대로</option>
+                                <option value="sequential">Sequential (순차)</option>
+                                <option value="best_momentum">Best momentum (Antonacci)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs text-th-text-muted mb-1.5">리밸런스 주기</label>
+                            <select
+                                value={rebalanceFreq}
+                                onChange={(e) => setRebalanceFreq(e.target.value as typeof rebalanceFreq)}
+                                disabled={loading}
+                                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-th-text focus:border-primary/30 transition-colors"
+                            >
+                                <option value="monthly">월말 (기본)</option>
+                                <option value="quarterly">분기말</option>
+                                <option value="semiannual">반기말</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <Input
                             label="시작일"
