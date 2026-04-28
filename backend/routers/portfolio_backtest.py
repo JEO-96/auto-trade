@@ -44,6 +44,7 @@ class PortfolioHistoryItem(BaseModel):
     commission_rate: Optional[float]
     status: str
     created_at: str
+    custom_params: Optional[dict] = None
 
 
 class PortfolioHistoryDetail(PortfolioHistoryItem):
@@ -176,6 +177,10 @@ def list_portfolio_history(
             assets = json.loads(r.symbols) if r.symbols else []
         except (TypeError, ValueError):
             assets = []
+        try:
+            custom = json.loads(r.custom_params) if r.custom_params else None
+        except (TypeError, ValueError):
+            custom = None
         out.append(PortfolioHistoryItem(
             id=r.id,
             title=r.title,
@@ -189,6 +194,7 @@ def list_portfolio_history(
             commission_rate=r.commission_rate,
             status=r.status,
             created_at=r.created_at.isoformat() if r.created_at else "",
+            custom_params=custom,
         ))
     return out
 
@@ -218,6 +224,10 @@ def get_portfolio_history_detail(
         result_data = json.loads(r.result_data) if r.result_data else None
     except (TypeError, ValueError):
         result_data = None
+    try:
+        custom = json.loads(r.custom_params) if r.custom_params else None
+    except (TypeError, ValueError):
+        custom = None
     return PortfolioHistoryDetail(
         id=r.id,
         title=r.title,
@@ -231,6 +241,7 @@ def get_portfolio_history_detail(
         commission_rate=r.commission_rate,
         status=r.status,
         created_at=r.created_at.isoformat() if r.created_at else "",
+        custom_params=custom,
         result_data=result_data,
     )
 

@@ -154,6 +154,7 @@ export interface PortfolioBacktestResult {
     equity_curve: EquityCurvePoint[];
     trades: PortfolioTrade[];
     rebalance_log: RebalanceLogEntry[];
+    benchmarks?: Record<string, EquityCurvePoint[]>;
     history_id?: number;
 }
 
@@ -170,6 +171,11 @@ export interface PortfolioHistoryItem {
     commission_rate: number | null;
     status: string;
     created_at: string;
+    custom_params?: {
+        lookback_months?: number | null;
+        evaluation_mode?: string | null;
+        rebalance_freq?: string | null;
+    } | null;
 }
 
 export interface PortfolioHistoryDetail extends PortfolioHistoryItem {

@@ -201,6 +201,13 @@ class PortfolioBacktester:
             initial_capital, final_capital, equity_curve, start_dt, end_dt, self.rebalance_freq,
         )
 
+        # Buy-and-hold 벤치마크 — 각 자산을 시작일에 매수해 끝까지 보유했다면?
+        # 리밸런스 시점들(equity_curve와 동일 시간축)에서의 자산 평가액 곡선.
+        rebalance_times = [pd.Timestamp(p["time"]) for p in equity_curve]
+        benchmarks = self._compute_buy_and_hold(
+            assets, df_dict, rebalance_times, initial_capital, self.commission_rate,
+        )
+
         return {
             "strategy_name": self.strategy_name,
             "assets": assets,
@@ -215,7 +222,48 @@ class PortfolioBacktester:
             "equity_curve": equity_curve,
             "trades": trades,
             "rebalance_log": rebalance_log,
+            "benchmarks": benchmarks,  # {asset: [{time, value}]} BH 곡선
         }
+
+    def _compute_buy_and_hold(
+        self,
+        assets: List[str],
+        df_dict: Dict[str, pd.DataFrame],
+        timeline: List[pd.Timestamp],
+        initial_capital: float,
+        commission_rate: float,
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """각 자산을 timeline[0]에 시장가 매수 후 보유한 가치 곡선.
+
+        매수 비용 = invest * (1 + commission), units = invest / first_price.
+        끝점에서는 매도 수수료까지 차감해 표시.
+        """
+        out: Dict[str, List[Dict[str, Any]]] = {}
+        if not timeline:
+            return out
+        start = timeline[0]
+        end = timeline[-1]
+
+        for asset in assets:
+            df = df_dict.get(asset)
+            buy_px = self._price_at_or_before(df, start)
+            if buy_px is None or buy_px <= 0:
+                continue
+            invest = initial_capital / (1.0 + commission_rate)
+            units = invest / buy_px
+            curve: List[Dict[str, Any]] = []
+            for t in timeline:
+                px = self._price_at_or_before(df, t)
+                if px is None:
+                    continue
+                value = units * px
+                if t == end:
+                    # 종가에서 한 번 매도 가정 → 수수료 차감
+                    value *= (1.0 - commission_rate)
+                curve.append({"time": t.strftime("%Y-%m-%d"), "value": float(round(value, 4))})
+            if curve:
+                out[asset] = curve
+        return out
 
     # ─────────────────────────────────────────────────────
     # Helpers
