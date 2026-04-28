@@ -82,6 +82,7 @@ class OHLCV(Base):
     __tablename__ = "ohlcv_data"
 
     id = Column(Integer, primary_key=True, index=True)
+    market = Column(String, default="crypto", nullable=False, index=True)  # 'crypto' | 'stock'
     symbol = Column(String, index=True)
     timeframe = Column(String, index=True)
     timestamp = Column(Float, index=True) # Unix timestamp in ms
@@ -92,8 +93,8 @@ class OHLCV(Base):
     volume = Column(Float)
 
     __table_args__ = (
-        UniqueConstraint('symbol', 'timeframe', 'timestamp', name='uq_ohlcv_symbol_tf_ts'),
-        Index('ix_ohlcv_symbol_tf_ts', 'symbol', 'timeframe', 'timestamp'),
+        UniqueConstraint('market', 'symbol', 'timeframe', 'timestamp', name='uq_ohlcv_market_symbol_tf_ts'),
+        Index('ix_ohlcv_market_symbol_tf_ts', 'market', 'symbol', 'timeframe', 'timestamp'),
     )
 
 

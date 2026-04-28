@@ -18,7 +18,7 @@ import bot_manager
 import database
 import models
 from okx_futures.bot import OKXFuturesBot
-from routers import admin, auth, backtest, bots, community, keys, strategies
+from routers import admin, auth, backtest, bots, community, keys, portfolio_backtest, strategies
 from routers import settings as settings_router
 from settings import settings
 
@@ -98,6 +98,7 @@ app.include_router(auth.router)
 app.include_router(bots.router)
 app.include_router(keys.router)
 app.include_router(backtest.router)
+app.include_router(portfolio_backtest.router)
 app.include_router(admin.router)
 app.include_router(community.router)
 app.include_router(strategies.router)

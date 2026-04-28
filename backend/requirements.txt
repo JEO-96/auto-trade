@@ -19,5 +19,6 @@ httpx
 python-dotenv
 vectorbt
 numba
+pykrx
 cryptography
 slowapi

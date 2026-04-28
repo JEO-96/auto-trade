@@ -73,6 +73,7 @@ class DataFetcher:
 
             # 2. DB에 있는 타임스탬프 조회
             db_records = db.query(models.OHLCV).filter(
+                models.OHLCV.market == "crypto",
                 models.OHLCV.symbol == symbol,
                 models.OHLCV.timeframe == timeframe,
                 models.OHLCV.timestamp >= since,
@@ -113,6 +114,7 @@ class DataFetcher:
 
             # 6. DB에서 최종 데이터 로드
             db_records = db.query(models.OHLCV).filter(
+                models.OHLCV.market == "crypto",
                 models.OHLCV.symbol == symbol,
                 models.OHLCV.timeframe == timeframe,
                 models.OHLCV.timestamp >= since,
@@ -243,6 +245,7 @@ class DataFetcher:
                 chunk = data[i:i + chunk_size]
                 rows = [
                     {
+                        "market": "crypto",
                         "symbol": symbol,
                         "timeframe": timeframe,
                         "timestamp": candle[0],
@@ -256,7 +259,7 @@ class DataFetcher:
                 ]
                 stmt = pg_insert(models.OHLCV).values(rows)
                 stmt = stmt.on_conflict_do_update(
-                    index_elements=['symbol', 'timeframe', 'timestamp'],
+                    index_elements=['market', 'symbol', 'timeframe', 'timestamp'],
                     set_={
                         'open': stmt.excluded.open,
                         'high': stmt.excluded.high,
