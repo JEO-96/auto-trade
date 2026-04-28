@@ -5,7 +5,7 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import Input, { SelectInput } from '@/components/ui/Input';
 import PageContainer from '@/components/ui/PageContainer';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -423,12 +423,12 @@ export default function PortfolioBacktestPage() {
                 <CardContent>
                     {/* Strategy selector */}
                     <div className="mb-4">
-                        <label className="block text-xs text-th-text-muted mb-1.5">전략</label>
-                        <select
+                        <SelectInput
+                            type="select"
+                            label="전략"
                             value={strategyName}
                             onChange={(e) => setStrategyName(e.target.value)}
                             disabled={loading}
-                            className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-th-text focus:border-primary/30 transition-colors"
                         >
                             {strategies.length === 0 && (
                                 <option value="dual_momentum_etf_v1">듀얼 모멘텀 v1 (KR+US)</option>
@@ -436,7 +436,7 @@ export default function PortfolioBacktestPage() {
                             {strategies.map(s => (
                                 <option key={s.name} value={s.name}>{s.label}</option>
                             ))}
-                        </select>
+                        </SelectInput>
                         {strategies.find(s => s.name === strategyName)?.description && (
                             <p className="mt-1.5 text-[10px] sm:text-xs text-th-text-muted">
                                 {strategies.find(s => s.name === strategyName)!.description}
@@ -446,48 +446,42 @@ export default function PortfolioBacktestPage() {
 
                     {/* Strategy params */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                        <div>
-                            <label className="block text-xs text-th-text-muted mb-1.5">Lookback 기간</label>
-                            <select
-                                value={lookbackMonths}
-                                onChange={(e) => setLookbackMonths(Number(e.target.value))}
-                                disabled={loading}
-                                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-th-text focus:border-primary/30 transition-colors"
-                            >
-                                <option value={3}>3개월</option>
-                                <option value={6}>6개월</option>
-                                <option value={9}>9개월</option>
-                                <option value={12}>12개월 (기본)</option>
-                                <option value={18}>18개월</option>
-                                <option value={24}>24개월</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs text-th-text-muted mb-1.5">평가 모드</label>
-                            <select
-                                value={evaluationMode}
-                                onChange={(e) => setEvaluationMode(e.target.value as typeof evaluationMode)}
-                                disabled={loading}
-                                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-th-text focus:border-primary/30 transition-colors"
-                            >
-                                <option value="preset">프리셋 그대로</option>
-                                <option value="sequential">Sequential (순차)</option>
-                                <option value="best_momentum">Best momentum (Antonacci)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs text-th-text-muted mb-1.5">리밸런스 주기</label>
-                            <select
-                                value={rebalanceFreq}
-                                onChange={(e) => setRebalanceFreq(e.target.value as typeof rebalanceFreq)}
-                                disabled={loading}
-                                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-th-text focus:border-primary/30 transition-colors"
-                            >
-                                <option value="monthly">월말 (기본)</option>
-                                <option value="quarterly">분기말</option>
-                                <option value="semiannual">반기말</option>
-                            </select>
-                        </div>
+                        <SelectInput
+                            type="select"
+                            label="Lookback 기간"
+                            value={String(lookbackMonths)}
+                            onChange={(e) => setLookbackMonths(Number(e.target.value))}
+                            disabled={loading}
+                        >
+                            <option value={3}>3개월</option>
+                            <option value={6}>6개월</option>
+                            <option value={9}>9개월</option>
+                            <option value={12}>12개월 (기본)</option>
+                            <option value={18}>18개월</option>
+                            <option value={24}>24개월</option>
+                        </SelectInput>
+                        <SelectInput
+                            type="select"
+                            label="평가 모드"
+                            value={evaluationMode}
+                            onChange={(e) => setEvaluationMode(e.target.value as typeof evaluationMode)}
+                            disabled={loading}
+                        >
+                            <option value="preset">프리셋 그대로</option>
+                            <option value="sequential">Sequential (순차)</option>
+                            <option value="best_momentum">Best momentum (Antonacci)</option>
+                        </SelectInput>
+                        <SelectInput
+                            type="select"
+                            label="리밸런스 주기"
+                            value={rebalanceFreq}
+                            onChange={(e) => setRebalanceFreq(e.target.value as typeof rebalanceFreq)}
+                            disabled={loading}
+                        >
+                            <option value="monthly">월말 (기본)</option>
+                            <option value="quarterly">분기말</option>
+                            <option value="semiannual">반기말</option>
+                        </SelectInput>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

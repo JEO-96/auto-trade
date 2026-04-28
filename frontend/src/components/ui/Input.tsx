@@ -9,14 +9,9 @@ interface InputBaseProps {
 type InputProps = InputBaseProps &
     React.InputHTMLAttributes<HTMLInputElement>;
 
-interface SelectInputProps extends InputBaseProps {
+type SelectInputProps = InputBaseProps & {
     type: 'select';
-    children: React.ReactNode;
-    value?: string;
-    onChange?: React.ChangeEventHandler<HTMLSelectElement>;
-    name?: string;
-    className?: string;
-}
+} & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'type'>;
 
 const inputStyles =
     'w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-th-text placeholder-th-text-muted focus:border-primary/30 transition-colors';
