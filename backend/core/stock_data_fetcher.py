@@ -194,47 +194,83 @@ class StockDataFetcher:
         return pd.DataFrame(data)
 
     def _save_to_db(self, db: Session, symbol: str, df: pd.DataFrame) -> None:
-        """SQLite/PostgreSQL 호환 select-then-insert/update."""
+        """OHLCV upsert. PostgreSQL ON CONFLICT 우선, SQLite fallback.
+
+        멀티스레드 환경에서 동시 fetch가 일어나도 유니크 충돌이 발생하지 않도록 UPSERT 사용.
+        """
         if df.empty:
             return
 
-        saved = 0
+        rows: list[dict] = []
+        for _, row in df.iterrows():
+            ts_ms = self._to_ms(pd.Timestamp(row["timestamp"]))
+            rows.append({
+                "market": MARKET,
+                "symbol": symbol,
+                "timeframe": TIMEFRAME,
+                "timestamp": ts_ms,
+                "open": float(row["open"]),
+                "high": float(row["high"]),
+                "low": float(row["low"]),
+                "close": float(row["close"]),
+                "volume": float(row["volume"]),
+            })
+        if not rows:
+            return
+
+        dialect = db.bind.dialect.name if db.bind is not None else ""
         try:
-            for _, row in df.iterrows():
-                ts_ms = self._to_ms(pd.Timestamp(row["timestamp"]))
-                existing = (
-                    db.query(models.OHLCV)
-                    .filter(
-                        models.OHLCV.market == MARKET,
-                        models.OHLCV.symbol == symbol,
-                        models.OHLCV.timeframe == TIMEFRAME,
-                        models.OHLCV.timestamp == ts_ms,
-                    )
-                    .first()
+            if dialect == "postgresql":
+                from sqlalchemy.dialects.postgresql import insert as pg_insert
+                stmt = pg_insert(models.OHLCV).values(rows)
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["market", "symbol", "timeframe", "timestamp"],
+                    set_={
+                        "open": stmt.excluded.open,
+                        "high": stmt.excluded.high,
+                        "low": stmt.excluded.low,
+                        "close": stmt.excluded.close,
+                        "volume": stmt.excluded.volume,
+                    },
                 )
-                if existing is None:
-                    db.add(
-                        models.OHLCV(
-                            market=MARKET,
-                            symbol=symbol,
-                            timeframe=TIMEFRAME,
-                            timestamp=ts_ms,
-                            open=float(row["open"]),
-                            high=float(row["high"]),
-                            low=float(row["low"]),
-                            close=float(row["close"]),
-                            volume=float(row["volume"]),
+                db.execute(stmt)
+            elif dialect == "sqlite":
+                from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+                stmt = sqlite_insert(models.OHLCV).values(rows)
+                stmt = stmt.on_conflict_do_update(
+                    index_elements=["market", "symbol", "timeframe", "timestamp"],
+                    set_={
+                        "open": stmt.excluded.open,
+                        "high": stmt.excluded.high,
+                        "low": stmt.excluded.low,
+                        "close": stmt.excluded.close,
+                        "volume": stmt.excluded.volume,
+                    },
+                )
+                db.execute(stmt)
+            else:
+                # 알 수 없는 방언 — row-by-row select-then-insert/update fallback
+                for r in rows:
+                    existing = (
+                        db.query(models.OHLCV)
+                        .filter(
+                            models.OHLCV.market == r["market"],
+                            models.OHLCV.symbol == r["symbol"],
+                            models.OHLCV.timeframe == r["timeframe"],
+                            models.OHLCV.timestamp == r["timestamp"],
                         )
+                        .first()
                     )
-                else:
-                    existing.open = float(row["open"])
-                    existing.high = float(row["high"])
-                    existing.low = float(row["low"])
-                    existing.close = float(row["close"])
-                    existing.volume = float(row["volume"])
-                saved += 1
+                    if existing is None:
+                        db.add(models.OHLCV(**r))
+                    else:
+                        existing.open = r["open"]
+                        existing.high = r["high"]
+                        existing.low = r["low"]
+                        existing.close = r["close"]
+                        existing.volume = r["volume"]
             db.commit()
-            logger.info("StockDataFetcher: saved %d rows for %s", saved, symbol)
+            logger.info("StockDataFetcher: upserted %d rows for %s (dialect=%s)", len(rows), symbol, dialect or "unknown")
         except Exception as exc:
             db.rollback()
             logger.error("StockDataFetcher save 실패: %s", exc)
