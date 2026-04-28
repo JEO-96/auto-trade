@@ -99,3 +99,48 @@ export interface RunBacktestResponse {
     message?: string;
     [key: string]: unknown;
 }
+
+// ──────────────────────────────────────────────
+// 포트폴리오 백테스트 (Dual Momentum 등)
+// ──────────────────────────────────────────────
+export interface DualMomentumRequest {
+    strategy_name?: string;
+    start_date: string;
+    end_date: string;
+    initial_capital: number;
+    commission_rate?: number;
+}
+
+export interface PortfolioTrade {
+    date: string;
+    side: 'BUY' | 'SELL';
+    asset: string;
+    price: number;
+    units: number;
+    cost?: number;
+    proceeds?: number;
+    fee: number;
+}
+
+export interface RebalanceLogEntry {
+    date: string;
+    selected_asset: string | null;
+    weights: Record<string, number>;
+    portfolio_value: number;
+}
+
+export interface PortfolioBacktestResult {
+    strategy_name: string;
+    assets: string[];
+    initial_capital: number;
+    final_capital: number;
+    total_return: number;
+    cagr: number;
+    max_drawdown: number;
+    sharpe: number;
+    total_rebalances: number;
+    holding_periods: Record<string, number>;
+    equity_curve: EquityCurvePoint[];
+    trades: PortfolioTrade[];
+    rebalance_log: RebalanceLogEntry[];
+}

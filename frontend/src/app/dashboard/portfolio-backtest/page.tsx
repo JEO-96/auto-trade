@@ -1,0 +1,366 @@
+'use client';
+import React, { useState, useMemo } from 'react';
+import { Play, TrendingUp, TrendingDown, Activity, Briefcase } from 'lucide-react';
+import {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from 'recharts';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import PageContainer from '@/components/ui/PageContainer';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import { useToast } from '@/components/ui/Toast';
+import { runDualMomentumBacktest } from '@/lib/api/backtest';
+import { formatKRW, getErrorMessage } from '@/lib/utils';
+import type { PortfolioBacktestResult } from '@/types/backtest';
+
+const ASSET_LABELS: Record<string, string> = {
+    '069500': 'KODEX 200 (국내)',
+    '360750': 'TIGER 미국 S&P 500',
+    '153130': 'KODEX 단기채권 (방어)',
+};
+
+const ASSET_COLORS: Record<string, string> = {
+    '069500': '#3b82f6',
+    '360750': '#22c55e',
+    '153130': '#f59e0b',
+};
+
+function fmtPct(x: number): string {
+    return `${x >= 0 ? '+' : ''}${(x * 100).toFixed(2)}%`;
+}
+
+export default function PortfolioBacktestPage() {
+    const toast = useToast();
+
+    const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+    const threeYearsAgo = useMemo(() => {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 3);
+        return d.toISOString().slice(0, 10);
+    }, []);
+
+    const [startDate, setStartDate] = useState(threeYearsAgo);
+    const [endDate, setEndDate] = useState(today);
+    const [initialCapital, setInitialCapital] = useState(10_000_000);
+    const [commissionRate, setCommissionRate] = useState(0.001);
+
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState<PortfolioBacktestResult | null>(null);
+
+    const handleRun = async () => {
+        if (!startDate || !endDate) {
+            toast.error('시작/종료일을 입력해주세요.');
+            return;
+        }
+        if (new Date(endDate) <= new Date(startDate)) {
+            toast.error('종료일은 시작일보다 뒤여야 합니다.');
+            return;
+        }
+        if (initialCapital < 100_000) {
+            toast.error('초기자본은 10만원 이상이어야 합니다.');
+            return;
+        }
+
+        setLoading(true);
+        setResult(null);
+        try {
+            const data = await runDualMomentumBacktest({
+                strategy_name: 'dual_momentum_etf_v1',
+                start_date: startDate,
+                end_date: endDate,
+                initial_capital: initialCapital,
+                commission_rate: commissionRate,
+            });
+            setResult(data);
+            toast.success('백테스트가 완료되었습니다.');
+        } catch (e) {
+            toast.error(getErrorMessage(e, '백테스트 실패'));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const equityChartData = useMemo(() => {
+        if (!result) return [];
+        const first = result.equity_curve[0]?.value ?? result.initial_capital;
+        return result.equity_curve.map(p => ({
+            time: p.time,
+            change: ((p.value / first) - 1) * 100,
+            value: p.value,
+        }));
+    }, [result]);
+
+    const totalDays = useMemo(() => {
+        if (!result) return 0;
+        return Object.values(result.holding_periods).reduce((a, b) => a + b, 0);
+    }, [result]);
+
+    return (
+        <PageContainer>
+            <div className="mb-6 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <Briefcase className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                    <h1 className="text-xl font-bold text-th-text">포트폴리오 백테스트</h1>
+                    <p className="text-xs text-th-text-muted">한국 ETF 듀얼 모멘텀 전략 — 월말 리밸런싱</p>
+                </div>
+            </div>
+
+            {/* Input panel */}
+            <Card className="mb-6">
+                <CardHeader>
+                    <CardTitle>설정</CardTitle>
+                    <CardDescription>
+                        069500(KODEX 200), 360750(TIGER 미국 S&P 500), 153130(KODEX 단기채권) 3종 ETF로 12개월 모멘텀 회전
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <Input
+                            label="시작일"
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            disabled={loading}
+                        />
+                        <Input
+                            label="종료일"
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            disabled={loading}
+                        />
+                        <Input
+                            label="초기자본 (KRW)"
+                            type="number"
+                            min={100000}
+                            step={100000}
+                            value={initialCapital}
+                            onChange={(e) => setInitialCapital(Number(e.target.value))}
+                            disabled={loading}
+                        />
+                        <Input
+                            label="수수료율 (예: 0.001 = 0.1%)"
+                            type="number"
+                            min={0}
+                            max={0.01}
+                            step={0.0001}
+                            value={commissionRate}
+                            onChange={(e) => setCommissionRate(Number(e.target.value))}
+                            disabled={loading}
+                        />
+                    </div>
+                    <div className="mt-5 flex justify-end">
+                        <Button onClick={handleRun} disabled={loading} size="md">
+                            {loading ? (
+                                <>
+                                    <LoadingSpinner size="sm" /> 실행 중...
+                                </>
+                            ) : (
+                                <>
+                                    <Play className="w-4 h-4" /> 백테스트 실행
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Result */}
+            {result && (
+                <>
+                    {/* Metrics summary */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                        <MetricCard
+                            label="총 수익률"
+                            value={fmtPct(result.total_return)}
+                            positive={result.total_return >= 0}
+                            icon={result.total_return >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                        />
+                        <MetricCard label="CAGR" value={fmtPct(result.cagr)} positive={result.cagr >= 0} />
+                        <MetricCard label="최대 낙폭 (MDD)" value={fmtPct(result.max_drawdown)} positive={false} />
+                        <MetricCard label="Sharpe" value={result.sharpe.toFixed(2)} />
+                    </div>
+
+                    {/* Equity chart */}
+                    <Card className="mb-6">
+                        <CardHeader>
+                            <CardTitle>자산 추이</CardTitle>
+                            <CardDescription>
+                                초기자본 {formatKRW(result.initial_capital)} → 최종 {formatKRW(result.final_capital)}
+                                {' • '}리밸런스 {result.total_rebalances}회
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={equityChartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                                    <XAxis dataKey="time" stroke="#6b7280" fontSize={11} tickLine={false} interval="preserveStartEnd" />
+                                    <YAxis
+                                        stroke="#6b7280"
+                                        fontSize={11}
+                                        tickLine={false}
+                                        tickFormatter={(v: number) => `${v > 0 ? '+' : ''}${v.toFixed(0)}%`}
+                                        domain={['auto', 'auto']}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            borderRadius: '12px',
+                                            fontSize: '12px',
+                                            padding: '10px 14px',
+                                        }}
+                                        formatter={(value, name) => {
+                                            if (name === 'change') {
+                                                const v = Number(value);
+                                                return [`${v > 0 ? '+' : ''}${v.toFixed(2)}%`, '수익률'];
+                                            }
+                                            return [String(value), String(name)];
+                                        }}
+                                        labelFormatter={(label) => label}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="change"
+                                        stroke="#3b82f6"
+                                        strokeWidth={2.5}
+                                        dot={false}
+                                        activeDot={{ r: 4, stroke: '#3b82f6', strokeWidth: 2, fill: '#111827' }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+
+                    {/* Asset distribution */}
+                    <Card className="mb-6">
+                        <CardHeader>
+                            <CardTitle>자산 보유 분포</CardTitle>
+                            <CardDescription>총 보유 일수 {totalDays}일 기준</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {result.assets.map(asset => {
+                                    const days = result.holding_periods[asset] || 0;
+                                    const pct = totalDays > 0 ? (days / totalDays) * 100 : 0;
+                                    return (
+                                        <div key={asset}>
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="text-th-text">
+                                                    <span
+                                                        className="inline-block w-2 h-2 rounded-full mr-2"
+                                                        style={{ backgroundColor: ASSET_COLORS[asset] || '#6b7280' }}
+                                                    />
+                                                    {asset} <span className="text-th-text-muted">— {ASSET_LABELS[asset] || ''}</span>
+                                                </span>
+                                                <span className="text-th-text-secondary">{days}일 ({pct.toFixed(1)}%)</span>
+                                            </div>
+                                            <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
+                                                <div
+                                                    className="h-full transition-all duration-500"
+                                                    style={{
+                                                        width: `${pct}%`,
+                                                        backgroundColor: ASSET_COLORS[asset] || '#6b7280',
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Trades table */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>거래 내역 ({result.trades.length}건)</CardTitle>
+                            <CardDescription>리밸런스 시점에 발생한 매수/매도</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                    <thead>
+                                        <tr className="text-th-text-muted border-b border-th-border-light">
+                                            <th className="text-left py-2 px-3">날짜</th>
+                                            <th className="text-left py-2 px-3">구분</th>
+                                            <th className="text-left py-2 px-3">자산</th>
+                                            <th className="text-right py-2 px-3">가격</th>
+                                            <th className="text-right py-2 px-3">수량</th>
+                                            <th className="text-right py-2 px-3">금액</th>
+                                            <th className="text-right py-2 px-3">수수료</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {result.trades.map((t, i) => (
+                                            <tr key={i} className="border-b border-th-border-light/50 hover:bg-white/[0.02]">
+                                                <td className="py-2 px-3 text-th-text-secondary">{t.date}</td>
+                                                <td className="py-2 px-3">
+                                                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] sm:text-xs font-semibold ${t.side === 'BUY' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                                        {t.side}
+                                                    </span>
+                                                </td>
+                                                <td className="py-2 px-3 text-th-text">{t.asset}</td>
+                                                <td className="py-2 px-3 text-right text-th-text-secondary">{t.price.toLocaleString()}</td>
+                                                <td className="py-2 px-3 text-right text-th-text-secondary">{t.units.toFixed(4)}</td>
+                                                <td className="py-2 px-3 text-right text-th-text-secondary">
+                                                    {Math.round(t.cost ?? t.proceeds ?? 0).toLocaleString()}
+                                                </td>
+                                                <td className="py-2 px-3 text-right text-th-text-muted">{Math.round(t.fee).toLocaleString()}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {result.trades.length === 0 && (
+                                    <div className="text-center py-8 text-sm text-th-text-muted">
+                                        거래가 발생하지 않았습니다.
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </>
+            )}
+
+            {!result && !loading && (
+                <Card>
+                    <CardContent>
+                        <div className="text-center py-12 text-th-text-muted">
+                            <Activity className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                            <p className="text-sm">설정을 입력하고 백테스트를 실행해주세요.</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+        </PageContainer>
+    );
+}
+
+interface MetricCardProps {
+    label: string;
+    value: string;
+    positive?: boolean;
+    icon?: React.ReactNode;
+}
+
+function MetricCard({ label, value, positive, icon }: MetricCardProps) {
+    const colorClass = positive === undefined
+        ? 'text-th-text'
+        : positive
+            ? 'text-green-400'
+            : 'text-red-400';
+    return (
+        <Card>
+            <div className="p-4">
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-th-text-muted mb-1.5">
+                    {icon}
+                    <span>{label}</span>
+                </div>
+                <div className={`text-xl font-bold ${colorClass}`}>{value}</div>
+            </div>
+        </Card>
+    );
+}

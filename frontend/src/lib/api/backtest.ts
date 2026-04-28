@@ -1,8 +1,15 @@
 import api from '@/lib/api';
-import type { BacktestFormParams, BacktestTaskStatus, BacktestHistoryItem, BacktestHistoryDetail, RunBacktestResponse } from '@/types/backtest';
+import type { BacktestFormParams, BacktestTaskStatus, BacktestHistoryItem, BacktestHistoryDetail, RunBacktestResponse, DualMomentumRequest, PortfolioBacktestResult } from '@/types/backtest';
 import type { CommunityPost } from '@/types/community';
 
 export type { RunBacktestResponse } from '@/types/backtest';
+
+export async function runDualMomentumBacktest(
+    params: DualMomentumRequest,
+): Promise<PortfolioBacktestResult> {
+    const res = await api.post<PortfolioBacktestResult>('/backtest/dual_momentum/', params);
+    return res.data;
+}
 
 export async function runPortfolioBacktest(
     params: BacktestFormParams,
