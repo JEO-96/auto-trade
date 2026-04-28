@@ -143,4 +143,24 @@ export interface PortfolioBacktestResult {
     equity_curve: EquityCurvePoint[];
     trades: PortfolioTrade[];
     rebalance_log: RebalanceLogEntry[];
+    history_id?: number;
+}
+
+export interface PortfolioHistoryItem {
+    id: number;
+    title: string | null;
+    strategy_name: string;
+    assets: string[];
+    initial_capital: number;
+    final_capital: number | null;
+    total_trades: number | null;
+    start_date: string | null;
+    end_date: string | null;
+    commission_rate: number | null;
+    status: string;
+    created_at: string;
+}
+
+export interface PortfolioHistoryDetail extends PortfolioHistoryItem {
+    result_data: PortfolioBacktestResult | null;
 }

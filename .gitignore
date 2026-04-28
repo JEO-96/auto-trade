@@ -69,6 +69,14 @@ skills-lock.json
 
 # Sensitive files — 절대 커밋 금지
 github token.txt
+*.pem
+*.ppk
+*.key
+
+# Bulk data / experimental backtest exports — 로컬 전용
+backend/okx_btc_4h_4y.csv
+backend/okx_data/
+backend/local_test.db
 
 # Local scripts
 scripts/

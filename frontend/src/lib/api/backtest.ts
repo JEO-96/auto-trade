@@ -1,5 +1,5 @@
 import api from '@/lib/api';
-import type { BacktestFormParams, BacktestTaskStatus, BacktestHistoryItem, BacktestHistoryDetail, RunBacktestResponse, DualMomentumRequest, PortfolioBacktestResult } from '@/types/backtest';
+import type { BacktestFormParams, BacktestTaskStatus, BacktestHistoryItem, BacktestHistoryDetail, RunBacktestResponse, DualMomentumRequest, PortfolioBacktestResult, PortfolioHistoryItem, PortfolioHistoryDetail } from '@/types/backtest';
 import type { CommunityPost } from '@/types/community';
 
 export type { RunBacktestResponse } from '@/types/backtest';
@@ -9,6 +9,29 @@ export async function runDualMomentumBacktest(
 ): Promise<PortfolioBacktestResult> {
     const res = await api.post<PortfolioBacktestResult>('/backtest/dual_momentum/', params);
     return res.data;
+}
+
+export async function getPortfolioHistory(
+    page: number = 1,
+    pageSize: number = 20,
+): Promise<PortfolioHistoryItem[]> {
+    const res = await api.get<PortfolioHistoryItem[]>('/backtest/portfolio_history', {
+        params: { page, page_size: pageSize },
+    });
+    return res.data;
+}
+
+export async function getPortfolioHistoryDetail(
+    historyId: number,
+): Promise<PortfolioHistoryDetail> {
+    const res = await api.get<PortfolioHistoryDetail>(`/backtest/portfolio_history/${historyId}`);
+    return res.data;
+}
+
+export async function deletePortfolioHistory(
+    historyId: number,
+): Promise<void> {
+    await api.delete(`/backtest/portfolio_history/${historyId}`);
 }
 
 export async function runPortfolioBacktest(

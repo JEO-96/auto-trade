@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useMemo } from 'react';
-import { Play, TrendingUp, TrendingDown, Activity, Briefcase } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Play, TrendingUp, TrendingDown, Activity, Briefcase, History, Trash2, ArrowLeft } from 'lucide-react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -10,9 +10,14 @@ import PageContainer from '@/components/ui/PageContainer';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
-import { runDualMomentumBacktest } from '@/lib/api/backtest';
+import {
+    runDualMomentumBacktest,
+    getPortfolioHistory,
+    getPortfolioHistoryDetail,
+    deletePortfolioHistory,
+} from '@/lib/api/backtest';
 import { formatKRW, getErrorMessage } from '@/lib/utils';
-import type { PortfolioBacktestResult } from '@/types/backtest';
+import type { PortfolioBacktestResult, PortfolioHistoryItem } from '@/types/backtest';
 
 const ASSET_LABELS: Record<string, string> = {
     '069500': 'KODEX 200 (국내)',
@@ -47,6 +52,60 @@ export default function PortfolioBacktestPage() {
 
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<PortfolioBacktestResult | null>(null);
+
+    // 탭/히스토리 상태
+    const [activeTab, setActiveTab] = useState<'run' | 'history'>('run');
+    const [historyList, setHistoryList] = useState<PortfolioHistoryItem[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [viewingHistoryId, setViewingHistoryId] = useState<number | null>(null);
+
+    const fetchHistory = useCallback(async () => {
+        setHistoryLoading(true);
+        try {
+            const data = await getPortfolioHistory(1, 50);
+            setHistoryList(data);
+        } catch (e) {
+            toast.error(getErrorMessage(e, '히스토리 로드 실패'));
+        } finally {
+            setHistoryLoading(false);
+        }
+    }, [toast]);
+
+    useEffect(() => {
+        if (activeTab === 'history' && !viewingHistoryId) {
+            fetchHistory();
+        }
+    }, [activeTab, viewingHistoryId, fetchHistory]);
+
+    const loadHistoryDetail = async (id: number) => {
+        try {
+            const detail = await getPortfolioHistoryDetail(id);
+            if (detail.result_data) {
+                setResult(detail.result_data);
+                setViewingHistoryId(id);
+            } else {
+                toast.error('결과 데이터가 비어있습니다.');
+            }
+        } catch (e) {
+            toast.error(getErrorMessage(e, '상세 로드 실패'));
+        }
+    };
+
+    const handleDeleteHistory = async (id: number) => {
+        if (!confirm('이 백테스트 기록을 삭제하시겠습니까?')) return;
+        try {
+            await deletePortfolioHistory(id);
+            toast.success('삭제되었습니다.');
+            fetchHistory();
+        } catch (e) {
+            toast.error(getErrorMessage(e, '삭제 실패'));
+        }
+    };
+
+    const handleBackToList = () => {
+        setViewingHistoryId(null);
+        setResult(null);
+    };
 
     const handleRun = async () => {
         if (!startDate || !endDate) {
@@ -102,13 +161,111 @@ export default function PortfolioBacktestPage() {
                 <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
                     <Briefcase className="w-5 h-5 text-primary" />
                 </div>
-                <div>
+                <div className="flex-1">
                     <h1 className="text-xl font-bold text-th-text">포트폴리오 백테스트</h1>
                     <p className="text-xs text-th-text-muted">한국 ETF 듀얼 모멘텀 전략 — 월말 리밸런싱</p>
                 </div>
             </div>
 
-            {/* Input panel */}
+            {/* Tabs */}
+            <div className="flex gap-2 mb-6 border-b border-th-border-light">
+                <button
+                    onClick={() => { setActiveTab('run'); setViewingHistoryId(null); }}
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                        activeTab === 'run'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-th-text-muted hover:text-th-text'
+                    }`}
+                >
+                    <Play className="w-4 h-4 inline mr-1.5" />실행
+                </button>
+                <button
+                    onClick={() => { setActiveTab('history'); setViewingHistoryId(null); setResult(null); }}
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                        activeTab === 'history'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-th-text-muted hover:text-th-text'
+                    }`}
+                >
+                    <History className="w-4 h-4 inline mr-1.5" />기록
+                </button>
+            </div>
+
+            {/* History list view */}
+            {activeTab === 'history' && !viewingHistoryId && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>실행 기록</CardTitle>
+                        <CardDescription>저장된 포트폴리오 백테스트 결과 ({historyList.length}건)</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {historyLoading ? (
+                            <div className="flex justify-center py-8"><LoadingSpinner /></div>
+                        ) : historyList.length === 0 ? (
+                            <div className="text-center py-12 text-sm text-th-text-muted">
+                                저장된 기록이 없습니다. '실행' 탭에서 백테스트를 진행해보세요.
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {historyList.map(h => {
+                                    const ret = (h.final_capital !== null && h.initial_capital > 0)
+                                        ? (h.final_capital - h.initial_capital) / h.initial_capital
+                                        : null;
+                                    return (
+                                        <button
+                                            key={h.id}
+                                            onClick={() => loadHistoryDetail(h.id)}
+                                            className="w-full text-left p-4 rounded-xl bg-white/[0.02] border border-th-border-light hover:bg-white/[0.04] hover:border-th-border transition-colors group"
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-sm font-semibold text-th-text">
+                                                            {h.title || h.strategy_name}
+                                                        </span>
+                                                        <span className="text-[10px] sm:text-xs text-th-text-muted">
+                                                            {h.assets.join(', ')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[10px] sm:text-xs text-th-text-muted">
+                                                        {h.start_date} ~ {h.end_date} • 거래 {h.total_trades || 0}건 • {new Date(h.created_at).toLocaleString('ko-KR')}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3 shrink-0">
+                                                    {ret !== null && (
+                                                        <span className={`text-sm font-bold ${ret >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                            {fmtPct(ret)}
+                                                        </span>
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteHistory(h.id); }}
+                                                        className="p-1.5 rounded-lg text-th-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                                        aria-label="삭제"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* History detail view */}
+            {activeTab === 'history' && viewingHistoryId && (
+                <div className="mb-4">
+                    <Button variant="ghost" size="sm" onClick={handleBackToList}>
+                        <ArrowLeft className="w-4 h-4" /> 목록으로
+                    </Button>
+                </div>
+            )}
+
+            {/* Input panel — only on run tab */}
+            {activeTab === 'run' && (
             <Card className="mb-6">
                 <CardHeader>
                     <CardTitle>설정</CardTitle>
@@ -167,6 +324,7 @@ export default function PortfolioBacktestPage() {
                     </div>
                 </CardContent>
             </Card>
+            )}
 
             {/* Result */}
             {result && (
@@ -325,7 +483,7 @@ export default function PortfolioBacktestPage() {
                 </>
             )}
 
-            {!result && !loading && (
+            {activeTab === 'run' && !result && !loading && (
                 <Card>
                     <CardContent>
                         <div className="text-center py-12 text-th-text-muted">
