@@ -4,11 +4,49 @@ import type { CommunityPost } from '@/types/community';
 
 export type { RunBacktestResponse } from '@/types/backtest';
 
+export interface PortfolioBacktestTaskStart {
+    task_id: string;
+    status: 'running';
+}
+
+export interface PortfolioBacktestTaskStatus {
+    task_id: string;
+    status: 'running' | 'completed' | 'failed';
+    progress: number;
+    message: string;
+    result: PortfolioBacktestResult | null;
+}
+
+export async function startDualMomentumBacktest(
+    params: DualMomentumRequest,
+): Promise<PortfolioBacktestTaskStart> {
+    const res = await api.post<PortfolioBacktestTaskStart>('/backtest/dual_momentum/', params);
+    return res.data;
+}
+
+export async function getDualMomentumStatus(
+    taskId: string,
+): Promise<PortfolioBacktestTaskStatus> {
+    const res = await api.get<PortfolioBacktestTaskStatus>(`/backtest/dual_momentum/status/${taskId}`);
+    return res.data;
+}
+
+/**
+ * 백테스트 실행 + 폴링까지 한 번에. onProgress로 진행률 노출.
+ */
 export async function runDualMomentumBacktest(
     params: DualMomentumRequest,
+    onProgress?: (progress: number, message: string) => void,
+    pollIntervalMs: number = 1000,
 ): Promise<PortfolioBacktestResult> {
-    const res = await api.post<PortfolioBacktestResult>('/backtest/dual_momentum/', params);
-    return res.data;
+    const start = await startDualMomentumBacktest(params);
+    while (true) {
+        await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+        const status = await getDualMomentumStatus(start.task_id);
+        if (onProgress) onProgress(status.progress, status.message);
+        if (status.status === 'completed' && status.result) return status.result;
+        if (status.status === 'failed') throw new Error(status.message || '백테스트 실패');
+    }
 }
 
 export async function getPortfolioHistory(

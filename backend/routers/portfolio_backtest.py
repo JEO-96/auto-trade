@@ -1,16 +1,35 @@
 """포트폴리오 백테스트 라우터 — ETF Dual Momentum 등 다자산 전략."""
 import json
 import logging
-from typing import List, Optional
+import threading
+import time
+import uuid
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+import database
 import models
 from core.portfolio_backtester import PortfolioBacktester
 from core.portfolio_strategy_registry import list_portfolio_strategies
 from dependencies import get_current_user, get_db
+
+# task_id → {status, progress, message, result, user_id, request, created_at}
+portfolio_tasks: Dict[str, Dict[str, Any]] = {}
+
+# task가 너무 오래 보관되지 않도록 최대 보관 시간(초) — 1시간
+_TASK_TTL_SECONDS = 3600
+
+
+def _purge_old_tasks() -> None:
+    """오래된 작업 정리 — 메모리 누수 방지."""
+    now = time.time()
+    expired = [k for k, v in portfolio_tasks.items()
+               if now - v.get("created_at", now) > _TASK_TTL_SECONDS]
+    for k in expired:
+        portfolio_tasks.pop(k, None)
 
 logger = logging.getLogger(__name__)
 
@@ -117,12 +136,15 @@ def list_strategies():
     ]
 
 
-@router.post("/dual_momentum/")
-def run_dual_momentum_backtest(
-    req: DualMomentumRequest,
-    current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
+def _run_backtest_async(task_id: str, user_id: int, req: DualMomentumRequest) -> None:
+    """백그라운드 스레드에서 백테스트 실행."""
+    def _set_progress(pct: float, msg: str) -> None:
+        info = portfolio_tasks.get(task_id)
+        if info is not None:
+            info["progress"] = float(pct)
+            info["message"] = msg
+
+    db = database.SessionLocal()
     try:
         tester = PortfolioBacktester(
             strategy_name=req.strategy_name,
@@ -136,20 +158,80 @@ def run_dual_momentum_backtest(
             end_date=req.end_date,
             initial_capital=req.initial_capital,
             db=db,
+            progress_callback=_set_progress,
         )
-        # 결과 저장 (실패해도 결과 반환은 막지 않음)
+        # 히스토리 저장 (실패해도 결과는 보존)
         try:
-            history_id = _save_history(db, current_user.id, req, result)
+            history_id = _save_history(db, user_id, req, result)
             result["history_id"] = history_id
         except Exception as e:
             logger.warning("Failed to save portfolio backtest history: %s", e)
-        return result
+
+        info = portfolio_tasks.get(task_id)
+        if info is not None:
+            info["status"] = "completed"
+            info["progress"] = 100.0
+            info["message"] = "완료"
+            info["result"] = result
+            info["completed_at"] = time.time()
     except ValueError as e:
-        # 알 수 없는 전략명, 잘못된 날짜 등
-        raise HTTPException(status_code=400, detail=str(e))
+        info = portfolio_tasks.get(task_id)
+        if info is not None:
+            info["status"] = "failed"
+            info["message"] = str(e)
+        logger.warning("Dual momentum backtest validation failed: %s", e)
     except Exception as e:
+        info = portfolio_tasks.get(task_id)
+        if info is not None:
+            info["status"] = "failed"
+            info["message"] = "Portfolio backtest failed"
         logger.exception("Dual momentum backtest failed: %s", e)
-        raise HTTPException(status_code=500, detail="Portfolio backtest failed")
+    finally:
+        db.close()
+
+
+@router.post("/dual_momentum/")
+def run_dual_momentum_backtest(
+    req: DualMomentumRequest,
+    current_user: models.User = Depends(get_current_user),
+):
+    """비동기 시작. task_id 반환 — 클라이언트는 status로 폴링."""
+    _purge_old_tasks()
+    task_id = str(uuid.uuid4())
+    portfolio_tasks[task_id] = {
+        "status": "running",
+        "progress": 0.0,
+        "message": "초기화 중...",
+        "result": None,
+        "user_id": current_user.id,
+        "created_at": time.time(),
+    }
+    thread = threading.Thread(
+        target=_run_backtest_async,
+        args=(task_id, current_user.id, req),
+        daemon=True,
+    )
+    thread.start()
+    return {"task_id": task_id, "status": "running"}
+
+
+@router.get("/dual_momentum/status/{task_id}")
+def get_dual_momentum_status(
+    task_id: str,
+    current_user: models.User = Depends(get_current_user),
+):
+    info = portfolio_tasks.get(task_id)
+    if not info:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if info.get("user_id") != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    return {
+        "task_id": task_id,
+        "status": info["status"],
+        "progress": info["progress"],
+        "message": info["message"],
+        "result": info["result"],
+    }
 
 
 @router.get("/portfolio_history", response_model=List[PortfolioHistoryItem])

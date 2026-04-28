@@ -59,7 +59,18 @@ class PortfolioBacktester:
         end_date: str,
         initial_capital: float,
         db: Optional[Session] = None,
+        progress_callback: Optional[Any] = None,
     ) -> dict:
+        """progress_callback(progress_pct: float, message: str) — 비동기 실행 시 진행률 업데이트용."""
+
+        def _progress(pct: float, msg: str) -> None:
+            if progress_callback is not None:
+                try:
+                    progress_callback(pct, msg)
+                except Exception:
+                    pass
+
+        _progress(5.0, "백테스터 초기화...")
         assets: List[str] = list(self.strategy.ASSETS)
         # lookback_months에 비례하는 버퍼 (1.1배 + 60일 여유)
         lookback_buffer_days = int(self.strategy.lookback_months * 30.5 * 1.1) + 60
@@ -73,11 +84,14 @@ class PortfolioBacktester:
         fetch_end = end_dt.strftime("%Y-%m-%d")
 
         df_dict: Dict[str, pd.DataFrame] = {}
-        for asset in assets:
+        n_assets = len(assets)
+        for i, asset in enumerate(assets):
+            _progress(10.0 + 30.0 * (i / max(n_assets, 1)), f"데이터 수집 중: {asset}")
             df = self.fetcher.fetch_ohlcv(asset, fetch_start, fetch_end, db=db)
             if df.empty:
                 logger.warning("PortfolioBacktester: %s 데이터 없음", asset)
             df_dict[asset] = df
+        _progress(45.0, "데이터 준비 완료")
 
         rebalance_dates = self._rebalance_dates(start_dt, end_dt)
         if not rebalance_dates:
@@ -97,7 +111,10 @@ class PortfolioBacktester:
         prev_rebalance_date: Optional[pd.Timestamp] = None
         prev_selected_asset: Optional[str] = None
 
-        for rb_date in rebalance_dates:
+        n_rebalance = len(rebalance_dates)
+        for i, rb_date in enumerate(rebalance_dates):
+            if i % max(n_rebalance // 20, 1) == 0:  # 20회마다 진행률 갱신
+                _progress(45.0 + 50.0 * (i / max(n_rebalance, 1)), f"시뮬레이션 {i + 1}/{n_rebalance}")
             weights = self.strategy.compute_weights(df_dict, rb_date)
             selected_asset = self._select_asset_from_weights(weights)
 
@@ -197,6 +214,7 @@ class PortfolioBacktester:
         else:
             equity_curve.append(end_point)
 
+        _progress(95.0, "지표 및 벤치마크 계산 중...")
         metrics = self._compute_metrics(
             initial_capital, final_capital, equity_curve, start_dt, end_dt, self.rebalance_freq,
         )
@@ -207,6 +225,7 @@ class PortfolioBacktester:
         benchmarks = self._compute_buy_and_hold(
             assets, df_dict, rebalance_times, initial_capital, self.commission_rate,
         )
+        _progress(100.0, "완료")
 
         return {
             "strategy_name": self.strategy_name,

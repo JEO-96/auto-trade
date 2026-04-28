@@ -59,6 +59,8 @@ export default function PortfolioBacktestPage() {
 
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<PortfolioBacktestResult | null>(null);
+    const [progress, setProgress] = useState(0);
+    const [progressMessage, setProgressMessage] = useState('');
 
     useEffect(() => {
         listPortfolioStrategies()
@@ -154,6 +156,8 @@ export default function PortfolioBacktestPage() {
 
         setLoading(true);
         setResult(null);
+        setProgress(0);
+        setProgressMessage('백테스트 시작 중...');
         try {
             const data = await runDualMomentumBacktest({
                 strategy_name: strategyName,
@@ -164,6 +168,9 @@ export default function PortfolioBacktestPage() {
                 lookback_months: lookbackMonths,
                 evaluation_mode: evaluationMode === 'preset' ? null : evaluationMode,
                 rebalance_freq: rebalanceFreq,
+            }, (pct, msg) => {
+                setProgress(pct);
+                setProgressMessage(msg);
             });
             setResult(data);
             toast.success('백테스트가 완료되었습니다.');
@@ -859,6 +866,30 @@ export default function PortfolioBacktestPage() {
                         </CardContent>
                     </Card>
                 </>
+            )}
+
+            {/* Loading progress */}
+            {activeTab === 'run' && loading && (
+                <Card>
+                    <CardContent>
+                        <div className="py-8">
+                            <div className="flex items-center gap-3 mb-4">
+                                <LoadingSpinner size="sm" />
+                                <span className="text-sm text-th-text font-medium">{progressMessage}</span>
+                                <span className="ml-auto text-xs text-th-text-muted font-semibold">{Math.round(progress)}%</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
+                                <div
+                                    className="h-full bg-primary transition-all duration-300 ease-out"
+                                    style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
+                                />
+                            </div>
+                            <p className="mt-3 text-[10px] sm:text-xs text-th-text-muted">
+                                pykrx에서 KRX 데이터를 받아 첫 호출은 30초~1분 걸릴 수 있습니다. 두 번째 호출부터는 DB 캐시 사용.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
             )}
 
             {activeTab === 'run' && !result && !loading && (
