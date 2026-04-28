@@ -112,8 +112,14 @@ jobs:
         docker compose pull
 
         # 3. DB 마이그레이션 (idempotent — 컬럼/인덱스 없을 때만 적용)
+        # 안전 가드:
+        #   - --no-deps: 의존 컨테이너(있을 경우) 추가 기동 방지
+        #   - < /dev/null: stdin 닫기 (set -e 환경에서 SSH heredoc과 충돌 회피)
+        #   - || true: 마이그레이션 실패해도 배포 진행 (idempotent하므로 다음 배포 때 재시도 가능,
+        #              실패가 후속 backend 재시작을 막지 않도록 함)
         echo "Running DB migrations..."
-        docker compose run --rm -T backend python -m migrations.migrate_ohlcv_market
+        docker compose run --rm --no-deps -T backend python -m migrations.migrate_ohlcv_market < /dev/null \
+          || echo "WARNING: Migration step returned non-zero — continuing with deploy"
 
         # 4. 롤링 재시작: nginx 유지한 채 backend → frontend 순서로 교체
         echo "Restarting backend..."
