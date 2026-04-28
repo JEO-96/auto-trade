@@ -111,11 +111,15 @@ jobs:
         echo "Pulling new images..."
         docker compose pull
 
-        # 3. 롤링 재시작: nginx 유지한 채 backend → frontend 순서로 교체
+        # 3. DB 마이그레이션 (idempotent — 컬럼/인덱스 없을 때만 적용)
+        echo "Running DB migrations..."
+        docker compose run --rm -T backend python -m migrations.migrate_ohlcv_market
+
+        # 4. 롤링 재시작: nginx 유지한 채 backend → frontend 순서로 교체
         echo "Restarting backend..."
         docker compose up -d --no-deps --force-recreate backend
 
-        # 4. 백엔드 헬스체크 (최대 60초)
+        # 5. 백엔드 헬스체크 (최대 60초)
         echo "Waiting for backend health..."
         for i in $(seq 1 12); do
           if docker compose exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')" < /dev/null 2>/dev/null; then
@@ -130,11 +134,11 @@ jobs:
           sleep 5
         done
 
-        # 5. 프론트엔드 교체
+        # 6. 프론트엔드 교체
         echo "Restarting frontend..."
         docker compose up -d --no-deps --force-recreate frontend
 
-        # 6. 프론트엔드 헬스체크 (최대 60초)
+        # 7. 프론트엔드 헬스체크 (최대 60초)
         echo "Waiting for frontend health..."
         for i in $(seq 1 12); do
           if docker compose exec -T frontend wget --no-verbose --tries=1 --spider http://127.0.0.1:3000 < /dev/null 2>/dev/null; then
@@ -149,14 +153,14 @@ jobs:
           sleep 5
         done
 
-        # 7. nginx 교체 (설정 변경 시에만 실제 재시작됨)
+        # 8. nginx 교체 (설정 변경 시에만 실제 재시작됨)
         echo "Updating nginx..."
         docker compose up -d --no-deps --force-recreate nginx
 
-        # 8. 최종 상태 확인
+        # 9. 최종 상태 확인
         docker compose ps
 
-        # 9. 미사용 이미지 정리
+        # 10. 미사용 이미지 정리
         docker image prune -f
 
         echo "Zero-downtime deployment successful!"
