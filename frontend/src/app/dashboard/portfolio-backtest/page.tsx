@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Play, TrendingUp, TrendingDown, Activity, Briefcase, History, Trash2, ArrowLeft } from 'lucide-react';
+import { Play, TrendingUp, TrendingDown, Activity, Briefcase, History, Trash2, ArrowLeft, RefreshCw, Calendar } from 'lucide-react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -119,6 +119,24 @@ export default function PortfolioBacktestPage() {
         setResult(null);
     };
 
+    // 동일 설정으로 재실행 — 히스토리 항목의 파라미터를 폼에 채우고 실행 탭으로 전환
+    const handleRerun = (h: PortfolioHistoryItem) => {
+        if (h.start_date) setStartDate(h.start_date);
+        if (h.end_date) setEndDate(h.end_date);
+        setInitialCapital(h.initial_capital);
+        if (h.commission_rate != null) setCommissionRate(h.commission_rate);
+        setStrategyName(h.strategy_name);
+        if (h.custom_params?.lookback_months != null) setLookbackMonths(h.custom_params.lookback_months);
+        const mode = h.custom_params?.evaluation_mode;
+        setEvaluationMode(mode === 'sequential' || mode === 'best_momentum' ? mode : 'preset');
+        const freq = h.custom_params?.rebalance_freq;
+        setRebalanceFreq(freq === 'quarterly' || freq === 'semiannual' || freq === 'monthly' ? freq : 'monthly');
+        setActiveTab('run');
+        setViewingHistoryId(null);
+        setResult(null);
+        toast.success('설정이 채워졌습니다. 백테스트 실행을 눌러주세요.');
+    };
+
     const handleRun = async () => {
         if (!startDate || !endDate) {
             toast.error('시작/종료일을 입력해주세요.');
@@ -217,6 +235,27 @@ export default function PortfolioBacktestPage() {
             offsetPct: ((new Date(s.start).getTime() - first) / span) * 100,
             widthPct: Math.max(((new Date(s.end).getTime() - new Date(s.start).getTime()) / span) * 100, 1),
         }));
+    }, [result]);
+
+    // 연도별 수익률 — equity_curve의 각 연도 마지막 시점 값으로 계산
+    // 첫 해는 시작값 대비, 이후 해는 직전 해 마지막 대비
+    const annualReturns = useMemo(() => {
+        if (!result || result.equity_curve.length === 0) return [];
+        const byYear: Map<number, number> = new Map();
+        for (const p of result.equity_curve) {
+            const y = new Date(p.time).getUTCFullYear();
+            byYear.set(y, p.value); // 같은 해 마지막 포인트가 자동으로 덮어씀 (정렬 가정)
+        }
+        const years = Array.from(byYear.keys()).sort((a, b) => a - b);
+        const rows: { year: number; ret: number; endValue: number }[] = [];
+        let prev = result.initial_capital;
+        for (const y of years) {
+            const v = byYear.get(y)!;
+            const ret = prev > 0 ? (v - prev) / prev : 0;
+            rows.push({ year: y, ret, endValue: v });
+            prev = v;
+        }
+        return rows;
     }, [result]);
 
     const totalDays = useMemo(() => {
@@ -331,12 +370,20 @@ export default function PortfolioBacktestPage() {
                                                         )}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3 shrink-0">
+                                                <div className="flex items-center gap-2 shrink-0">
                                                     {ret !== null && (
                                                         <span className={`text-sm font-bold ${ret >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                                             {fmtPct(ret)}
                                                         </span>
                                                     )}
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleRerun(h); }}
+                                                        className="p-1.5 rounded-lg text-th-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                                                        aria-label="동일 설정으로 재실행"
+                                                        title="동일 설정으로 재실행"
+                                                    >
+                                                        <RefreshCw className="w-4 h-4" />
+                                                    </button>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleDeleteHistory(h.id); }}
                                                         className="p-1.5 rounded-lg text-th-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
@@ -654,6 +701,64 @@ export default function PortfolioBacktestPage() {
                                             {a} {ASSET_LABELS[a] && <span className="text-th-text-muted">— {ASSET_LABELS[a]}</span>}
                                         </span>
                                     ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Annual returns table */}
+                    {annualReturns.length > 0 && (
+                        <Card className="mb-6">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-primary" />
+                                    연도별 수익률
+                                </CardTitle>
+                                <CardDescription>
+                                    각 연도 마지막 시점의 자산 가치 변화
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-xs">
+                                        <thead>
+                                            <tr className="text-th-text-muted border-b border-th-border-light">
+                                                <th className="text-left py-2 px-3">연도</th>
+                                                <th className="text-right py-2 px-3">수익률</th>
+                                                <th className="text-right py-2 px-3">연말 자산</th>
+                                                <th className="text-left py-2 px-3 hidden sm:table-cell w-1/2">시각화</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {annualReturns.map(r => {
+                                                const positive = r.ret >= 0;
+                                                const barWidth = Math.min(Math.abs(r.ret) * 100 * 2, 100); // 50% 수익 = 100% bar
+                                                return (
+                                                    <tr key={r.year} className="border-b border-th-border-light/50 hover:bg-white/[0.02]">
+                                                        <td className="py-2 px-3 font-semibold text-th-text">{r.year}</td>
+                                                        <td className={`py-2 px-3 text-right font-bold ${positive ? 'text-green-400' : 'text-red-400'}`}>
+                                                            {fmtPct(r.ret)}
+                                                        </td>
+                                                        <td className="py-2 px-3 text-right text-th-text-secondary">
+                                                            {Math.round(r.endValue).toLocaleString()}
+                                                        </td>
+                                                        <td className="py-2 px-3 hidden sm:table-cell">
+                                                            <div className="relative h-3 bg-white/[0.03] rounded">
+                                                                <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/[0.1]" />
+                                                                <div
+                                                                    className={`absolute top-0 bottom-0 ${positive ? 'bg-green-400/40 left-1/2' : 'bg-red-400/40'}`}
+                                                                    style={positive
+                                                                        ? { width: `${barWidth / 2}%` }
+                                                                        : { width: `${barWidth / 2}%`, right: '50%' }
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </CardContent>
                         </Card>
