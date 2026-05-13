@@ -145,6 +145,7 @@ def get_me(current_user: models.User = Depends(get_current_user_any), db: Sessio
         notification_trade=current_user.notification_trade if current_user.notification_trade is not None else True,
         notification_bot_status=current_user.notification_bot_status if current_user.notification_bot_status is not None else True,
         notification_system=current_user.notification_system if current_user.notification_system is not None else True,
+        notification_stock_alert=current_user.notification_stock_alert if current_user.notification_stock_alert is not None else False,
         notification_interval=current_user.notification_interval or "realtime",
     )
 
@@ -156,6 +157,7 @@ def get_notification_settings(current_user: models.User = Depends(get_current_us
         notification_trade=current_user.notification_trade if current_user.notification_trade is not None else True,
         notification_bot_status=current_user.notification_bot_status if current_user.notification_bot_status is not None else True,
         notification_system=current_user.notification_system if current_user.notification_system is not None else True,
+        notification_stock_alert=current_user.notification_stock_alert if current_user.notification_stock_alert is not None else False,
         notification_interval=current_user.notification_interval or "realtime",
     )
 
@@ -177,6 +179,7 @@ def update_notification_settings(
     current_user.notification_trade = data.notification_trade
     current_user.notification_bot_status = data.notification_bot_status
     current_user.notification_system = data.notification_system
+    current_user.notification_stock_alert = data.notification_stock_alert
     current_user.notification_interval = data.notification_interval
     db.commit()
     db.refresh(current_user)
@@ -184,6 +187,7 @@ def update_notification_settings(
         notification_trade=current_user.notification_trade,
         notification_bot_status=current_user.notification_bot_status,
         notification_system=current_user.notification_system,
+        notification_stock_alert=current_user.notification_stock_alert,
         notification_interval=current_user.notification_interval or "realtime",
     )
 

@@ -43,6 +43,7 @@ export default function ProfilePage() {
         notification_trade: true,
         notification_bot_status: true,
         notification_system: true,
+        notification_stock_alert: false,
         notification_interval: 'realtime',
     });
     const [notifSaving, setNotifSaving] = useState(false);
@@ -56,6 +57,7 @@ export default function ProfilePage() {
                 notification_trade: user.notification_trade ?? true,
                 notification_bot_status: user.notification_bot_status ?? true,
                 notification_system: user.notification_system ?? true,
+                notification_stock_alert: user.notification_stock_alert ?? false,
                 notification_interval: user.notification_interval ?? 'realtime',
             });
         }
@@ -318,6 +320,12 @@ export default function ProfilePage() {
 
                 <div className="space-y-2">
                     {([
+                        {
+                            key: 'notification_stock_alert' as keyof NotificationSettings,
+                            label: '주식 추천 알림',
+                            description: '초단타 후보, 진입가, 손절가, 1차/2차 매도가',
+                            icon: <TrendingUp className="w-4 h-4 text-accent" />,
+                        },
                         {
                             key: 'notification_trade' as keyof NotificationSettings,
                             label: '매매 체결 알림',

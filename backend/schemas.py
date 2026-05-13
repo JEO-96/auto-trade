@@ -18,6 +18,7 @@ class UserResponse(UserBase):
     notification_trade: bool = True
     notification_bot_status: bool = True
     notification_system: bool = True
+    notification_stock_alert: bool = False
     notification_interval: str = "realtime"
 
     class Config:
@@ -333,6 +334,7 @@ class NotificationSettings(BaseModel):
     notification_trade: bool = True
     notification_bot_status: bool = True
     notification_system: bool = True
+    notification_stock_alert: bool = False
     notification_interval: str = "realtime"  # realtime, 4h, 12h, daily
 
 

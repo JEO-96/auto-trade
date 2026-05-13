@@ -105,6 +105,48 @@ async def send_bot_status_notification(user_id: int, message: str) -> bool:
     return await send_telegram_message(message, user_id=user_id)
 
 
+async def send_stock_alert_notification(user_id: int, message: str) -> bool:
+    """주식 추천 알림 — 유저의 notification_stock_alert 설정 확인 후 전송."""
+    if not _check_user_notification_setting(user_id, "notification_stock_alert"):
+        logger.debug("[Telegram] Stock alert notification disabled for user %d", user_id)
+        return False
+    return await send_telegram_message(message, user_id=user_id)
+
+
+def _get_stock_alert_recipient_ids() -> list[int]:
+    """주식 추천 알림 수신 대상 user_id 목록."""
+    try:
+        import database
+        from models import User
+        with database.get_db_session() as db:
+            users = (
+                db.query(User)
+                .filter(
+                    User.notification_stock_alert == True,  # noqa: E712
+                    User.telegram_chat_id.isnot(None),
+                )
+                .all()
+            )
+            return [int(user.id) for user in users]
+    except Exception as e:
+        logger.error("[Telegram] Failed to load stock alert recipients: %s", e)
+        return []
+
+
+async def send_stock_alert_broadcast(message: str) -> dict[str, int]:
+    """주식 추천 알림을 수신 동의한 텔레그램 연동 사용자에게 전송."""
+    recipient_ids = _get_stock_alert_recipient_ids()
+    sent = 0
+    failed = 0
+    for user_id in recipient_ids:
+        ok = await send_stock_alert_notification(user_id, message)
+        if ok:
+            sent += 1
+        else:
+            failed += 1
+    return {"sent": sent, "failed": failed, "eligible": len(recipient_ids)}
+
+
 async def send_system_notification(message: str) -> bool:
     """시스템 알림 — 관리자 chat_id로 전송 (사용자 설정과 무관하게 항상 전송)."""
     return await send_telegram_message(message)

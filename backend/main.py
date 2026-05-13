@@ -17,8 +17,9 @@ setup_error_monitoring()
 import bot_manager
 import database
 import models
+import scalping_alert_manager
 from okx_futures.bot import OKXFuturesBot
-from routers import admin, auth, backtest, bots, community, keys, portfolio_backtest, strategies
+from routers import admin, auth, backtest, bots, community, keys, portfolio_backtest, scalping_alerts, strategies
 from routers import settings as settings_router
 from settings import settings
 
@@ -66,6 +67,8 @@ limiter = Limiter(key_func=get_remote_address)
 async def lifespan(app: FastAPI):
     # Startup: 업비트 봇 자동 복구
     await bot_manager.recover_active_bots()
+    if settings.scalping_alert_enabled:
+        await scalping_alert_manager.start()
 
     # OKX 선물 봇 — 자동시작 비활성화
     # 수동 활성화 필요 시 이 블록 주석 해제
@@ -76,6 +79,9 @@ async def lifespan(app: FastAPI):
     #     okx_task = asyncio.create_task(okx_bot.run_loop())
 
     yield
+
+    # Shutdown: 초단타 알림 스캐너 안전 종료
+    await scalping_alert_manager.stop()
 
     # Shutdown: 업비트 봇 안전 종료
     await bot_manager.graceful_shutdown()
@@ -100,6 +106,7 @@ app.include_router(keys.router)
 app.include_router(backtest.router)
 app.include_router(portfolio_backtest.router)
 app.include_router(admin.router)
+app.include_router(scalping_alerts.router)
 app.include_router(community.router)
 app.include_router(strategies.router)
 app.include_router(settings_router.router)

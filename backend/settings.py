@@ -34,6 +34,16 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
 
+    # Korea Investment OpenAPI
+    kis_app_key: str = ""
+    kis_app_secret: str = ""
+    kis_access_token: str = ""
+
+    # Intraday scalping alerts
+    scalping_alert_enabled: bool = False
+    scalping_alert_dry_run: bool = True
+    scalping_alert_chat_id: str = ""
+
     # CORS
     cors_origins: list[str] = [
         "http://localhost:3000",
