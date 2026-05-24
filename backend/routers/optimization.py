@@ -5,7 +5,7 @@ import importlib
 import logging
 
 from core.optimization_engine import OptimizationEngine
-from auth import get_current_user
+from dependencies import get_db, get_current_user
 
 router = APIRouter(prefix="/optimization", tags=["optimization"])
 logger = logging.getLogger(__name__)
