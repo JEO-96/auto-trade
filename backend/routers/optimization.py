@@ -32,7 +32,7 @@ async def run_optimization(req: OptimizationRequest, current_user: Any = Depends
         # For simplicity, we assume strategy_name is the module name and 
         # we'll look for a class that inherits from BaseStrategy.
         
-        module_path = f"backend.core.strategies.{req.strategy_name}"
+        module_path = f"core.strategies.{req.strategy_name}"
         try:
             module = importlib.import_module(module_path)
         except ImportError:
