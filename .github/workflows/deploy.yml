@@ -106,6 +106,16 @@ jobs:
         git fetch origin main
         git reset --hard origin/main
 
+        # 2-pre. 포트 충돌 방지: 구 프로젝트 고아 컨테이너 정리
+        echo "Cleaning up orphan containers on ports 80/443..."
+        for cid in $(docker ps -q --filter "publish=80" --filter "publish=443"); do
+          proj=$(docker inspect "$cid" --format '{{index .Config.Labels "com.docker.compose.project"}}' 2>/dev/null)
+          if [ "$proj" != "auto-trade" ]; then
+            echo "Stopping orphan container $cid (project: $proj)"
+            docker stop "$cid" && docker rm "$cid" || true
+          fi
+        done
+
         # 2. GHCR 로그인 & 새 이미지 pull (기존 컨테이너 유지)
         echo "$GHCR_PAT" | docker login ghcr.io -u jeo-96 --password-stdin 2>/dev/null || true
         echo "Pulling new images..."
