@@ -4,8 +4,8 @@ import vectorbt as vbt
 import gc
 from typing import List, Dict, Any, Type
 import logging
-from backend.core.strategies.base import BaseStrategy
-from backend.core.data_fetcher import DataFetcher
+from core.strategies.base import BaseStrategy
+from core.data_fetcher import DataFetcher
 
 logger = logging.getLogger(__name__)
 
