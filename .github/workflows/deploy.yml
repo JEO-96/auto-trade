@@ -118,6 +118,8 @@ jobs:
         #   - || true: 마이그레이션 실패해도 배포 진행 (idempotent하므로 다음 배포 때 재시도 가능,
         #              실패가 후속 backend 재시작을 막지 않도록 함)
         echo "Running DB migrations..."
+        docker compose run --rm --no-deps -T backend python -m migrations.migrate_pnl_summary_notification < /dev/null \
+          || echo "WARNING: Migration step returned non-zero — continuing with deploy"
         docker compose run --rm --no-deps -T backend python -m migrations.migrate_ohlcv_market < /dev/null \
           || echo "WARNING: Migration step returned non-zero — continuing with deploy"
 
