@@ -32,6 +32,7 @@ from core.strategies.multi_signal_15m import MultiSignal15mStrategy
 from core.strategies.trend_follower_15m import TrendFollower15mStrategy
 from core.strategies.signal_test_15m import SignalTest15mStrategy
 from core.strategies.surge_catcher_15m import SurgeCatcher15mStrategy
+from core.strategies.morning_breakout import MorningBreakoutStrategy
 
 # OKX 선물 전략
 from okx_futures.strategy import SmartTrendFuturesStrategy
@@ -96,6 +97,7 @@ STRATEGY_MAP = {
 
     # OKX 선물 전략
     "ultimate_ensemble_1h": SmartTrendFuturesStrategy,
+    "morning_breakout_1d": MorningBreakoutStrategy,
 }
 
 DEFAULT_STRATEGY = "momentum_stable_1h"

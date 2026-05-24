@@ -1,8 +1,11 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
-import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Pencil, Check, ArrowLeft, Save, Sparkles, Calculator, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, 
+  History, Share2, X, Trash2, Pencil, Check, ArrowLeft, Save, 
+  Sparkles, Calculator, AlertTriangle, ChevronDown, ChevronUp 
+} from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Pencil, Check, ArrowLeft, Save } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';

@@ -20,6 +20,8 @@ export interface PriceChangePoint {
 
 export interface BacktestResult {
     status?: string;
+    task_id?: string;
+    message?: string;
     initial_capital: number;
     final_capital: number;
     total_trades: number;
@@ -208,3 +210,7 @@ export interface PortfolioHistoryItem {
 export interface PortfolioHistoryDetail extends PortfolioHistoryItem {
     result_data: PortfolioBacktestResult | null;
 }
+
+
+// Alias for backward compatibility
+export type RunBacktestResponse = BacktestResult;
