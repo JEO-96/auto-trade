@@ -267,7 +267,7 @@ def _process_symbol_entry(
     save_trade_log(bot_config_id, symbol, "BUY", entry_price, qty, "Portfolio Entry")
     # 트레일링 모드면 알림에 TP=None 전달 → "TP 없음 (트레일링)" 표시
     notify_tp: float | None = None if (use_trailing or tp_pct is None) else tp
-    msg = format_buy_notification(symbol, entry_price, qty, sl, notify_tp)
+    msg = format_buy_notification(symbol, entry_price, qty, sl, notify_tp, paper_trading=paper_trading)
     _send_trade_notification(user_id, msg)
 
     return liquid_capital, position
@@ -957,7 +957,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                     logger.error("[Bot %d] Too many consecutive errors. Stopping bot.", bot_config_id)
                     # 에러로 중단해도 포지션은 DB에 저장
                     save_positions_to_db(bot_config_id, active_positions)
-                    _send_bot_status_notification(user_id, format_bot_error_stop(strategy_label, timeframe, MAX_CONSECUTIVE_ERRORS))
+                    _send_bot_status_notification(user_id, format_bot_error_stop(strategy_label, timeframe, MAX_CONSECUTIVE_ERRORS, paper_trading=paper_trading))
                     break
             finally:
                 current_db.close()
@@ -1002,12 +1002,13 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
             # 종료 알림 (청산 내역 포함)
             _send_bot_status_notification(user_id, format_bot_stop_notification(
                 strategy_label, timeframe, symbols_str, closed_details or None,
+                paper_trading=paper_trading,
             ))
         raise
     except Exception as e:
         logger.error("[Bot %d] Fatal error in bot loop: %s", bot_config_id, e)
         logger.debug(traceback.format_exc())
-        _send_bot_status_notification(user_id, format_bot_fatal_error(strategy_label, timeframe, str(e)))
+        _send_bot_status_notification(user_id, format_bot_fatal_error(strategy_label, timeframe, str(e), paper_trading=paper_trading))
     finally:
         # Clean up from active_bots so status correctly reports Stopped
         active_bots.pop(bot_config_id, None)

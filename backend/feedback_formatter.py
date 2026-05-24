@@ -40,8 +40,10 @@ def format_buy_notification(
     qty: float,
     sl: float,
     tp: float | None,
+    paper_trading: bool = True,
 ) -> str:
     """매수 체결 알림 메시지. tp=None이면 트레일링 모드 (TP 미사용)."""
+    trade_mode = "모의" if paper_trading else "실매매"
     sl_pct = abs((sl - entry_price) / entry_price * 100) if entry_price > 0 else 0
     if tp is None:
         tp_line = "🎯 익절: — (트레일링 스탑)"
@@ -51,7 +53,7 @@ def format_buy_notification(
         tp_line = f"🎯 익절: {tp:,.0f} (+{tp_pct:.1f}%)"
         sl_line = f"🛑 손절: {sl:,.0f} (-{sl_pct:.1f}%)"
     return (
-        f"📈 매수 체결\n"
+        f"📈 매수 체결 [{trade_mode}]\n"
         f"{SEPARATOR}\n"
         f"종목: {symbol}\n"
         f"체결가: {entry_price:,.0f} KRW\n"
@@ -137,13 +139,15 @@ def format_bot_stop_notification(
     timeframe: str,
     symbols_str: str,
     closed_details: list[str] | None = None,
+    paper_trading: bool = True,
 ) -> str:
     """봇 정상 종료 알림 메시지."""
+    trade_mode = "모의" if paper_trading else "실매매"
     close_section = ""
     if closed_details:
         close_section = f"\n📉 포지션 청산\n" + "\n".join(closed_details)
     return (
-        f"🔴 봇 정상 종료\n"
+        f"🛑 봇 정지 [{trade_mode}]\n"
         f"{SEPARATOR}\n"
         f"전략: {strategy_label} · {timeframe}봉\n"
         f"종목: {symbols_str}"
@@ -155,10 +159,12 @@ def format_bot_error_stop(
     strategy_label: str,
     timeframe: str,
     max_errors: int,
+    paper_trading: bool = True,
 ) -> str:
     """연속 에러로 인한 봇 중단 알림."""
+    trade_mode = "모의" if paper_trading else "실매매"
     return (
-        f"🔴 봇 자동 종료\n"
+        f"🔴 봇 자동 종료 [{trade_mode}]\n"
         f"{SEPARATOR}\n"
         f"전략: {strategy_label} · {timeframe}봉\n"
         f"사유: 연속 오류 {max_errors}회 발생\n"
@@ -170,10 +176,12 @@ def format_bot_fatal_error(
     strategy_label: str,
     timeframe: str,
     error_msg: str,
+    paper_trading: bool = True,
 ) -> str:
     """봇 비정상 종료 알림."""
+    trade_mode = "모의" if paper_trading else "실매매"
     return (
-        f"🔴 봇 비정상 종료\n"
+        f"🔴 봇 비정상 종료 [{trade_mode}]\n"
         f"{SEPARATOR}\n"
         f"전략: {strategy_label} · {timeframe}봉\n"
         f"오류: {error_msg[:100]}\n"
