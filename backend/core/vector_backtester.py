@@ -11,6 +11,7 @@ import uuid
 import threading
 import time
 from typing import Dict, Any, Optional
+from core.performance_metrics import calculate_advanced_metrics, downsample_equity_curve
 
 logger = logging.getLogger(__name__)
 
@@ -256,10 +257,14 @@ class VectorBacktester:
 
         # 5. Extract Equity Curve
         equity_series = portfolio.value()
-        equity_curve = [
+        raw_equity_curve = [
             {"time": str(ts), "value": float(val)}
             for ts, val in equity_series.items()
         ]
+        equity_curve = downsample_equity_curve(raw_equity_curve, max_points=500)
+
+        # 5b. Calculate Advanced Metrics
+        metrics = calculate_advanced_metrics(equity_series, formatted_trades)
 
         # 6. Extract price change rates for charting (% change from first price)
         price_changes = {}
@@ -308,6 +313,10 @@ class VectorBacktester:
             "initial_capital": float(initial_capital),
             "final_capital": float(portfolio.final_value()),
             "total_trades": total_trades,
+            "win_rate": metrics.get("win_rate"),
+            "max_drawdown": metrics.get("max_drawdown"),
+            "sharpe_ratio": metrics.get("sharpe_ratio"),
+            "profit_factor": metrics.get("profit_factor"),
             "trades": formatted_trades,
             "equity_curve": equity_curve,
             "price_changes": price_changes,

@@ -77,7 +77,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
             )}
 
             {post.post_type === 'backtest_share' && post.backtest_data && (
-                <div className="p-3 bg-white/[0.02] rounded-xl border border-th-border-light space-y-2">
+                <div className="p-3 bg-th-input rounded-xl border border-th-border-light space-y-2">
                     <div className="grid grid-cols-3 gap-3">
                         <MetricItem
                             label="모의 수익률"
@@ -104,7 +104,7 @@ function PostCard({ post, onLikeToggle, isLoggedIn, basePath }: { post: Communit
             )}
 
             {post.post_type === 'performance_share' && post.performance_data && (
-                <div className="grid grid-cols-3 gap-3 p-3 bg-white/[0.02] rounded-xl border border-th-border-light">
+                <div className="grid grid-cols-3 gap-3 p-3 bg-th-input rounded-xl border border-th-border-light">
                     <MetricItem
                         label="총 PnL"
                         value={`₩${Number(post.performance_data.total_pnl).toLocaleString()}`}

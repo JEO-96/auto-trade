@@ -15,8 +15,7 @@ def save_positions_to_db(bot_id: int, active_positions: dict) -> None:
     """현재 보유 포지션을 DB에 저장 (atomic delete+insert)"""
     with database.get_db_session() as db:
         try:
-            # 단일 트랜잭션 내에서 삭제+삽입 (중간 크래시 시 전체 롤백)
-            db.begin_nested()
+            # ensure atomic operations with explicit flush/commit
             db.query(models.ActivePosition).filter(models.ActivePosition.bot_id == bot_id).delete()
             for symbol, pos in active_positions.items():
                 db.add(models.ActivePosition(

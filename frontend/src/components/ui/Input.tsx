@@ -14,7 +14,7 @@ type SelectInputProps = InputBaseProps & {
 } & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'type'>;
 
 const inputStyles =
-    'w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-4 py-3 text-sm text-th-text placeholder-th-text-muted focus:border-primary/30 transition-colors';
+    'w-full bg-th-input border border-th-border rounded-xl px-4 py-3 text-sm text-th-text placeholder-th-text-muted focus:border-primary/30 transition-colors';
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
     ({ label, error, className, id, ...rest }, ref) => {
@@ -76,7 +76,7 @@ export function SelectInput({
                 id={selectId}
                 className={cn(
                     inputStyles,
-                    'appearance-none cursor-pointer font-medium [&>option]:bg-[#1e293b] [&>option]:text-white',
+                    'appearance-none cursor-pointer font-medium [&>option]:bg-th-modal [&>option]:text-th-text',
                     error && 'border-red-500/40',
                     className
                 )}

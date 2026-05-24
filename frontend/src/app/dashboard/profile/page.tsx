@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { NotificationSettings } from '@/types/user';
 import { formatDate } from '@/lib/utils';
 import { POST_TYPE_BADGE } from '@/lib/constants';
-import type { CommunityPost, PostType } from '@/types/community';
+import type { CommunityPost } from '@/types/community';
 
 export default function ProfilePage() {
     const { user, refreshUser, logout } = useAuth();
@@ -44,6 +44,7 @@ export default function ProfilePage() {
         notification_bot_status: true,
         notification_system: true,
         notification_stock_alert: false,
+        notification_pnl_summary: true,
         notification_interval: 'realtime',
     });
     const [notifSaving, setNotifSaving] = useState(false);
@@ -58,6 +59,7 @@ export default function ProfilePage() {
                 notification_bot_status: user.notification_bot_status ?? true,
                 notification_system: user.notification_system ?? true,
                 notification_stock_alert: user.notification_stock_alert ?? false,
+                notification_pnl_summary: user.notification_pnl_summary ?? true,
                 notification_interval: user.notification_interval ?? 'realtime',
             });
         }
@@ -157,7 +159,7 @@ export default function ProfilePage() {
     };
 
     const handleToggleNotification = async (key: keyof NotificationSettings) => {
-        if (key === 'notification_interval') return; // interval은 별도 핸들러 사용
+        if (key === 'notification_interval') return;
         const updated = { ...notifSettings, [key]: !notifSettings[key] };
         setNotifSettings(updated);
         setNotifSaving(true);
@@ -220,7 +222,6 @@ export default function ProfilePage() {
                     </div>
                 </div>
 
-                {/* Nickname Form */}
                 <div className="p-4 bg-th-card rounded-xl border border-th-border-light">
                     <h3 className="text-sm font-semibold text-th-text mb-3">닉네임 변경</h3>
                     <form onSubmit={handleSaveNickname} className="flex items-end gap-3">
@@ -237,9 +238,6 @@ export default function ProfilePage() {
                             {saved ? <Check className="w-4 h-4" /> : '저장'}
                         </Button>
                     </form>
-                    {saved && (
-                        <p className="text-xs text-secondary mt-2 font-medium">닉네임이 변경되었습니다.</p>
-                    )}
                 </div>
             </div>
 
@@ -248,11 +246,8 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2 mb-4">
                     <Bell className="w-4 h-4 text-blue-400" />
                     <h3 className="text-sm font-semibold text-th-text">텔레그램 알림 설정</h3>
-                    {user?.telegram_chat_id && (
-                        <Badge variant="success">연동됨</Badge>
-                    )}
+                    {user?.telegram_chat_id && <Badge variant="success">연동됨</Badge>}
                 </div>
-
                 {user?.telegram_chat_id ? (
                     <div className="space-y-3">
                         <div className="flex items-center gap-3 p-3 bg-th-card rounded-xl border border-th-border-light">
@@ -262,20 +257,8 @@ export default function ProfilePage() {
                                 <p className="text-sm text-th-text font-mono">{user.telegram_chat_id}</p>
                             </div>
                             <div className="flex gap-2 shrink-0">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleTestTelegram}
-                                    loading={telegramTesting}
-                                >
-                                    테스트
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleUnlinkTelegram}
-                                    className="text-red-400 hover:text-red-300"
-                                >
+                                <Button variant="ghost" size="sm" onClick={handleTestTelegram} loading={telegramTesting}>테스트</Button>
+                                <Button variant="ghost" size="sm" onClick={handleUnlinkTelegram} className="text-red-400 hover:text-red-300">
                                     <Unlink className="w-3 h-3" />
                                 </Button>
                             </div>
@@ -284,26 +267,14 @@ export default function ProfilePage() {
                 ) : (
                     <div className="space-y-3">
                         <div className="p-3 bg-th-card rounded-xl border border-th-border-light text-xs text-th-text-secondary space-y-2.5">
-                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] sm:text-xs font-bold mr-1.5">1</span>텔레그램에서 <a href="https://t.me/backtested_alert_bot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline font-medium">@backtested_alert_bot</a>을 검색하고 <span className="text-th-text font-medium">/start</span>를 보내세요.</p>
-                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] sm:text-xs font-bold mr-1.5">2</span>봇이 응답하면, <span className="text-th-text font-medium">/chatid</span>를 입력하세요. 봇이 Chat ID를 알려줍니다.</p>
-                            <p><span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 text-[10px] sm:text-xs font-bold mr-1.5">3</span>받은 숫자를 아래에 입력하면 연동 완료!</p>
+                            <p>텔레그램에서 <a href="https://t.me/backtested_alert_bot" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">@backtested_alert_bot</a>에 /start와 /chatid를 보내세요.</p>
                         </div>
                         <form onSubmit={handleSaveTelegram} className="flex items-end gap-3">
                             <div className="flex-1">
-                                <Input
-                                    value={chatId}
-                                    onChange={(e) => setChatId(e.target.value)}
-                                    placeholder="텔레그램 Chat ID 입력"
-                                    error={telegramError}
-                                />
+                                <Input value={chatId} onChange={(e) => setChatId(e.target.value)} placeholder="텔레그램 Chat ID 입력" error={telegramError} />
                             </div>
-                            <Button type="submit" size="md" loading={telegramSaving}>
-                                {telegramSaved ? <Check className="w-4 h-4" /> : <><Link2 className="w-4 h-4 mr-1" />연동</>}
-                            </Button>
+                            <Button type="submit" size="md" loading={telegramSaving}>{telegramSaved ? <Check className="w-4 h-4" /> : '연동'}</Button>
                         </form>
-                        {telegramSaved && (
-                            <p className="text-xs text-secondary font-medium">텔레그램이 연동되었습니다.</p>
-                        )}
                     </div>
                 )}
             </div>
@@ -312,66 +283,36 @@ export default function ProfilePage() {
             <div className="glass-panel rounded-2xl p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Bell className="w-4 h-4 text-yellow-400" />
-                    <h3 className="text-sm font-semibold text-th-text">알림 카테고리 설정</h3>
-                    {!user?.telegram_chat_id && (
-                        <span className="text-[10px] sm:text-xs text-th-text-muted ml-auto">텔레그램 연동 후 사용 가능</span>
-                    )}
+                    <h3 className="text-sm font-semibold text-th-text">Notification Categories</h3>
                 </div>
 
                 <div className="space-y-2">
-                    {([
-                        {
-                            key: 'notification_stock_alert' as keyof NotificationSettings,
-                            label: '주식 추천 알림',
-                            description: '초단타 후보, 진입가, 손절가, 1차/2차 매도가',
-                            icon: <TrendingUp className="w-4 h-4 text-accent" />,
-                        },
-                        {
-                            key: 'notification_trade' as keyof NotificationSettings,
-                            label: '매매 체결 알림',
-                            description: '매수/매도 체결, 손익, 캔들 분석 피드백',
-                            icon: <TrendingUp className="w-4 h-4 text-green-400" />,
-                        },
-                        {
-                            key: 'notification_bot_status' as keyof NotificationSettings,
-                            label: '봇 상태 알림',
-                            description: '봇 시작, 종료, 자동 종료 알림',
-                            icon: <Bot className="w-4 h-4 text-blue-400" />,
-                        },
-                        {
-                            key: 'notification_system' as keyof NotificationSettings,
-                            label: '시스템 알림',
-                            description: '공지사항, 점검 안내 등',
-                            icon: <AlertTriangle className="w-4 h-4 text-orange-400" />,
-                        },
-                    ]).map(({ key, label, description, icon }) => (
-                        <div
-                            key={key}
-                            className="flex items-center gap-3 p-3 bg-th-card rounded-xl border border-th-border-light"
-                        >
-                            <div className="shrink-0">{icon}</div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm text-th-text font-medium">{label}</p>
-                                <p className="text-[11px] sm:text-xs text-th-text-muted">{description}</p>
+                    {[
+                        { key: 'notification_trade', label: 'Trade Alerts', description: 'BUY/SELL fills, profit/loss, and candle analysis feedback', icon: <TrendingUp className="w-4 h-4 text-green-400" /> },
+                        { key: 'notification_bot_status', label: 'Bot Status', description: 'Bot start/stop and auto-shutdown alerts', icon: <Bot className="w-4 h-4 text-blue-400" /> },
+                        { key: 'notification_pnl_summary', label: 'PnL Summary', description: 'Daily and weekly performance summaries', icon: <TrendingUp className="w-4 h-4 text-purple-400" /> },
+                        { key: 'notification_stock_alert', label: 'Stock Alerts', description: 'Scanner candidates, entry/exit price alerts', icon: <TrendingUp className="w-4 h-4 text-accent" /> },
+                        { key: 'notification_system', label: 'System Updates', description: 'Announcements and maintenance guides', icon: <AlertTriangle className="w-4 h-4 text-orange-400" /> },
+                    ].map((item) => {
+                        const key = item.key as keyof NotificationSettings;
+                        return (
+                            <div key={key} className="flex items-center gap-3 p-3 bg-th-card rounded-xl border border-th-border-light">
+                                <div className="shrink-0">{item.icon}</div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-th-text font-medium">{item.label}</p>
+                                    <p className="text-[11px] sm:text-xs text-th-text-muted">{item.description}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled={!user?.telegram_chat_id || notifSaving}
+                                    onClick={() => handleToggleNotification(key)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${notifSettings[key] ? 'bg-primary' : 'bg-th-hover'} disabled:opacity-40`}
+                                >
+                                    <span className={`inline-block h-4 w-4 rounded-full bg-th-text transition-transform duration-200 ${notifSettings[key] ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
                             </div>
-                            <button
-                                type="button"
-                                disabled={!user?.telegram_chat_id || notifSaving}
-                                onClick={() => handleToggleNotification(key)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed ${
-                                    notifSettings[key]
-                                        ? 'bg-primary'
-                                        : 'bg-th-hover'
-                                }`}
-                            >
-                                <span
-                                    className={`inline-block h-4 w-4 rounded-full bg-white transition-transform duration-200 ${
-                                        notifSettings[key] ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
-                                />
-                            </button>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
@@ -379,21 +320,15 @@ export default function ProfilePage() {
             <div className="glass-panel rounded-2xl p-6 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                     <Clock className="w-4 h-4 text-purple-400" />
-                    <h3 className="text-sm font-semibold text-th-text">정기 분석 알림 주기</h3>
-                    {!user?.telegram_chat_id && (
-                        <span className="text-[10px] sm:text-xs text-th-text-muted ml-auto">텔레그램 연동 후 사용 가능</span>
-                    )}
+                    <h3 className="text-sm font-semibold text-th-text">Analysis Feedback Interval</h3>
                 </div>
-                <p className="text-[11px] sm:text-xs text-th-text-muted mb-3">
-                    캔들 분석 피드백의 전송 주기를 설정합니다. 매매 체결/봇 상태 알림은 항상 즉시 전송됩니다.
-                </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {([
-                        { value: 'realtime', label: '매 캔들', desc: '캔들 마감마다' },
-                        { value: '4h', label: '4시간', desc: '4시간 간격' },
-                        { value: '12h', label: '12시간', desc: '12시간 간격' },
-                        { value: 'daily', label: '1일', desc: '하루 1회' },
-                    ]).map(({ value, label, desc }) => {
+                    {[
+                        { value: 'realtime', label: 'Every Candle' },
+                        { value: '4h', label: '4 Hours' },
+                        { value: '12h', label: '12 Hours' },
+                        { value: 'daily', label: 'Daily' },
+                    ].map(({ value, label }) => {
                         const isSelected = notifSettings.notification_interval === value;
                         return (
                             <button
@@ -401,91 +336,34 @@ export default function ProfilePage() {
                                 type="button"
                                 disabled={!user?.telegram_chat_id || notifSaving}
                                 onClick={() => handleChangeInterval(value)}
-                                className={`p-3 rounded-xl border text-center transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                                    isSelected
-                                        ? 'border-primary bg-primary/10 text-primary'
-                                        : 'border-th-border bg-th-card text-th-text-secondary hover:bg-th-hover'
-                                }`}
+                                className={`p-3 rounded-xl border text-center transition-all ${isSelected ? 'border-primary bg-primary/10 text-primary' : 'border-th-border bg-th-card text-th-text-secondary'} disabled:opacity-40`}
                             >
-                                <p className={`text-sm font-bold ${isSelected ? 'text-primary' : 'text-th-text'}`}>{label}</p>
-                                <p className="text-[10px] sm:text-xs text-th-text-muted mt-0.5">{desc}</p>
+                                <p className="text-sm font-bold">{label}</p>
                             </button>
                         );
                     })}
                 </div>
             </div>
 
-            {/* My Posts */}
-            <div className="glass-panel rounded-2xl p-6">
-                <h2 className="text-base font-bold text-th-text mb-4">내 커뮤니티 게시글</h2>
-
-                {loadingPosts ? (
-                    <LoadingSpinner size="sm" message="불러오는 중..." />
-                ) : myPosts.length === 0 ? (
-                    <div className="text-center py-8">
-                        <p className="text-xs text-th-text-muted mb-3">작성한 게시글이 없습니다.</p>
-                        <Link href="/dashboard/community">
-                            <Button variant="ghost" size="sm">커뮤니티 바로가기</Button>
-                        </Link>
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {myPosts.map((post) => {
-                            const badge = POST_TYPE_BADGE[post.post_type];
-                            return (
-                                <Link
-                                    key={post.id}
-                                    href={`/dashboard/community/post?id=${post.id}`}
-                                    className="flex items-center gap-3 p-3 rounded-xl bg-th-card border border-th-border-light hover:bg-th-hover transition-colors group"
-                                >
-                                    <Badge variant={badge.variant}>{badge.label}</Badge>
-                                    <span className="flex-1 text-sm text-th-text font-medium truncate group-hover:text-primary transition-colors">
-                                        {post.title}
-                                    </span>
-                                    <div className="flex items-center gap-3 text-[11px] sm:text-xs text-th-text-muted shrink-0">
-                                        <span className="flex items-center gap-0.5">
-                                            <Heart className="w-3 h-3" /> {post.like_count}
-                                        </span>
-                                        <span className="flex items-center gap-0.5">
-                                            <MessageCircle className="w-3 h-3" /> {post.comment_count}
-                                        </span>
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-
-            {/* 회원 탈퇴 */}
+            {/* Withdrawal */}
             <div className="mt-10 p-6 bg-red-500/[0.03] border border-red-500/10 rounded-2xl">
-                <h3 className="text-sm font-semibold text-red-400 mb-2">회원 탈퇴</h3>
-                <p className="text-xs text-th-text-muted mb-4">
-                    탈퇴 시 모든 데이터(봇, 거래 기록, API 키 등)가 영구 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
-                </p>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="!text-red-400 hover:!bg-red-500/10"
-                    onClick={() => setShowWithdrawModal(true)}
-                >
-                    회원 탈퇴
-                </Button>
+                <h3 className="text-sm font-semibold text-red-400 mb-2">Delete Account</h3>
+                <Button variant="ghost" size="sm" className="!text-red-400 hover:!bg-red-500/10" onClick={() => setShowWithdrawModal(true)}>Withdraw Account</Button>
             </div>
 
             <DeleteConfirmationModal
                 isOpen={showWithdrawModal}
-                title="회원 탈퇴"
-                message="정말로 탈퇴하시겠습니까? 모든 데이터가 영구 삭제되며 복구할 수 없습니다."
+                title="Withdraw Account"
+                message="Are you sure you want to delete your account? This cannot be undone."
                 loading={withdrawLoading}
                 onConfirm={async () => {
                     setWithdrawLoading(true);
                     try {
                         await withdrawAccount();
-                        toast.success('회원 탈퇴가 완료되었습니다.');
+                        toast.success('Account deleted.');
                         logout();
                     } catch {
-                        toast.error('탈퇴 처리에 실패했습니다.');
+                        toast.error('Failed to withdraw.');
                     } finally {
                         setWithdrawLoading(false);
                         setShowWithdrawModal(false);

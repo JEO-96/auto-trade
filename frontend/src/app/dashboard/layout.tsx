@@ -33,7 +33,7 @@ export default function DashboardLayout({
                 {/* Mobile Menu Toggle - 닫힌 상태에서만 표시 */}
                 <button
                     onClick={() => setIsMobileMenuOpen(true)}
-                    className={`lg:hidden fixed top-4 right-4 z-50 p-2.5 bg-surface/80 backdrop-blur-xl border border-white/[0.06] rounded-xl text-th-text-secondary hover:text-th-text hover:bg-surface hover:border-white/[0.1] active:scale-95 transition-all duration-200 ${isMobileMenuOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
+                    className={`lg:hidden fixed top-4 right-4 z-50 p-2.5 bg-surface/80 backdrop-blur-xl border border-th-border-light rounded-xl text-th-text-secondary hover:text-th-text hover:bg-surface hover:border-white/[0.1] active:scale-95 transition-all duration-200 ${isMobileMenuOpen ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 scale-100'}`}
                     aria-label="메뉴 열기"
                 >
                     <Menu className="w-5 h-5" />
@@ -56,7 +56,7 @@ export default function DashboardLayout({
                                 {/* 사이드바 내부 닫기 버튼 */}
                                 <button
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="lg:hidden p-2 rounded-lg text-th-text-muted hover:text-th-text hover:bg-white/[0.06] active:scale-95 transition-all duration-200"
+                                    className="lg:hidden p-2 rounded-lg text-th-text-muted hover:text-th-text hover:bg-th-hover-emphasis active:scale-95 transition-all duration-200"
                                     aria-label="메뉴 닫기"
                                 >
                                     <X className="w-5 h-5" />
@@ -87,9 +87,9 @@ export default function DashboardLayout({
                     <div className="p-3 mt-auto border-t border-white/[0.04]">
                         <Link
                             href="/dashboard/profile"
-                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.04] transition-colors group"
+                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-th-card transition-colors group"
                         >
-                            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-xs font-bold border border-white/[0.06] text-white/80">
+                            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-xs font-bold border border-th-border text-th-text-secondary">
                                 {initials}
                             </div>
                             <div className="flex-1 min-w-0">

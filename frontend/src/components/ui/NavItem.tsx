@@ -15,8 +15,8 @@ export default function NavItem({ href, icon, label  }: NavItemProps) {
 
     return (
         <Link href={href} className={`group relative flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
-            ? 'bg-white/[0.06] text-th-text'
-            : 'text-th-text-muted hover:text-th-text hover:bg-white/[0.03]'
+            ? 'bg-th-hover-emphasis text-th-text'
+            : 'text-th-text-muted hover:text-th-text hover:bg-th-hover'
             }`}>
             <div className={`transition-colors ${isActive ? 'text-primary' : ''}`}>
                 {icon}

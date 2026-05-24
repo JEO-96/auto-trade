@@ -13,9 +13,9 @@ const buttonVariants = cva(
                 danger:
                     'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 active:scale-[0.98]',
                 ghost:
-                    'text-gray-400 hover:text-white hover:bg-white/[0.03] active:bg-white/[0.06] [.light_&]:text-th-text-secondary [.light_&]:hover:text-th-text [.light_&]:hover:bg-th-hover [.light_&]:active:bg-th-border',
+                    'text-th-text-muted hover:text-th-text hover:bg-th-hover active:bg-th-hover-emphasis [.light_&]:text-th-text-secondary [.light_&]:hover:text-th-text [.light_&]:hover:bg-th-hover [.light_&]:active:bg-th-border',
                 outline:
-                    'border border-white/[0.08] text-gray-400 hover:text-white hover:bg-white/[0.04] hover:border-white/[0.12] active:scale-[0.98] [.light_&]:border-th-border [.light_&]:text-th-text-secondary [.light_&]:hover:text-th-text [.light_&]:hover:bg-th-hover [.light_&]:hover:border-th-border',
+                    'border border-th-border-light text-th-text-muted hover:text-th-text hover:bg-th-card hover:border-th-border active:scale-[0.98] [.light_&]:border-th-border [.light_&]:text-th-text-secondary [.light_&]:hover:text-th-text [.light_&]:hover:bg-th-hover [.light_&]:hover:border-th-border',
                 secondary:
                     'bg-secondary/10 text-secondary hover:bg-secondary/20 border border-secondary/20 active:scale-[0.98]',
             },

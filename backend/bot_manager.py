@@ -371,6 +371,7 @@ def _build_tick_feedback(
 def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
     """봇 루프 시작에 필요한 설정, 전략, 실행 엔진, 포지션을 초기화.
     실패 시 None 반환, 성공 시 초기화된 상태 dict 반환."""
+    start_time = datetime.now()
     cfg = _load_bot_config(bot_config_id)
     if cfg is None:
         set_bot_active(bot_config_id, False)
@@ -437,6 +438,8 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
     active_positions: dict = load_positions_from_db(bot_config_id)
     cooldown_until: dict[str, datetime] = {}
 
+    # Sync logic: Exchange is Truth Source
+    # Drift detection: 1% difference triggers sync or manual intervention log
     for sym, pos in active_positions.items():
         invested: float = pos['entry_price'] * pos['position_amount']
         liquid_capital -= invested
@@ -453,6 +456,16 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
         for sym, info in holdings.items():
             avg_price: float = info['avg_buy_price']
             amount: float = info['amount']
+
+            # Fallback entry price logic for unmanaged holdings
+            if avg_price <= 0:
+                try:
+                    ticker = execution.exchange.fetch_ticker(sym)
+                    avg_price = float(ticker.get('last', 0))
+                    logger.info("[Bot %d] %s has 0 avg_price. Using market price %.0f as fallback.", bot_config_id, sym, avg_price)
+                except Exception:
+                    avg_price = 0.0
+
             sl = avg_price * (1 - sl_pct) if sl_pct else avg_price * 0.9
             # 트레일링/무제한 TP 모드: 절대 닿지 않을 sentinel 저장 (NOT NULL 대응)
             if use_trailing_init or tp_pct is None:
@@ -461,13 +474,16 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
                 tp = avg_price * (1 + tp_pct)
 
             if sym in active_positions:
-                # 거래소가 진실의 근원 — 사용자가 봇 외부에서 추가 매수/일부 매도한
-                # 경우 DB의 entry/qty가 stale해질 수 있으므로 거래소 값으로 동기화.
                 existing = active_positions[sym]
-                entry_changed = abs(existing.get('entry_price', 0) - avg_price) > 1e-6
-                qty_changed = abs(existing.get('position_amount', 0) - amount) > 1e-8
+                # Drift check (1%)
+                db_qty = existing.get('position_amount', 0)
+                qty_drift = abs(db_qty - amount) / amount if amount > 0 else 0
 
-                if entry_changed or qty_changed:
+                if qty_drift > 0.01:
+                    logger.warning("[Bot %d] %s drift detected: DB=%.8f, Exchange=%.8f (%.2f%%)",
+                                   bot_config_id, sym, db_qty, amount, qty_drift * 100)
+
+                if qty_drift > 0:
                     logger.info(
                         "[Bot %d] Syncing %s with exchange: entry %.4f→%.4f, qty %.8f→%.8f",
                         bot_config_id, sym,
@@ -539,8 +555,12 @@ def _initialize_bot_engine(bot_config_id: int) -> Optional[dict]:
         "active_positions": active_positions,
         "cooldown_until": cooldown_until,
         "detected_holdings": detected_holdings,
+        "start_time": start_time,
     }
 
+def _check_grace_period(start_time: datetime, minutes: int = 5) -> bool:
+    """Returns True if the bot is still within the grace period (no new entries allowed)."""
+    return (datetime.now() - start_time).total_seconds() < (minutes * 60)
 
 async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None:
     logger.info("--- [Bot %d] Engine Started (Portfolio Mode) ---", bot_config_id)
@@ -562,6 +582,7 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
     execution: ExecutionEngine = init["execution"]
     active_positions: dict = init["active_positions"]
     cooldown_until: dict[str, datetime] = init["cooldown_until"]
+    start_time: datetime = init["start_time"]
 
     consecutive_errors: int = 0
     last_feedback_candle_ts: object = None  # 마지막으로 피드백을 보낸 캔들의 타임스탬프
@@ -776,15 +797,19 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
                         elif symbol in cooldown_until and datetime.now() < cooldown_until[symbol]:
                             entry_skipped_reason = "손절 쿨다운 중"
                         else:
-                            liquid_capital, new_position = _process_symbol_entry(
-                                symbol, df, curr_price, current_idx, strategy,
-                                execution, bot_config_id, user_id,
-                                total_equity, liquid_capital, active_positions, paper_trading,
-                            )
-                            if new_position:
-                                trade_occurred = True
-                                active_positions[symbol] = new_position
-                                cooldown_until.pop(symbol, None)
+                            # Grace Period Check: Ensure no NEW entries for the first 5 mins of a bot's lifecycle.
+                            if _check_grace_period(start_time, 5):
+                                entry_skipped_reason = "Grace Period (초기 5분 진입 제한)"
+                            else:
+                                liquid_capital, new_position = _process_symbol_entry(
+                                    symbol, df, curr_price, current_idx, strategy,
+                                    execution, bot_config_id, user_id,
+                                    total_equity, liquid_capital, active_positions, paper_trading,
+                                )
+                                if new_position:
+                                    trade_occurred = True
+                                    active_positions[symbol] = new_position
+                                    cooldown_until.pop(symbol, None)
 
                         # 미보유 상태 피드백 (진입 조건 상세 포함)
                         conditions: list[str] = []

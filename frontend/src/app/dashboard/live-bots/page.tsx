@@ -109,7 +109,7 @@ export default function LiveBotsPage() {
                                 {groupBots.map((bot, idx) => (
                                     <div
                                         key={`${strategyKey}-${idx}`}
-                                        className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-th-border-light"
+                                        className="flex items-center gap-3 p-3 rounded-xl bg-th-card border border-th-border-light"
                                     >
                                         {/* 상태 표시 */}
                                         <div className="relative">

@@ -9,7 +9,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: int
     nickname: Optional[str] = None
     is_active: bool
@@ -19,6 +19,7 @@ class UserResponse(UserBase):
     notification_bot_status: bool = True
     notification_system: bool = True
     notification_stock_alert: bool = False
+    notification_pnl_summary: bool = True
     notification_interval: str = "realtime"
 
     class Config:
@@ -255,6 +256,10 @@ class BacktestResponse(BaseModel):
     initial_capital: Optional[float] = None
     final_capital: Optional[float] = None
     total_trades: Optional[int] = None
+    win_rate: Optional[float] = None
+    max_drawdown: Optional[float] = None
+    sharpe_ratio: Optional[float] = None
+    profit_factor: Optional[float] = None
     trades: Optional[List[BacktestTradeResponse]] = None
     equity_curve: Optional[List[EquityPoint]] = None
     price_changes: Optional[dict[str, List[PriceChangePoint]]] = None
@@ -335,6 +340,7 @@ class NotificationSettings(BaseModel):
     notification_bot_status: bool = True
     notification_system: bool = True
     notification_stock_alert: bool = False
+    notification_pnl_summary: bool = True
     notification_interval: str = "realtime"  # realtime, 4h, 12h, daily
 
 

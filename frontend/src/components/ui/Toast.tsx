@@ -100,7 +100,7 @@ function ToastItem({ toast: t, onDismiss }: { toast: Toast; onDismiss: (id: numb
             <span className="text-sm font-medium flex-1">{t.message}</span>
             <button
                 onClick={handleDismiss}
-                className="shrink-0 p-0.5 rounded hover:bg-white/10 transition-colors"
+                className="shrink-0 p-0.5 rounded hover:bg-th-hover-emphasis transition-colors"
                 aria-label="닫기"
             >
                 <X className="w-3.5 h-3.5" />

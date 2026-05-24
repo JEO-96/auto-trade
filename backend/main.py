@@ -19,7 +19,7 @@ import database
 import models
 import scalping_alert_manager
 from okx_futures.bot import OKXFuturesBot
-from routers import admin, auth, backtest, bots, community, keys, portfolio_backtest, scalping_alerts, strategies
+from routers import admin, auth, backtest, bots, community, keys, portfolio_backtest, scalping_alerts, strategies, optimization
 from routers import settings as settings_router
 from settings import settings
 
@@ -110,6 +110,7 @@ app.include_router(scalping_alerts.router)
 app.include_router(community.router)
 app.include_router(strategies.router)
 app.include_router(settings_router.router)
+app.include_router(optimization.router)
 
 
 @app.exception_handler(Exception)

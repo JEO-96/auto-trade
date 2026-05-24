@@ -23,6 +23,10 @@ export interface BacktestResult {
     initial_capital: number;
     final_capital: number;
     total_trades: number;
+    win_rate?: number;
+    max_drawdown?: number;
+    sharpe_ratio?: number;
+    profit_factor?: number;
     trades: BacktestTrade[];
     equity_curve?: EquityCurvePoint[];
     price_changes?: Record<string, PriceChangePoint[]>;
@@ -93,11 +97,34 @@ export interface BacktestHistoryDetail extends BacktestHistoryItem {
     result_data: BacktestResult | null;
 }
 
-export interface RunBacktestResponse {
-    status: 'running' | 'success';
-    task_id?: string;
-    message?: string;
-    [key: string]: unknown;
+export interface OptimizationRange {
+    start: number;
+    stop: number;
+    step: number;
+}
+
+export interface OptimizationRequest extends Omit<BacktestFormParams, 'custom_params'> {
+    optimization_params: Record<string, OptimizationRange>;
+    max_combinations?: number;
+}
+
+export interface OptimizationResultItem {
+    params: Record<string, number>;
+    metrics: {
+        total_return: number;
+        cagr: number;
+        max_drawdown: number;
+        sharpe: number;
+        total_trades: number;
+        win_rate: number;
+    };
+}
+
+export interface OptimizationTaskStatus {
+    status: 'running' | 'completed' | 'failed';
+    progress: number;
+    message: string;
+    results?: OptimizationResultItem[];
 }
 
 // ──────────────────────────────────────────────

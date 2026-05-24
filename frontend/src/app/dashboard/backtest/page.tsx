@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
+import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Pencil, Check, ArrowLeft, Save, Sparkles, Calculator, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Play, Activity, CheckCircle2, TrendingUp, TrendingDown, Settings, History, Share2, X, Trash2, Pencil, Check, ArrowLeft, Save } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -12,14 +13,79 @@ import SymbolPicker from '@/components/ui/SymbolPicker';
 import DeleteConfirmationModal from '@/components/modals/DeleteConfirmationModal';
 import { BACKTEST_POLL_INTERVAL_MS, TRADE_SIDE, TRADE_SIDE_LABELS, getStrategyLabel, getStrategyTimeframe, TIMEFRAME_LABEL_MAP, STRATEGY_TIMEFRAME_TABS, filterStrategiesByTimeframe, STRATEGY_DEFAULTS } from '@/lib/constants';
 import { useMarkets } from '@/lib/useMarkets';
-import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle } from '@/lib/api/backtest';
+import { runPortfolioBacktest, getBacktestStatus, getBacktestHistory, getBacktestHistoryDetail, shareBacktestToCommunity, deleteBacktestHistory, updateBacktestHistoryTitle, startOptimization, getOptimizationStatus } from '@/lib/api/backtest';
 import { createStrategyFromBacktest } from '@/lib/api/strategies';
 import { getBacktestSettings } from '@/lib/api/settings';
 import { useStrategies } from '@/lib/useStrategies';
 import { getErrorMessage, formatKRW } from '@/lib/utils';
 import BacktestComparisonChart from '@/components/BacktestComparisonChart';
+import StatCard from '@/components/ui/StatCard';
 import ParameterTuningPanel, { TuningState, DEFAULT_TUNING_STATE } from '@/components/backtest/ParameterTuningPanel';
 import type { BacktestResult, BacktestTrade, EquityCurvePoint, BacktestHistoryItem } from '@/types/backtest';
+
+interface OptimizationRange {
+    start: number;
+    stop: number;
+    step: number;
+    enabled: boolean;
+}
+
+interface OptimizationResultItem {
+    params: Record<string, number>;
+    metrics: {
+        total_return: number;
+        cagr: number;
+        max_drawdown: number;
+        sharpe: number;
+        total_trades: number;
+        win_rate: number;
+    };
+}
+
+function OptimizationInputGroup({ 
+    label, 
+    paramKey, 
+    range, 
+    onToggle, 
+    onChange 
+}: { 
+    label: string, 
+    paramKey: string, 
+    range: OptimizationRange, 
+    onToggle: (key: string) => void,
+    onChange: (key: string, field: keyof OptimizationRange, val: number) => void
+}) {
+    return (
+        <div className="p-3 rounded-xl bg-th-card border border-th-border-light">
+            <div className="flex items-center justify-between mb-3">
+                <label className="text-xs font-semibold text-th-text">{label}</label>
+                <button
+                    type="button"
+                    onClick={() => onToggle(paramKey)}
+                    className={`w-7 h-4 rounded-full transition-colors relative ${range.enabled ? 'bg-primary' : 'bg-th-hover-emphasis'}`}
+                >
+                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${range.enabled ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                </button>
+            </div>
+            {range.enabled && (
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                        <label className="text-[9px] text-th-text-muted uppercase">Start (%)</label>
+                        <input type="number" step="0.1" value={range.start} onChange={e => onChange(paramKey, 'start', Number(e.target.value))} className="w-full bg-th-input border border-th-border rounded-lg px-2 py-1 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[9px] text-th-text-muted uppercase">Stop (%)</label>
+                        <input type="number" step="0.1" value={range.stop} onChange={e => onChange(paramKey, 'stop', Number(e.target.value))} className="w-full bg-th-input border border-th-border rounded-lg px-2 py-1 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[9px] text-th-text-muted uppercase">Step (%)</label>
+                        <input type="number" step="0.1" value={range.step} onChange={e => onChange(paramKey, 'step', Number(e.target.value))} className="w-full bg-th-input border border-th-border rounded-lg px-2 py-1 text-xs" />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function BacktestPage() {
     const toast = useToast();
@@ -67,6 +133,27 @@ export default function BacktestPage() {
 
     // 타임프레임 필터
     const [backtestTfFilter, setBacktestTfFilter] = useState('all');
+
+    // 최적화 모드 상태
+    const [isOptimizationMode, setIsOptimizationMode] = useState(false);
+    const [optParams, setOptParams] = useState<Record<string, OptimizationRange>>({
+        sl_pct: { start: 1, stop: 5, step: 1, enabled: false },
+        tp_pct: { start: 2, stop: 10, step: 2, enabled: false },
+    });
+    const [optimizationResults, setOptimizationResults] = useState<OptimizationResultItem[]>([]);
+
+    const totalCombinations = useMemo(() => {
+        let total = 1;
+        let activeCount = 0;
+        Object.values(optParams).forEach(range => {
+            if (range.enabled) {
+                const count = Math.max(1, Math.floor((range.stop - range.start) / range.step) + 1);
+                total *= count;
+                activeCount++;
+            }
+        });
+        return activeCount > 0 ? total : 0;
+    }, [optParams]);
 
     // 인라인 제목 수정
     const [editingTitleId, setEditingTitleId] = useState<number | null>(null);
@@ -310,6 +397,20 @@ export default function BacktestPage() {
         });
     };
 
+    const toggleOptParam = (key: string) => {
+        setOptParams(prev => ({
+            ...prev,
+            [key]: { ...prev[key], enabled: !prev[key].enabled }
+        }));
+    };
+
+    const updateOptParam = (key: string, field: keyof OptimizationRange, val: number) => {
+        setOptParams(prev => ({
+            ...prev,
+            [key]: { ...prev[key], [field]: val }
+        }));
+    };
+
     const pollStatus = async (taskId: string) => {
         // 기존 폴링 인터벌이 있으면 정리 (중복 방지)
         if (intervalRef.current) clearInterval(intervalRef.current);
@@ -337,6 +438,30 @@ export default function BacktestPage() {
         }, BACKTEST_POLL_INTERVAL_MS);
     };
 
+    const pollOptimizationStatus = async (taskId: string) => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = setInterval(async () => {
+            try {
+                const data = await getOptimizationStatus(taskId);
+                setProgress(data.progress || 0);
+                setProgressMessage(data.message || '최적화 진행 중...');
+
+                if (data.status === 'completed') {
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                    setOptimizationResults(data.results || []);
+                    setLoading(false);
+                    toast.success('최적화가 완료되었습니다.');
+                } else if (data.status === 'failed') {
+                    if (intervalRef.current) clearInterval(intervalRef.current);
+                    setError(data.message || '최적화 중 오류가 발생했습니다.');
+                    setLoading(false);
+                }
+            } catch {
+                if (intervalRef.current) clearInterval(intervalRef.current);
+            }
+        }, BACKTEST_POLL_INTERVAL_MS);
+    };
+
     const runBacktest = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -344,6 +469,40 @@ export default function BacktestPage() {
         setResult(null);
         setProgress(0);
         setProgressMessage('백테스트 작업을 시작합니다...');
+        setOptimizationResults([]);
+
+        if (isOptimizationMode) {
+            try {
+                const optimization_params: Record<string, any> = {};
+                Object.entries(optParams).forEach(([key, range]) => {
+                    if (range.enabled) {
+                        optimization_params[key] = {
+                            start: range.start / 100,
+                            stop: range.stop / 100,
+                            step: range.step / 100,
+                        };
+                    }
+                });
+
+                const payload = {
+                    symbols: form.symbols,
+                    timeframe: form.timeframe,
+                    strategy_name: form.strategy_name,
+                    start_date: form.start_date,
+                    end_date: form.end_date,
+                    initial_capital: Number(form.initial_capital),
+                    commission_rate: form.commission_rate_pct / 100,
+                    optimization_params,
+                };
+
+                const data = await startOptimization(payload);
+                if (data.task_id) pollOptimizationStatus(data.task_id);
+            } catch (err) {
+                setError(getErrorMessage(err, '최적화 시작 실패'));
+                setLoading(false);
+            }
+            return;
+        }
 
         try {
             const payload: Record<string, unknown> = {
@@ -1072,7 +1231,120 @@ export default function BacktestPage() {
                             >
                                 <Play className="w-4 h-4 fill-white" /> 백테스트 실행
                             </Button>
-                        </form>
+                    {/* 최적화 모드 섹션 */}
+                    <div className="mt-8 pt-8 border-t border-th-border-light">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 rounded-lg bg-secondary/10 border border-secondary/20">
+                                    <Sparkles className="w-4 h-4 text-secondary" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-th-text">파라미터 최적화</h3>
+                                    <p className="text-[11px] text-th-text-muted">다양한 설정 조합 중 최적의 성과를 찾아냅니다.</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsOptimizationMode(!isOptimizationMode)}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${isOptimizationMode ? 'bg-secondary text-white shadow-lg shadow-secondary/25' : 'bg-th-card border border-th-border text-th-text-muted hover:text-th-text'}`}
+                            >
+                                {isOptimizationMode ? '최적화 모드 끄기' : '최적화 모드 활성화'}
+                            </button>
+                        </div>
+
+                        {isOptimizationMode && (
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <OptimizationInputGroup label="손절률 (SL %)" paramKey="sl_pct" range={optParams.sl_pct} onToggle={toggleOptParam} onChange={updateOptParam} />
+                                    <OptimizationInputGroup label="익절률 (TP %)" paramKey="tp_pct" range={optParams.tp_pct} onToggle={toggleOptParam} onChange={updateOptParam} />
+                                </div>
+
+                                <div className="p-4 rounded-2xl bg-th-card border border-th-border-light flex flex-wrap items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-full bg-primary/10">
+                                            <Calculator className="w-4 h-4 text-primary" />
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] text-th-text-muted uppercase block">총 테스트 조합</span>
+                                            <span className="text-lg font-bold text-th-text">{totalCombinations.toLocaleString()} <span className="text-xs font-normal text-th-text-muted">combinations</span></span>
+                                        </div>
+                                    </div>
+                                    {totalCombinations > 5000 && (
+                                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                                            <AlertTriangle className="w-4 h-4" />
+                                            <span className="text-[11px] font-semibold text-orange-400">조합이 너무 많아 실행이 지연될 수 있습니다.</span>
+                                        </div>
+                                    )}
+                                    <Button 
+                                        type="submit" 
+                                        loading={loading} 
+                                        disabled={loading || totalCombinations === 0}
+                                        className="sm:w-auto w-full bg-secondary hover:bg-secondary/90 text-white"
+                                    >
+                                        <Sparkles className="w-4 h-4" /> 최적화 실행
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 최적화 결과 테이블 */}
+                    {optimizationResults.length > 0 && !loading && (
+                        <div className="mt-8 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-bold text-th-text flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4 text-secondary" />
+                                    Top {optimizationResults.length} 최적화 결과
+                                </h3>
+                            </div>
+                            <div className="overflow-x-auto rounded-2xl border border-th-border-light">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-th-card border-b border-th-border-light text-[10px] uppercase text-th-text-muted font-bold">
+                                            <th className="px-4 py-3">Parameters</th>
+                                            <th className="px-4 py-3 text-right text-secondary">Return</th>
+                                            <th className="px-4 py-3 text-right">MDD</th>
+                                            <th className="px-4 py-3 text-right">Sharpe</th>
+                                            <th className="px-4 py-3 text-right">Win Rate</th>
+                                            <th className="px-4 py-3 text-right">Trades</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {optimizationResults.map((res, idx) => (
+                                            <tr key={idx} className="bg-th-card/50 hover:bg-th-hover transition-colors border-b border-white/[0.03] group">
+                                                <td className="px-4 py-3">
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {Object.entries(res.params).map(([k, v]) => (
+                                                            <span key={k} className="text-[10px] px-1.5 py-0.5 rounded-md bg-th-card border border-th-border-light text-th-text-secondary">
+                                                                <span className="text-th-text-muted">{k}:</span> {(v*100).toFixed(1)}%
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-xs font-bold text-secondary font-mono">
+                                                    {(res.metrics.total_return * 100).toFixed(2)}%
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-xs text-red-400 font-mono">
+                                                    {(res.metrics.max_drawdown * 100).toFixed(2)}%
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-xs text-th-text font-mono">
+                                                    {res.metrics.sharpe.toFixed(2)}
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-xs text-th-text font-mono">
+                                                    {(res.metrics.win_rate * 100).toFixed(1)}%
+                                                </td>
+                                                <td className="px-4 py-3 text-right text-xs text-th-text-muted font-mono">
+                                                    {res.metrics.total_trades}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                </form>
                     </div>
                 </div>
 
@@ -1157,6 +1429,30 @@ export default function BacktestPage() {
                                         {result.total_trades}<span className="text-sm text-th-text-muted ml-1 font-medium">회</span>
                                     </p>
                                 </div>
+                            </div>
+
+                            {/* Advanced Metrics */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <StatCard
+                                    title="승률"
+                                    value={`${((result.win_rate || 0) * 100).toFixed(1)}%`}
+                                    accentColor="from-emerald-400/10"
+                                />
+                                <StatCard
+                                    title="MDD"
+                                    value={`${((result.max_drawdown || 0) * 100).toFixed(2)}%`}
+                                    accentColor="from-red-400/10"
+                                />
+                                <StatCard
+                                    title="Sharpe"
+                                    value={(result.sharpe_ratio || 0).toFixed(2)}
+                                    accentColor="from-primary/10"
+                                />
+                                <StatCard
+                                    title="Profit Factor"
+                                    value={(result.profit_factor || 0).toFixed(2)}
+                                    accentColor="from-secondary/10"
+                                />
                             </div>
 
                             {/* Equity Curve */}

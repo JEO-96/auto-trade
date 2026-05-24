@@ -76,14 +76,14 @@ export default function RiskDisclaimerModal({ onConfirm, onCancel }: RiskDisclai
                 <div className="flex gap-3 p-6 pt-2">
                     <button
                         onClick={onCancel}
-                        className="flex-1 py-2.5 rounded-xl border border-white/[0.06] text-sm font-medium text-th-text-secondary hover:bg-white/[0.03] transition-colors"
+                        className="flex-1 py-2.5 rounded-xl border border-th-border text-sm font-medium text-th-text-secondary hover:bg-th-hover transition-colors"
                     >
                         취소
                     </button>
                     <button
                         onClick={onConfirm}
                         disabled={!allChecked}
-                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-primary hover:bg-primary-dark text-white"
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-primary hover:bg-primary-dark text-th-text"
                     >
                         동의하고 가동
                     </button>

@@ -18,6 +18,7 @@ class User(Base):
     notification_bot_status = Column(Boolean, default=True)  # 봇 시작/정지 알림
     notification_system = Column(Boolean, default=True)      # 시스템/공지 알림
     notification_stock_alert = Column(Boolean, default=False)  # 주식 추천/스캐너 알림
+    notification_pnl_summary = Column(Boolean, default=True)  # Daily/Weekly PnL Summary 알림
     notification_interval = Column(String, default="realtime")  # 정기 피드백 주기: realtime, 4h, 12h, daily
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False) # 관리자 여부

@@ -81,7 +81,7 @@ export default function RegisterEmailPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="w-full py-3 rounded-lg bg-primary text-th-text font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         {loading ? '등록 중...' : '가입 완료'}
                     </button>

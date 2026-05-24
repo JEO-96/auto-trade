@@ -66,14 +66,14 @@ export default function ParameterTuningPanel({ state, onChange, onSyncDefaults, 
                     if (!enabled) onSyncDefaults(strategyName);
                     onChange({ enabled: !enabled });
                 }}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-th-hover transition-colors"
             >
                 <span className="flex items-center gap-2 text-xs font-semibold text-th-text-secondary">
                     <Settings className="w-3.5 h-3.5" />
                     파라미터 튜닝
                 </span>
-                <div className={`w-8 h-4.5 rounded-full transition-colors relative ${enabled ? 'bg-primary' : 'bg-white/10'}`}>
-                    <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                <div className={`w-8 h-4.5 rounded-full transition-colors relative ${enabled ? 'bg-primary' : 'bg-th-hover-emphasis'}`}>
+                    <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-th-text shadow transition-transform ${enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
                 </div>
             </button>
             {enabled && (
@@ -85,14 +85,14 @@ export default function ParameterTuningPanel({ state, onChange, onSyncDefaults, 
                             <button
                                 type="button"
                                 onClick={() => onChange({ trailing: false })}
-                                className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${!trailing ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-white/[0.02] text-th-text-muted border border-white/[0.06] hover:text-th-text'}`}
+                                className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${!trailing ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-th-card text-th-text-muted border border-th-border hover:text-th-text'}`}
                             >
                                 고정 SL/TP
                             </button>
                             <button
                                 type="button"
                                 onClick={() => onChange({ trailing: true })}
-                                className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${trailing ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-white/[0.02] text-th-text-muted border border-white/[0.06] hover:text-th-text'}`}
+                                className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${trailing ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-th-card text-th-text-muted border border-th-border hover:text-th-text'}`}
                             >
                                 트레일링 스탑
                             </button>
@@ -114,7 +114,7 @@ export default function ParameterTuningPanel({ state, onChange, onSyncDefaults, 
                             step="0.5"
                             value={sl}
                             onChange={(e) => onChange({ sl: Number(e.target.value) })}
-                            className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-red-400 cursor-pointer"
+                            className="w-full h-1.5 rounded-full appearance-none bg-th-hover-emphasis accent-red-400 cursor-pointer"
                         />
                         <div className="flex justify-between text-[9px] text-th-text-muted mt-0.5">
                             <span>0.5%</span>
@@ -136,7 +136,7 @@ export default function ParameterTuningPanel({ state, onChange, onSyncDefaults, 
                                 step="1"
                                 value={tp}
                                 onChange={(e) => onChange({ tp: Number(e.target.value) })}
-                                className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-emerald-400 cursor-pointer"
+                                className="w-full h-1.5 rounded-full appearance-none bg-th-hover-emphasis accent-emerald-400 cursor-pointer"
                             />
                             <div className="flex justify-between text-[9px] text-th-text-muted mt-0.5">
                                 <span>1%</span>
@@ -146,7 +146,7 @@ export default function ParameterTuningPanel({ state, onChange, onSyncDefaults, 
                     )}
 
                     {trailing && (
-                        <p className="text-[10px] sm:text-xs text-th-text-muted bg-white/[0.02] rounded-lg px-3 py-2">
+                        <p className="text-[10px] sm:text-xs text-th-text-muted bg-th-card rounded-lg px-3 py-2">
                             트레일링 모드: 최고가 대비 {sl.toFixed(1)}% 하락 시 청산. 익절 목표 없이 추세를 끝까지 추종합니다.
                         </p>
                     )}
@@ -156,39 +156,39 @@ export default function ParameterTuningPanel({ state, onChange, onSyncDefaults, 
                         <label className="text-[10px] sm:text-xs text-th-text-muted font-medium block uppercase tracking-wider">진입 조건 설정</label>
 
                         {/* RSI 필터 */}
-                        <div className={`rounded-lg border transition-colors ${useRsiFilter ? 'border-blue-500/20 bg-blue-500/[0.03]' : 'border-th-border-light bg-white/[0.01]'}`}>
+                        <div className={`rounded-lg border transition-colors ${useRsiFilter ? 'border-blue-500/20 bg-blue-500/[0.03]' : 'border-th-border-light bg-th-card/30'}`}>
                             <button type="button" onClick={() => onChange({ useRsiFilter: !useRsiFilter })}
                                 className="w-full flex items-center justify-between px-3 py-2">
                                 <span className={`text-[11px] sm:text-xs font-semibold ${useRsiFilter ? 'text-blue-400' : 'text-th-text-muted'}`}>RSI 필터</span>
-                                <div className={`w-7 h-4 rounded-full transition-colors relative ${useRsiFilter ? 'bg-blue-500' : 'bg-white/10'}`}>
-                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${useRsiFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                                <div className={`w-7 h-4 rounded-full transition-colors relative ${useRsiFilter ? 'bg-blue-500' : 'bg-th-hover-emphasis'}`}>
+                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-th-text shadow transition-transform ${useRsiFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
                                 </div>
                             </button>
                             {useRsiFilter && (
                                 <div className="px-3 pb-2.5 space-y-2">
                                     <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-th-text-muted">기간</span><span className="text-[10px] sm:text-xs font-bold text-blue-400 font-mono">{rsiPeriod}</span></div>
-                                        <input type="range" min="7" max="30" step="1" value={rsiPeriod} onChange={(e) => onChange({ rsiPeriod: Number(e.target.value) })} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-blue-400 cursor-pointer" /></div>
+                                        <input type="range" min="7" max="30" step="1" value={rsiPeriod} onChange={(e) => onChange({ rsiPeriod: Number(e.target.value) })} className="w-full h-1 rounded-full appearance-none bg-th-hover-emphasis accent-blue-400 cursor-pointer" /></div>
                                     <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-th-text-muted">진입 기준</span><span className="text-[10px] sm:text-xs font-bold text-blue-400 font-mono">{rsiThreshold}</span></div>
-                                        <input type="range" min="30" max="80" step="1" value={rsiThreshold} onChange={(e) => onChange({ rsiThreshold: Number(e.target.value) })} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-blue-400 cursor-pointer" /></div>
+                                        <input type="range" min="30" max="80" step="1" value={rsiThreshold} onChange={(e) => onChange({ rsiThreshold: Number(e.target.value) })} className="w-full h-1 rounded-full appearance-none bg-th-hover-emphasis accent-blue-400 cursor-pointer" /></div>
                                     <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-th-text-muted">과매수 상한</span><span className="text-[10px] sm:text-xs font-bold text-blue-400 font-mono">{rsiUpperLimit}</span></div>
-                                        <input type="range" min="65" max="95" step="1" value={rsiUpperLimit} onChange={(e) => onChange({ rsiUpperLimit: Number(e.target.value) })} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-blue-400 cursor-pointer" /></div>
+                                        <input type="range" min="65" max="95" step="1" value={rsiUpperLimit} onChange={(e) => onChange({ rsiUpperLimit: Number(e.target.value) })} className="w-full h-1 rounded-full appearance-none bg-th-hover-emphasis accent-blue-400 cursor-pointer" /></div>
                                 </div>
                             )}
                         </div>
 
                         {/* MACD 필터 */}
-                        <div className={`rounded-lg border transition-colors ${useMacdFilter ? 'border-cyan-500/20 bg-cyan-500/[0.03]' : 'border-th-border-light bg-white/[0.01]'}`}>
+                        <div className={`rounded-lg border transition-colors ${useMacdFilter ? 'border-cyan-500/20 bg-cyan-500/[0.03]' : 'border-th-border-light bg-th-card/30'}`}>
                             <button type="button" onClick={() => onChange({ useMacdFilter: !useMacdFilter })}
                                 className="w-full flex items-center justify-between px-3 py-2">
                                 <span className={`text-[11px] sm:text-xs font-semibold ${useMacdFilter ? 'text-cyan-400' : 'text-th-text-muted'}`}>MACD 필터</span>
-                                <div className={`w-7 h-4 rounded-full transition-colors relative ${useMacdFilter ? 'bg-cyan-500' : 'bg-white/10'}`}>
-                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${useMacdFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                                <div className={`w-7 h-4 rounded-full transition-colors relative ${useMacdFilter ? 'bg-cyan-500' : 'bg-th-hover-emphasis'}`}>
+                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-th-text shadow transition-transform ${useMacdFilter ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
                                 </div>
                             </button>
                             {useMacdFilter && (
                                 <div className="px-3 pb-2.5 space-y-2">
                                     <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-th-text-muted">단기 (Fast)</span><span className="text-[10px] sm:text-xs font-bold text-cyan-400 font-mono">{macdFast}</span></div>
-                                        <input type="range" min="5" max="20" step="1" value={macdFast} onChange={(e) => onChange({ macdFast: Number(e.target.value) })} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-cyan-400 cursor-pointer" /></div>
+                                        <input type="range" min="5" max="20" step="1" value={macdFast} onChange={(e) => onChange({ macdFast: Number(e.target.value) })} className="w-full h-1 rounded-full appearance-none bg-th-hover-emphasis accent-cyan-400 cursor-pointer" /></div>
                                     <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-th-text-muted">장기 (Slow)</span><span className="text-[10px] sm:text-xs font-bold text-cyan-400 font-mono">{macdSlow}</span></div>
                                         <input type="range" min="15" max="40" step="1" value={macdSlow} onChange={(e) => onChange({ macdSlow: Number(e.target.value) })} className="w-full h-1 rounded-full appearance-none bg-white/10 accent-cyan-400 cursor-pointer" /></div>
                                     <div><div className="flex justify-between mb-0.5"><span className="text-[9px] text-th-text-muted">시그널</span><span className="text-[10px] sm:text-xs font-bold text-cyan-400 font-mono">{macdSignal}</span></div>

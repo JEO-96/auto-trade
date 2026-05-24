@@ -15,7 +15,7 @@ export default function Home() {
 
                     <Link
                         href="/dashboard"
-                        className="px-5 py-2 text-sm font-semibold bg-white/[0.06] hover:bg-white/[0.1] text-th-text rounded-lg transition-all border border-white/[0.06] flex items-center gap-2"
+                        className="px-5 py-2 text-sm font-semibold bg-th-hover-emphasis hover:bg-th-hover-emphasis/80 text-th-text rounded-lg transition-all border border-th-border flex items-center gap-2"
                     >
                         <LayoutDashboard className="w-4 h-4" />
                         대시보드
@@ -30,7 +30,7 @@ export default function Home() {
             <div className="z-10 max-w-5xl w-full mx-auto flex flex-col items-center pt-36 pb-20 px-6">
                 {/* Hero */}
                 <div className="text-center mb-24 animate-fade-in-up">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-primary-light text-xs font-medium mb-8">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-th-card border border-th-border text-primary-light text-xs font-medium mb-8">
                         <span className="relative flex h-1.5 w-1.5">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
@@ -53,7 +53,7 @@ export default function Home() {
                             카카오로 시작하기
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                         </Link>
-                        <Link href="/login?redirect=/dashboard/backtest" className="px-8 py-3.5 rounded-xl border border-th-border hover:bg-white/[0.04] transition-all flex items-center justify-center gap-2 text-sm font-semibold text-th-text-secondary">
+                        <Link href="/login?redirect=/dashboard/backtest" className="px-8 py-3.5 rounded-xl border border-th-border hover:bg-th-card transition-all flex items-center justify-center gap-2 text-sm font-semibold text-th-text-secondary">
                             백테스트 먼저 해보기
                         </Link>
                     </div>

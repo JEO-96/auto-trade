@@ -138,18 +138,18 @@ export default function ChatPage() {
                                     <div key={msg.id}>
                                         {showDate && (
                                             <div className="flex items-center gap-3 my-4">
-                                                <div className="flex-1 h-px bg-white/[0.04]" />
+                                                <div className="flex-1 h-px bg-th-card-hover" />
                                                 <span className="text-[10px] sm:text-xs text-th-text-muted font-medium">
                                                     {formatDate(msg.created_at)}
                                                 </span>
-                                                <div className="flex-1 h-px bg-white/[0.04]" />
+                                                <div className="flex-1 h-px bg-th-card-hover" />
                                             </div>
                                         )}
                                         <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-0.5`}>
                                             <div className={`max-w-[75%] ${isMe ? 'order-2' : ''}`}>
                                                 {showAuthor && (
                                                     <div className="flex items-center gap-1.5 mb-1 ml-1">
-                                                        <div className="w-4 h-4 rounded bg-white/[0.06] flex items-center justify-center">
+                                                        <div className="w-4 h-4 rounded bg-th-card flex items-center justify-center">
                                                             <UserIcon className="w-2.5 h-2.5 text-th-text-muted" />
                                                         </div>
                                                         <span className="text-[10px] sm:text-xs text-th-text-muted font-semibold">
@@ -162,7 +162,7 @@ export default function ChatPage() {
                                                         className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed ${
                                                             isMe
                                                                 ? 'bg-primary/20 text-th-text rounded-br-md'
-                                                                : 'bg-white/[0.02] text-th-text-secondary rounded-bl-md'
+                                                                : 'bg-th-input text-th-text-secondary rounded-bl-md'
                                                         }`}
                                                     >
                                                         {msg.content}
@@ -189,7 +189,7 @@ export default function ChatPage() {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="메시지를 입력하세요..."
                             maxLength={500}
-                            className="flex-1 bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-th-text placeholder-gray-500 focus:border-primary/30 transition-colors"
+                            className="flex-1 bg-th-input border border-th-border-light rounded-xl px-4 py-2.5 text-sm text-th-text placeholder-th-text-muted focus:border-primary/30 transition-colors"
                         />
                         <Button type="submit" size="sm" loading={sending} disabled={!input.trim()}>
                             <Send className="w-4 h-4" />

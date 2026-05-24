@@ -91,6 +91,20 @@ export async function getBacktestStatus(
     return res.data;
 }
 
+export async function startOptimization(
+    params: any,
+): Promise<{ task_id: string; status: string }> {
+    const res = await api.post('/optimization/run', params);
+    return res.data;
+}
+
+export async function getOptimizationStatus(
+    taskId: string,
+): Promise<any> {
+    const res = await api.get(`/optimization/status/${taskId}`);
+    return res.data;
+}
+
 export async function getBacktestHistory(
     page: number = 1,
     pageSize: number = 20,

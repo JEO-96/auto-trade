@@ -456,7 +456,7 @@ export default function AdminPage() {
                             placeholder="이름, 이메일, ID 검색..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-th-card border border-th-border rounded-lg text-sm text-th-text placeholder-gray-500 focus:outline-none focus:border-primary/40 transition-colors"
+                            className="w-full pl-9 pr-4 py-2 bg-th-card border border-th-border rounded-lg text-sm text-th-text placeholder-th-text-muted focus:outline-none focus:border-primary/40 transition-colors"
                             aria-label="사용자 검색"
                         />
                     </div>

@@ -82,7 +82,8 @@
 - `@/` path alias → `src/`, Tailwind CSS
 - **테마 토큰 필수**: `text-white`/`text-gray-*` 금지 → `text-th-text`/`text-th-text-secondary`/`text-th-text-muted` 사용
 - **배경/보더**: `bg-th-card`, `bg-th-modal`, `bg-th-input`, `border-th-border`, `border-th-border-light`
-- **하드코딩 hex 금지**: `bg-[#0d1117]` 등 금지 → CSS 변수 토큰 사용
+- **하드코딩 색상 절대 금지**: `bg-white/[...]`, `text-white/[...]`, `gray-*`, `[#hex]` 패턴은 기술 부채로 간주하여 사용을 금지함.
+- **테마 토큰 필수 사용**: 대신 `bg-th-card`, `bg-th-modal`, `text-th-text-secondary`, `border-th-border-light` 등을 사용함.
 - **에러 처리**: catch 블록에서 `toast.error()` 필수 (폴링 제외), console.error 금지
 - **반응형 텍스트**: `text-[10px] sm:text-xs` 패턴 — 10-11px에는 반드시 sm 브레이크포인트 추가
 - **디자인 컨텍스트**: `.impeccable.md` 참조 (브랜드, 팔레트, 원칙)

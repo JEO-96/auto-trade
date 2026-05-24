@@ -344,7 +344,7 @@ export default function PortfolioBacktestPage() {
                                         <button
                                             key={h.id}
                                             onClick={() => loadHistoryDetail(h.id)}
-                                            className="w-full text-left p-4 rounded-xl bg-white/[0.02] border border-th-border-light hover:bg-white/[0.04] hover:border-th-border transition-colors group"
+                                            className="w-full text-left p-4 rounded-xl bg-th-card border border-th-border-light hover:bg-th-hover hover:border-th-border transition-colors group"
                                         >
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="flex-1 min-w-0">
@@ -587,7 +587,7 @@ export default function PortfolioBacktestPage() {
                                 <button
                                     type="button"
                                     onClick={() => { /* equity always on */ }}
-                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-medium bg-white/[0.06] text-th-text cursor-default"
+                                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-medium bg-th-hover-emphasis text-th-text cursor-default"
                                 >
                                     <span className="w-3 h-0.5 inline-block" style={{ backgroundColor: '#3b82f6' }} />
                                     전략 (DM)
@@ -600,7 +600,7 @@ export default function PortfolioBacktestPage() {
                                             type="button"
                                             key={asset}
                                             onClick={() => setChartVisible(p => ({ ...p, [k]: !p[k] }))}
-                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all ${visible ? 'bg-white/[0.06] text-th-text' : 'bg-white/[0.02] text-th-text-muted line-through'}`}
+                                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-medium transition-all ${visible ? 'bg-th-hover-emphasis text-th-text' : 'bg-th-card text-th-text-muted line-through'}`}
                                         >
                                             <span
                                                 className="w-3 inline-block"
@@ -689,7 +689,7 @@ export default function PortfolioBacktestPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="relative h-10 mb-3 rounded-lg bg-white/[0.02] overflow-hidden">
+                                <div className="relative h-10 mb-3 rounded-lg bg-th-card overflow-hidden">
                                     {timelineSegments.map((seg, i) => (
                                         <div
                                             key={i}
@@ -748,7 +748,7 @@ export default function PortfolioBacktestPage() {
                                                 const positive = r.ret >= 0;
                                                 const barWidth = Math.min(Math.abs(r.ret) * 100 * 2, 100); // 50% 수익 = 100% bar
                                                 return (
-                                                    <tr key={r.year} className="border-b border-th-border-light/50 hover:bg-white/[0.02]">
+                                                    <tr key={r.year} className="border-b border-th-border-light/50 hover:bg-th-hover">
                                                         <td className="py-2 px-3 font-semibold text-th-text">{r.year}</td>
                                                         <td className={`py-2 px-3 text-right font-bold ${positive ? 'text-green-400' : 'text-red-400'}`}>
                                                             {fmtPct(r.ret)}
@@ -757,8 +757,8 @@ export default function PortfolioBacktestPage() {
                                                             {Math.round(r.endValue).toLocaleString()}
                                                         </td>
                                                         <td className="py-2 px-3 hidden sm:table-cell">
-                                                            <div className="relative h-3 bg-white/[0.03] rounded">
-                                                                <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/[0.1]" />
+                                                            <div className="relative h-3 bg-th-input rounded">
+                                                                <div className="absolute top-0 bottom-0 left-1/2 w-px bg-th-border" />
                                                                 <div
                                                                     className={`absolute top-0 bottom-0 ${positive ? 'bg-green-400/40 left-1/2' : 'bg-red-400/40'}`}
                                                                     style={positive
@@ -801,7 +801,7 @@ export default function PortfolioBacktestPage() {
                                                 </span>
                                                 <span className="text-th-text-secondary">{days}일 ({pct.toFixed(1)}%)</span>
                                             </div>
-                                            <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
+                                            <div className="h-2 rounded-full bg-th-card overflow-hidden">
                                                 <div
                                                     className="h-full transition-all duration-500"
                                                     style={{
@@ -839,7 +839,7 @@ export default function PortfolioBacktestPage() {
                                     </thead>
                                     <tbody>
                                         {result.trades.map((t, i) => (
-                                            <tr key={i} className="border-b border-th-border-light/50 hover:bg-white/[0.02]">
+                                            <tr key={i} className="border-b border-th-border-light/50 hover:bg-th-hover">
                                                 <td className="py-2 px-3 text-th-text-secondary">{t.date}</td>
                                                 <td className="py-2 px-3">
                                                     <span className={`inline-block px-2 py-0.5 rounded text-[10px] sm:text-xs font-semibold ${t.side === 'BUY' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
@@ -878,7 +878,7 @@ export default function PortfolioBacktestPage() {
                                 <span className="text-sm text-th-text font-medium">{progressMessage}</span>
                                 <span className="ml-auto text-xs text-th-text-muted font-semibold">{Math.round(progress)}%</span>
                             </div>
-                            <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
+                            <div className="h-2 rounded-full bg-th-card overflow-hidden">
                                 <div
                                     className="h-full bg-primary transition-all duration-300 ease-out"
                                     style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}

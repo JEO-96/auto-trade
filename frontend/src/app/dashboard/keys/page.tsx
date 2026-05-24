@@ -261,7 +261,7 @@ export default function ApiKeysPage() {
                                         className="text-th-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-red-500/[0.08] rounded-lg disabled:opacity-50"
                                     >
                                         {deleting === key.id ? (
-                                            <div className="w-4 h-4 border border-gray-500/20 border-t-gray-400 rounded-full animate-spin" />
+                                            <div className="w-4 h-4 border border-th-text-muted/20 border-t-th-text-muted rounded-full animate-spin" />
                                         ) : (
                                             <Trash2 className="w-4 h-4" />
                                         )}
