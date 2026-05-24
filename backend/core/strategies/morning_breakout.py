@@ -14,14 +14,15 @@ class MorningBreakoutStrategy(BaseStrategy):
         2. Stop Loss 2%.
     """
 
-    def __init__(self, k: float = 0.5):
+    def __init__(self, k: float = 0.5, volume_multiplier: float = 1.0):
         super().__init__()
         self.k = k
+        self.volume_multiplier = volume_multiplier
         self.backtest_sl_pct = 0.02
         self.backtest_tp_pct = None  # Time-based exit at next 9 AM
         
         # UI/Notification flags
-        self.filter_volume_min = 1.0
+        self.filter_volume_min = volume_multiplier
 
     def apply_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -37,7 +38,16 @@ class MorningBreakoutStrategy(BaseStrategy):
         df['target_price'] = df['open'] + (df['prev_range'] * self.k)
         
         # Standard indicators for meta-data/filtering
-        df = super().apply_indicators(df)
+        df = super().apply_indicators(df)  # This usually adds MA, etc.
+
+        # Volume Surge: Current Volume / 24h Average Volume
+        # Since it's 1D timeframe, we can compare current candle volume to a rolling mean
+        df['vol_avg_24h'] = df['volume'].rolling(window=20).mean() # Using 20-day mean as proxy for 24h avg
+        df['volume_surge'] = df['volume'] / df['vol_avg_24h'].shift(1)
+        
+        # Proximity to breakout: (Price / Target Price)
+        df['breakout_proximity'] = df['close'] / df['target_price']
+
         return df
 
     def check_buy_signal(self, df: pd.DataFrame, current_idx: int) -> bool:

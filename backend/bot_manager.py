@@ -669,6 +669,72 @@ async def run_bot_loop(bot_config_id: int, *, is_recovery: bool = False) -> None
 
                 # First pass: Fetch data for all symbols and update equity
                 for symbol in symbols:
+                    # [MorningBreakout All-Market Top Picker Optimization]
+                    if strategy.__class__.__name__ == 'MorningBreakoutStrategy' and symbol == 'ALL':
+                        try:
+                            # Scan KRW markets
+                            tickers = await asyncio.get_running_loop().run_in_executor(
+                                None, lambda: fetcher.exchange.fetch_tickers()
+                            )
+                            krw_symbols = [s for s in tickers.keys() if s.endswith('/KRW')]
+                            
+                            candidates = []
+                            for s_all in krw_symbols:
+                                if s_all in active_positions: continue
+                                
+                                df_all = await fetcher.fetch_ohlcv_async(symbol=s_all, timeframe=timeframe, limit=50, db=current_db)
+                                if df_all is None or len(df_all) < 22: continue
+                                
+                                # Indicator calculation
+                                if 'timestamp' in df_all.columns:
+                                    df_all = df_all.set_index('timestamp', drop=True)
+                                df_all = strategy.apply_indicators(df_all)
+                                c_idx = len(df_all) - 2 # Use last closed candle
+                                if c_idx < 1: continue
+                                
+                                row = df_all.iloc[c_idx]
+                                surge = row.get('volume_surge', 0)
+                                if surge > getattr(strategy, 'volume_multiplier', 1.0) and \
+                                   strategy.check_buy_signal(df_all, c_idx):
+                                    candidates.append({
+                                        'symbol': s_all,
+                                        'score': surge,
+                                        'df': df_all,
+                                        'price': tickers[s_all]['last']
+                                    })
+                            
+                            # Pick Top 3
+                            candidates = sorted(candidates, key=lambda x: x['score'], reverse=True)[:3]
+                            for cand in candidates:
+                                if len(active_positions) >= MAX_CONCURRENT_POSITIONS: break
+                                if liquid_capital < MIN_ORDER_KRW: break
+                                
+                                # Distribute capital among slots (Simple even split)
+                                slots_available = MAX_CONCURRENT_POSITIONS - len(active_positions)
+                                buy_cap_per_slot = liquid_capital / slots_available
+                                
+                                temp_cap, new_pos = _process_symbol_entry(
+                                    symbol=cand['symbol'],
+                                    df=cand['df'],
+                                    curr_price=cand['price'],
+                                    current_idx=len(cand['df']) - 2,
+                                    strategy=strategy,
+                                    execution=execution,
+                                    bot_config_id=bot_config_id,
+                                    user_id=user_id,
+                                    total_equity=total_equity,
+                                    liquid_capital=buy_cap_per_slot,
+                                    active_positions=active_positions,
+                                    paper_trading=paper_trading
+                                )
+                                if new_pos:
+                                    active_positions[cand['symbol']] = new_pos
+                                    liquid_capital = liquid_capital - (buy_cap_per_slot - temp_cap)
+                                    save_positions_to_db(bot_config_id, active_positions)
+                        except Exception as e:
+                            logger.error(f"[Bot {bot_config_id}] ALL scan error: {e}")
+                        continue
+
                     # Use async wrapper to avoid blocking the event loop with time.sleep()
                     # DB 캐시 활용 — 빠진 캔들만 API fetch + DB 저장
                     df = await fetcher.fetch_ohlcv_async(symbol=symbol, timeframe=timeframe, limit=300, db=current_db)

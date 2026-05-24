@@ -105,3 +105,15 @@
 
 플레이위드 | 대표 주은오 | 사업자 880-58-00862 | seal5945@gmail.com
 서울시 영등포구 경인로 882, 1103호 | 호스팅: AWS
+
+---
+
+## 🚨 MANDATORY Quality Gate (Strictly Enforced)
+
+Any frontend modification MUST pass the following before reporting 'Done':
+1. **Type Safety**: Run `cd frontend && npx tsc --noEmit`. Error count must be 0.
+2. **Duplicate Check**: Manually scan the top of the file for duplicate `import` statements (common mistake with `lucide-react`).
+3. **Property Check**: Ensure all data properties used in `page.tsx` exist in the corresponding interface in `types/`.
+4. **Build Attempt**: If logic is complex, run `npm run build` locally to verify webpack/next.js integrity.
+
+Failure to follow these steps leads to deployment breakage. Execute these now for any changes.

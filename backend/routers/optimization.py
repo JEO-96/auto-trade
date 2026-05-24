@@ -4,8 +4,8 @@ from typing import Dict, List, Any, Optional
 import importlib
 import logging
 
-from backend.core.optimization_engine import OptimizationEngine
-from backend.auth import get_current_user
+from core.optimization_engine import OptimizationEngine
+from auth import get_current_user
 
 router = APIRouter(prefix="/optimization", tags=["optimization"])
 logger = logging.getLogger(__name__)

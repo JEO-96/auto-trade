@@ -132,6 +132,7 @@ def apply_custom_params(strategy, custom_params: dict):
     }
     for param_key, attr_name in param_map.items():
         val = custom_params.get(param_key)
+        if param_key == 'k_value' and hasattr(strategy, 'k'): setattr(strategy, 'k', val)
         if val is not None and hasattr(strategy, attr_name):
             setattr(strategy, attr_name, val)
 

@@ -122,7 +122,7 @@ STRATEGY_LABELS: dict[str, str] = {
     'trend_follower_15m': '추세추종 (15분)',
     'signal_test_15m': '매매 테스트 (15분)',
     'surge_catcher_15m': '급등 포착기 (15분)',
-    'morning_breakout_1d': '모닝 브레이크아웃 (1일)',
+    'morning_breakout_1d': '모닝 브레이크아웃 (전종목 탑픽)',
     # OKX 선물 전략
     'ultimate_ensemble_1h': '얼티밋 앙상블 (1시간/선물)',
 }
@@ -160,7 +160,7 @@ STRATEGY_DEFINITIONS: list[dict] = [
     {"value": "surge_catcher_15m", "label": "급등 포착기 (15분)", "is_public": True, "status": "testing"},
     # OKX 선물 전략
     {"value": "ultimate_ensemble_1h", "label": "얼티밋 앙상블 (1시간/선물)", "is_public": True, "status": "testing"},
-    {"value": "morning_breakout_1d", "label": "모닝 브레이크아웃 (1일)", "is_public": True, "status": "testing"},
+    {"value": "morning_breakout_1d", "label": "모닝 브레이크아웃 (전종목 탑픽)", "is_public": True, "status": "testing"},
 ]
 
 # 백테스트 전용 별칭 (더 이상 사용하지 않지만 하위 호환용)
