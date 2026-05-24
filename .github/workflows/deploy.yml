@@ -90,7 +90,7 @@ jobs:
           "export GHCR_PAT='${GHCR_PAT}'; bash -s" << 'DEPLOY_SCRIPT'
         set -e
 
-        cd ~/traiding-bot
+        cd ~/auto-trade
 
         # 0. docker compose v2 플러그인 설치 (없으면)
         if ! docker compose version &>/dev/null; then
