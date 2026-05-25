@@ -30,8 +30,8 @@ import { useToast } from '@/components/ui/Toast';
 import { isAxiosError } from 'axios';
 import StatCard from '@/components/ui/StatCard';
 import { getInitials, formatDateCompact } from '@/lib/utils';
-import { getUsers, getPendingUsers, approveUser, rejectUser, getAdminDashboard } from '@/lib/api/admin';
-import type { AdminDashboard } from '@/lib/api/admin';
+import { getUsers, getPendingUsers, approveUser, rejectUser, getAdminDashboard, getPaperLabStatus } from '@/lib/api/admin';
+import type { AdminDashboard, PaperLabStatus } from '@/lib/api/admin';
 import type { User } from '@/types/user';
 
 type TabFilter = 'all' | 'pending' | 'approved' | 'rejected';
@@ -41,6 +41,7 @@ export default function AdminPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [pendingUsers, setPendingUsers] = useState<User[]>([]);
     const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
+    const [paperLab, setPaperLab] = useState<PaperLabStatus | null>(null);
     const [loading, setLoading] = useState(true);
     const [forbidden, setForbidden] = useState(false);
     const [activeTab, setActiveTab] = useState<TabFilter>('all');
@@ -52,14 +53,16 @@ export default function AdminPage() {
 
     const fetchUsers = useCallback(async () => {
         try {
-            const [allUsers, pending, dashboardData] = await Promise.all([
+            const [allUsers, pending, dashboardData, paperLabData] = await Promise.all([
                 getUsers(),
                 getPendingUsers(),
                 getAdminDashboard(),
+                getPaperLabStatus().catch(() => null),
             ]);
             setUsers(allUsers);
             setPendingUsers(pending);
             setDashboard(dashboardData);
+            setPaperLab(paperLabData);
         } catch (err: unknown) {
             if (isAxiosError(err) && err.response?.status === 403) {
                 setForbidden(true);
@@ -175,6 +178,9 @@ export default function AdminPage() {
     })();
 
     const pendingCount = pendingUsers.length;
+    const formatKrw = (value: number) => `${Math.round(value).toLocaleString()} KRW`;
+    const formatQty = (value: number) => value.toLocaleString(undefined, { maximumFractionDigits: 8 });
+    const formatDateTime = (value?: string) => value ? new Date(value).toLocaleString('ko-KR') : '-';
 
     if (loading) {
         return (
@@ -364,6 +370,124 @@ export default function AdminPage() {
             )}
 
             {/* ========== 사용자 관리 섹션 ========== */}
+
+            {paperLab && (
+                <section className="glass-panel p-5 rounded-2xl mb-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+                        <div className="flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-primary" />
+                            <h2 className="text-sm font-semibold text-th-text">멀티코인 모의투자</h2>
+                            <Badge variant={paperLab.enabled ? 'success' : 'warning'}>
+                                {paperLab.enabled ? '실행중' : '중지됨'}
+                            </Badge>
+                        </div>
+                        <div className="text-xs text-th-text-muted">
+                            마지막 업데이트: {formatDateTime(paperLab.state?.updated_at)}
+                        </div>
+                    </div>
+
+                    {paperLab.state ? (
+                        <>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                                <div className="p-4 bg-th-card rounded-xl border border-th-border-light">
+                                    <p className="text-xs text-th-text-muted mb-2">현재 총자산</p>
+                                    <p className="text-lg font-bold text-th-text">
+                                        {formatKrw(paperLab.state.last_summary.total_equity)}
+                                    </p>
+                                </div>
+                                <div className="p-4 bg-th-card rounded-xl border border-th-border-light">
+                                    <p className="text-xs text-th-text-muted mb-2">미실현 손익</p>
+                                    <p className={`text-lg font-bold ${paperLab.state.last_summary.unrealized_pnl >= 0 ? 'text-secondary' : 'text-red-400'}`}>
+                                        {paperLab.state.last_summary.unrealized_pnl >= 0 ? '+' : ''}
+                                        {formatKrw(paperLab.state.last_summary.unrealized_pnl)}
+                                    </p>
+                                </div>
+                                <div className="p-4 bg-th-card rounded-xl border border-th-border-light">
+                                    <p className="text-xs text-th-text-muted mb-2">보유 포지션</p>
+                                    <p className="text-lg font-bold text-th-text">
+                                        {paperLab.state.last_summary.open_position_count}개
+                                    </p>
+                                </div>
+                                <div className="p-4 bg-th-card rounded-xl border border-th-border-light">
+                                    <p className="text-xs text-th-text-muted mb-2">집계 구간</p>
+                                    <p className="text-xs font-semibold text-th-text">
+                                        {formatDateTime(paperLab.state.window_start)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-th-border-light">
+                                                <th className="text-left py-2 pr-3 text-xs text-th-text-muted font-semibold">코인</th>
+                                                <th className="text-right py-2 px-3 text-xs text-th-text-muted font-semibold">현재가</th>
+                                                <th className="text-right py-2 px-3 text-xs text-th-text-muted font-semibold">수량</th>
+                                                <th className="text-right py-2 pl-3 text-xs text-th-text-muted font-semibold">진입가</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {paperLab.state.symbols.map(symbol => {
+                                                const bucket = paperLab.state?.engine.buckets[symbol];
+                                                const position = bucket?.position;
+                                                return (
+                                                    <tr key={symbol} className="border-b border-th-border-light last:border-0">
+                                                        <td className="py-3 pr-3 font-semibold text-th-text">{symbol}</td>
+                                                        <td className="py-3 px-3 text-right text-th-text-secondary">
+                                                            {formatKrw(paperLab.state?.last_prices[symbol] ?? 0)}
+                                                        </td>
+                                                        <td className="py-3 px-3 text-right text-th-text-secondary">
+                                                            {position ? formatQty(position.qty) : '-'}
+                                                        </td>
+                                                        <td className="py-3 pl-3 text-right text-th-text-secondary">
+                                                            {position ? formatKrw(position.entry_price) : '-'}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="text-xs font-semibold text-th-text-muted">최근 일일 스냅샷</h3>
+                                        <span className="text-xs text-th-text-muted">{paperLab.run_id}</span>
+                                    </div>
+                                    {paperLab.snapshots.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {paperLab.snapshots.slice(0, 5).map(snapshot => (
+                                                <div key={`${snapshot.window_start}-${snapshot.window_end}`} className="flex items-center justify-between gap-3 p-3 bg-th-card rounded-lg border border-th-border-light">
+                                                    <div>
+                                                        <p className="text-xs font-semibold text-th-text">{formatDateTime(snapshot.window_end)}</p>
+                                                        <p className="text-[11px] text-th-text-muted">실현 {formatKrw(snapshot.summary.realized_pnl)}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-sm font-bold text-th-text">{formatKrw(snapshot.summary.total_equity)}</p>
+                                                        <p className={`text-[11px] ${snapshot.summary.unrealized_pnl >= 0 ? 'text-secondary' : 'text-red-400'}`}>
+                                                            {snapshot.summary.unrealized_pnl >= 0 ? '+' : ''}
+                                                            {formatKrw(snapshot.summary.unrealized_pnl)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 bg-th-card rounded-xl border border-th-border-light text-sm text-th-text-muted">
+                                            아직 저장된 일일 스냅샷이 없습니다. 다음 KST 09:00 이후부터 쌓입니다.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="p-4 bg-th-card rounded-xl border border-th-border-light text-sm text-th-text-muted">
+                            아직 모의투자 상태가 생성되지 않았습니다. 서버의 첫 가격 조회 tick 이후 표시됩니다.
+                        </div>
+                    )}
+                </section>
+            )}
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
