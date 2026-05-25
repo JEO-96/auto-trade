@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey, DateTime, UniqueConstraint, Index
+from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey, DateTime, UniqueConstraint, Index, Text
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime
@@ -194,6 +194,29 @@ class ActivePosition(Base):
     __table_args__ = (
         UniqueConstraint('bot_id', 'symbol', name='uq_active_position_bot_symbol'),
     )
+
+
+class PaperLabRunState(Base):
+    __tablename__ = "paper_lab_run_states"
+
+    id = Column(Integer, primary_key=True, index=True)
+    run_id = Column(String, unique=True, nullable=False, index=True)
+    state_json = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow())
+
+
+class PaperLabDailySnapshot(Base):
+    __tablename__ = "paper_lab_daily_snapshots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    run_id = Column(String, nullable=False, index=True)
+    window_start = Column(String, nullable=False, index=True)
+    window_end = Column(String, nullable=False)
+    total_equity = Column(Float, nullable=False)
+    realized_pnl = Column(Float, nullable=False)
+    unrealized_pnl = Column(Float, nullable=False)
+    snapshot_json = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.utcnow(), index=True)
 
 
 class SystemSettings(Base):

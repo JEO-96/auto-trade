@@ -17,15 +17,17 @@ setup_error_monitoring()
 import bot_manager
 import database
 import models
+from core.paper_lab.service import build_paper_lab_service
 import scalping_alert_manager
 from okx_futures.bot import OKXFuturesBot
-from routers import admin, auth, backtest, bots, community, keys, portfolio_backtest, scalping_alerts, strategies, optimization
+from routers import admin, auth, backtest, bots, community, keys, paper_lab, portfolio_backtest, scalping_alerts, strategies, optimization
 from routers import settings as settings_router
 from settings import settings
 
 models.Base.metadata.create_all(bind=database.engine)
 
 logger = logging.getLogger(__name__)
+paper_lab_service = None
 
 
 def _load_okx_credentials() -> dict | None:
@@ -65,10 +67,18 @@ limiter = Limiter(key_func=get_remote_address)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global paper_lab_service
     # Startup: 업비트 봇 자동 복구
     await bot_manager.recover_active_bots()
     if settings.scalping_alert_enabled:
         await scalping_alert_manager.start()
+    if settings.paper_lab_enabled:
+        paper_lab_service = build_paper_lab_service(
+            database.get_db_session,
+            poll_seconds=settings.paper_lab_poll_seconds,
+        )
+        paper_lab_service.start()
+        logger.info("[PaperLab] service started")
 
     # OKX 선물 봇 — 자동시작 비활성화
     # 수동 활성화 필요 시 이 블록 주석 해제
@@ -82,6 +92,8 @@ async def lifespan(app: FastAPI):
 
     # Shutdown: 초단타 알림 스캐너 안전 종료
     await scalping_alert_manager.stop()
+    if paper_lab_service:
+        await paper_lab_service.stop()
 
     # Shutdown: 업비트 봇 안전 종료
     await bot_manager.graceful_shutdown()
@@ -106,6 +118,7 @@ app.include_router(keys.router)
 app.include_router(backtest.router)
 app.include_router(portfolio_backtest.router)
 app.include_router(admin.router)
+app.include_router(paper_lab.router)
 app.include_router(scalping_alerts.router)
 app.include_router(community.router)
 app.include_router(strategies.router)

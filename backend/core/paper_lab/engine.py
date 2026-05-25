@@ -119,6 +119,67 @@ class PaperLabEngine:
     def summary(self, mark_prices: dict[str, float]) -> dict:
         return self.state.summary(mark_prices)
 
+    def to_dict(self) -> dict:
+        return {
+            "buckets": {
+                symbol: {
+                    "cash": bucket.cash,
+                    "position": (
+                        {
+                            "symbol": bucket.position.symbol,
+                            "qty": bucket.position.qty,
+                            "entry_price": bucket.position.entry_price,
+                        }
+                        if bucket.position
+                        else None
+                    ),
+                    "trades": [
+                        {
+                            "symbol": trade.symbol,
+                            "qty": trade.qty,
+                            "entry_price": trade.entry_price,
+                            "exit_price": trade.exit_price,
+                        }
+                        for trade in bucket.trades
+                    ],
+                }
+                for symbol, bucket in self.state.buckets.items()
+            }
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "PaperLabEngine":
+        engine = cls.__new__(cls)
+        buckets: dict[str, SymbolBucket] = {}
+        for symbol, bucket_data in data["buckets"].items():
+            position_data = bucket_data.get("position")
+            position = (
+                PaperPosition(
+                    symbol=position_data["symbol"],
+                    qty=float(position_data["qty"]),
+                    entry_price=float(position_data["entry_price"]),
+                )
+                if position_data
+                else None
+            )
+            trades = [
+                PaperTrade(
+                    symbol=trade["symbol"],
+                    qty=float(trade["qty"]),
+                    entry_price=float(trade["entry_price"]),
+                    exit_price=float(trade["exit_price"]),
+                )
+                for trade in bucket_data.get("trades", [])
+            ]
+            buckets[symbol] = SymbolBucket(
+                symbol=symbol,
+                cash=float(bucket_data["cash"]),
+                position=position,
+                trades=trades,
+            )
+        engine.state = PaperLabState(buckets=buckets)
+        return engine
+
     def _bucket(self, symbol: str) -> SymbolBucket:
         if symbol not in self.state.buckets:
             raise KeyError(f"Symbol {symbol} not in experiment")

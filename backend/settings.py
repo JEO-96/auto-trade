@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     scalping_alert_dry_run: bool = True
     scalping_alert_chat_id: str = ""
 
+    # Multi-coin paper-lab experiment
+    paper_lab_enabled: bool = True
+    paper_lab_poll_seconds: int = 300
+
     # CORS
     cors_origins: list[str] = [
         "http://localhost:3000",

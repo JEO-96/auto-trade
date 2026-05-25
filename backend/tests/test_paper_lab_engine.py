@@ -181,3 +181,16 @@ def test_sell_without_position_raises():
     engine = PaperLabEngine(["BTC"], 100_000)
     with pytest.raises(ValueError):
         engine.sell("BTC", price=50_000)
+
+
+def test_engine_round_trips_to_dict():
+    engine = PaperLabEngine(["BTC", "ETH"], 200_000)
+    engine.buy("BTC", price=50_000)
+    engine.sell("BTC", price=60_000)
+    engine.buy("ETH", price=5_000)
+
+    restored = PaperLabEngine.from_dict(engine.to_dict())
+
+    assert restored.state.buckets["BTC"].cash == pytest.approx(120_000)
+    assert restored.state.buckets["BTC"].realized_pnl == pytest.approx(20_000)
+    assert restored.state.buckets["ETH"].position.qty == pytest.approx(20)
