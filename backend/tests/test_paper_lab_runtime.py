@@ -5,20 +5,21 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from core.paper_lab.runtime import PaperLabConfig, PaperLabRuntime
+from core.paper_lab.selector import MarketCandidate
 
 
 KST = ZoneInfo("Asia/Seoul")
 
 
 class FakePriceProvider:
-    def __init__(self, prices_by_tick):
-        self.prices_by_tick = list(prices_by_tick)
+    def __init__(self, snapshots_by_tick):
+        self.snapshots_by_tick = list(snapshots_by_tick)
         self.calls = 0
 
-    async def get_prices(self, symbols):
-        prices = self.prices_by_tick[min(self.calls, len(self.prices_by_tick) - 1)]
+    async def get_market_snapshot(self):
+        snapshot = self.snapshots_by_tick[min(self.calls, len(self.snapshots_by_tick) - 1)]
         self.calls += 1
-        return {symbol: prices[symbol] for symbol in symbols}
+        return snapshot
 
 
 class FakeStore:
@@ -39,8 +40,12 @@ class FakeStore:
 def test_first_tick_opens_equal_positions_for_all_symbols():
     store = FakeStore()
     runtime = PaperLabRuntime(
-        PaperLabConfig(symbols=["BTC", "ETH"], total_capital=200_000),
-        FakePriceProvider([{"BTC": 50_000, "ETH": 5_000}]),
+        PaperLabConfig(selection_limit=2, total_capital=200_000, min_quote_volume=0),
+        FakePriceProvider([[
+            MarketCandidate("BTC", price=50_000, quote_volume=10_000, percentage=3),
+            MarketCandidate("ETH", price=5_000, quote_volume=9_000, percentage=2),
+            MarketCandidate("XRP", price=500, quote_volume=8_000, percentage=1),
+        ]]),
         store,
         now_fn=lambda: datetime(2026, 5, 25, 10, 0, tzinfo=KST),
     )
@@ -51,16 +56,25 @@ def test_first_tick_opens_equal_positions_for_all_symbols():
     assert result["event"] == "initialized"
     assert buckets["BTC"]["position"]["qty"] == pytest.approx(2)
     assert buckets["ETH"]["position"]["qty"] == pytest.approx(20)
+    assert store.state["monitored_symbol_count"] == 3
+    assert store.state["symbols"] == ["BTC", "ETH"]
     assert store.state["window_start"] == "2026-05-25T09:00:00+09:00"
 
 
 def test_same_window_tick_only_updates_state_without_snapshot():
     store = FakeStore()
     runtime = PaperLabRuntime(
-        PaperLabConfig(symbols=["BTC", "ETH"], total_capital=200_000),
+        PaperLabConfig(selection_limit=2, total_capital=200_000, min_quote_volume=0),
         FakePriceProvider([
-            {"BTC": 50_000, "ETH": 5_000},
-            {"BTC": 51_000, "ETH": 5_100},
+            [
+                MarketCandidate("BTC", price=50_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_000, quote_volume=9_000, percentage=2),
+            ],
+            [
+                MarketCandidate("BTC", price=51_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_100, quote_volume=9_000, percentage=2),
+                MarketCandidate("XRP", price=500, quote_volume=20_000, percentage=10),
+            ],
         ]),
         store,
         now_fn=lambda: datetime(2026, 5, 25, 10, 0, tzinfo=KST),
@@ -72,6 +86,8 @@ def test_same_window_tick_only_updates_state_without_snapshot():
     assert result["event"] == "updated"
     assert store.snapshots == []
     assert store.state["last_prices"] == {"BTC": 51_000, "ETH": 5_100}
+    assert store.state["candidate_symbols"][0] == "XRP"
+    assert store.state["monitored_symbol_count"] == 3
 
 
 def test_new_kst_9am_window_snapshots_and_rebalances():
@@ -81,10 +97,17 @@ def test_new_kst_9am_window_snapshots_and_rebalances():
         datetime(2026, 5, 26, 9, 1, tzinfo=KST),
     ])
     runtime = PaperLabRuntime(
-        PaperLabConfig(symbols=["BTC", "ETH"], total_capital=200_000),
+        PaperLabConfig(selection_limit=2, total_capital=200_000, min_quote_volume=0),
         FakePriceProvider([
-            {"BTC": 50_000, "ETH": 5_000},
-            {"BTC": 60_000, "ETH": 4_000},
+            [
+                MarketCandidate("BTC", price=50_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_000, quote_volume=9_000, percentage=2),
+            ],
+            [
+                MarketCandidate("BTC", price=60_000, quote_volume=9_000, percentage=1),
+                MarketCandidate("ETH", price=4_000, quote_volume=8_000, percentage=1),
+                MarketCandidate("XRP", price=1_000, quote_volume=50_000, percentage=10),
+            ],
         ]),
         store,
         now_fn=lambda: next(now_values),
@@ -98,6 +121,7 @@ def test_new_kst_9am_window_snapshots_and_rebalances():
     assert store.snapshots[0]["window_start"] == "2026-05-25T09:00:00+09:00"
     assert store.snapshots[0]["summary"]["total_equity"] == pytest.approx(200_000)
     buckets = store.state["engine"]["buckets"]
+    assert store.state["symbols"] == ["XRP", "BTC"]
+    assert buckets["XRP"]["position"]["qty"] == pytest.approx(200_000 / 2 / 1_000)
     assert buckets["BTC"]["position"]["qty"] == pytest.approx(200_000 / 2 / 60_000)
-    assert buckets["ETH"]["position"]["qty"] == pytest.approx(200_000 / 2 / 4_000)
     assert store.state["window_start"] == "2026-05-26T09:00:00+09:00"

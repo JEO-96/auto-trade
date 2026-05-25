@@ -5,6 +5,7 @@ import logging
 
 from core.data_fetcher import DataFetcher
 from core.paper_lab.runtime import PaperLabConfig, PaperLabRuntime
+from core.paper_lab.selector import MarketCandidate
 from core.paper_lab.store import SqlAlchemyPaperLabStore
 
 logger = logging.getLogger(__name__)
@@ -14,18 +15,30 @@ class UpbitTickerPriceProvider:
     def __init__(self) -> None:
         self.fetcher = DataFetcher(exchange_id="upbit")
 
-    async def get_prices(self, symbols: list[str]) -> dict[str, float]:
+    async def get_market_snapshot(self) -> list[MarketCandidate]:
         loop = asyncio.get_running_loop()
-        prices: dict[str, float] = {}
-        for symbol in symbols:
-            ticker = await loop.run_in_executor(
-                None, lambda s=symbol: self.fetcher.exchange.fetch_ticker(s)
-            )
+        markets = await loop.run_in_executor(None, self.fetcher.exchange.load_markets)
+        symbols = [
+            symbol
+            for symbol, market in markets.items()
+            if symbol.endswith("/KRW") and market.get("active", True)
+        ]
+        tickers = await loop.run_in_executor(None, lambda: self.fetcher.exchange.fetch_tickers(symbols))
+        candidates: list[MarketCandidate] = []
+        for symbol, ticker in tickers.items():
             price = float(ticker.get("last") or ticker.get("close") or 0)
-            if price <= 0:
-                raise ValueError(f"Invalid ticker price for {symbol}: {price}")
-            prices[symbol] = price
-        return prices
+            quote_volume = _quote_volume(ticker, price)
+            percentage = float(ticker.get("percentage") or 0)
+            if price > 0:
+                candidates.append(
+                    MarketCandidate(
+                        symbol=symbol,
+                        price=price,
+                        quote_volume=quote_volume,
+                        percentage=percentage,
+                    )
+                )
+        return candidates
 
 
 class PaperLabService:
@@ -71,3 +84,13 @@ def build_paper_lab_service(db_factory, poll_seconds: int = 300) -> PaperLabServ
         SqlAlchemyPaperLabStore(db_factory),
     )
     return PaperLabService(runtime, poll_seconds=poll_seconds)
+
+
+def _quote_volume(ticker: dict, price: float) -> float:
+    quote_volume = ticker.get("quoteVolume")
+    if quote_volume is not None:
+        return float(quote_volume)
+    base_volume = ticker.get("baseVolume")
+    if base_volume is not None:
+        return float(base_volume) * price
+    return 0.0

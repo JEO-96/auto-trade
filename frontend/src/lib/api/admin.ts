@@ -54,6 +54,15 @@ export interface PaperLabBucket {
 export interface PaperLabState {
     run_id: string;
     symbols: string[];
+    monitored_symbol_count?: number;
+    candidate_symbols?: string[];
+    candidates?: Array<{
+        symbol: string;
+        price: number;
+        quote_volume: number;
+        percentage: number;
+        score: number;
+    }>;
     window_start: string;
     window_end: string;
     engine: {

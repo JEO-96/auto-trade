@@ -416,6 +416,15 @@ export default function AdminPage() {
                                 </div>
                             </div>
 
+                            <div className="mb-5 p-3 bg-th-card rounded-xl border border-th-border-light">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="text-xs text-th-text-muted">감시 / 선택</span>
+                                    <span className="text-sm font-semibold text-th-text">
+                                        {paperLab.state.monitored_symbol_count ?? paperLab.state.symbols.length} / {paperLab.state.last_summary.open_position_count}
+                                    </span>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
@@ -451,6 +460,35 @@ export default function AdminPage() {
                                 </div>
 
                                 <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="text-xs font-semibold text-th-text-muted">선택 후보 랭킹</h3>
+                                        <span className="text-xs text-th-text-muted">{paperLab.run_id}</span>
+                                    </div>
+                                    {paperLab.state.candidates && paperLab.state.candidates.length > 0 ? (
+                                        <div className="space-y-2 mb-4">
+                                            {paperLab.state.candidates.slice(0, 10).map(candidate => (
+                                                <div key={candidate.symbol} className="flex items-center justify-between gap-3 p-3 bg-th-card rounded-lg border border-th-border-light">
+                                                    <div>
+                                                        <p className="text-xs font-semibold text-th-text">{candidate.symbol}</p>
+                                                        <p className="text-[11px] text-th-text-muted">
+                                                            24h {candidate.percentage >= 0 ? '+' : ''}{candidate.percentage.toFixed(2)}%
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-sm font-bold text-th-text">{formatKrw(candidate.price)}</p>
+                                                        <p className="text-[11px] text-th-text-muted">
+                                                            점수 {candidate.score.toFixed(1)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-4 bg-th-card rounded-xl border border-th-border-light text-sm text-th-text-muted mb-4">
+                                            아직 후보 랭킹이 없습니다. 다음 스캔 이후 표시됩니다.
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center justify-between mb-2">
                                         <h3 className="text-xs font-semibold text-th-text-muted">최근 일일 스냅샷</h3>
                                         <span className="text-xs text-th-text-muted">{paperLab.run_id}</span>
