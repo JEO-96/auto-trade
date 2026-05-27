@@ -90,6 +90,81 @@ def test_same_window_tick_only_updates_state_without_snapshot():
     assert store.state["monitored_symbol_count"] == 3
 
 
+def test_same_window_rebalances_when_new_candidates_are_much_better_after_hold_time():
+    store = FakeStore()
+    now_values = iter([
+        datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        datetime(2026, 5, 25, 11, 1, tzinfo=KST),
+    ])
+    runtime = PaperLabRuntime(
+        PaperLabConfig(
+            selection_limit=2,
+            total_capital=200_000,
+            min_quote_volume=0,
+            intraday_rebalance_min_minutes=60,
+            intraday_score_improvement=0.10,
+        ),
+        FakePriceProvider([
+            [
+                MarketCandidate("BTC", price=50_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_000, quote_volume=9_000, percentage=2),
+                MarketCandidate("XRP", price=500, quote_volume=8_000, percentage=1),
+            ],
+            [
+                MarketCandidate("BTC", price=51_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_100, quote_volume=9_000, percentage=1),
+                MarketCandidate("XRP", price=1_000, quote_volume=50_000, percentage=15),
+            ],
+        ]),
+        store,
+        now_fn=lambda: next(now_values),
+    )
+
+    asyncio.run(runtime.tick())
+    result = asyncio.run(runtime.tick())
+
+    assert result["event"] == "intraday_rebalanced"
+    assert store.state["symbols"] == ["XRP", "BTC"]
+    assert store.state["rebalance_reason"] == "intraday_candidate_rotation"
+    assert store.state["rebalance_history"][-1]["event"] == "intraday_rebalanced"
+
+
+def test_same_window_does_not_rebalance_before_min_hold_time():
+    store = FakeStore()
+    now_values = iter([
+        datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        datetime(2026, 5, 25, 10, 30, tzinfo=KST),
+    ])
+    runtime = PaperLabRuntime(
+        PaperLabConfig(
+            selection_limit=2,
+            total_capital=200_000,
+            min_quote_volume=0,
+            intraday_rebalance_min_minutes=60,
+            intraday_score_improvement=0.10,
+        ),
+        FakePriceProvider([
+            [
+                MarketCandidate("BTC", price=50_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_000, quote_volume=9_000, percentage=2),
+            ],
+            [
+                MarketCandidate("XRP", price=1_000, quote_volume=50_000, percentage=15),
+                MarketCandidate("BTC", price=51_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_100, quote_volume=9_000, percentage=1),
+            ],
+        ]),
+        store,
+        now_fn=lambda: next(now_values),
+    )
+
+    asyncio.run(runtime.tick())
+    result = asyncio.run(runtime.tick())
+
+    assert result["event"] == "updated"
+    assert store.state["symbols"] == ["BTC", "ETH"]
+
+
 def test_new_kst_9am_window_snapshots_and_rebalances():
     store = FakeStore()
     now_values = iter([

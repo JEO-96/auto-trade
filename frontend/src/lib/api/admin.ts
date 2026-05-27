@@ -63,6 +63,15 @@ export interface PaperLabState {
         percentage: number;
         score: number;
     }>;
+    last_rebalanced_at?: string;
+    rebalance_reason?: string;
+    rebalance_history?: Array<{
+        event: string;
+        reason: string;
+        at: string;
+        symbols: string[];
+        candidate_symbols: string[];
+    }>;
     window_start: string;
     window_end: string;
     engine: {

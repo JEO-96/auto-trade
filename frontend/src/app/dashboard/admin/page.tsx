@@ -425,6 +425,15 @@ export default function AdminPage() {
                                 </div>
                             </div>
 
+                            <div className="mb-5 p-3 bg-th-card rounded-xl border border-th-border-light">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="text-xs text-th-text-muted">최근 리밸런싱</span>
+                                    <span className="text-xs font-semibold text-th-text">
+                                        {formatDateTime(paperLab.state.last_rebalanced_at)} · {paperLab.state.rebalance_reason ?? '-'}
+                                    </span>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
