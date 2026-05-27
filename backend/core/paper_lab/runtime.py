@@ -152,6 +152,7 @@ class PaperLabRuntime:
                 "monitored_symbol_count": len(market_snapshot),
                 "candidate_symbols": [candidate.symbol for candidate in selected],
                 "candidates": [candidate.__dict__ for candidate in selected],
+                "provider_stats": getattr(self.price_provider, "stats", {}),
                 "last_rebalanced_at": last_rebalanced_at,
                 "rebalance_reason": rebalance_reason,
                 "rebalance_history": rebalance_history,

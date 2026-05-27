@@ -63,6 +63,11 @@ export interface PaperLabState {
         percentage: number;
         score: number;
     }>;
+    provider_stats?: {
+        market_load_calls?: number;
+        ticker_calls?: number;
+        last_error?: string | null;
+    };
     last_rebalanced_at?: string;
     rebalance_reason?: string;
     rebalance_history?: Array<{

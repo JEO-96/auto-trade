@@ -14,16 +14,23 @@ logger = logging.getLogger(__name__)
 class UpbitTickerPriceProvider:
     def __init__(self) -> None:
         self.fetcher = DataFetcher(exchange_id="upbit")
+        self._krw_symbols: list[str] | None = None
+        self.stats = {
+            "market_load_calls": 0,
+            "ticker_calls": 0,
+            "last_error": None,
+        }
 
     async def get_market_snapshot(self) -> list[MarketCandidate]:
         loop = asyncio.get_running_loop()
-        markets = await loop.run_in_executor(None, self.fetcher.exchange.load_markets)
-        symbols = [
-            symbol
-            for symbol, market in markets.items()
-            if symbol.endswith("/KRW") and market.get("active", True)
-        ]
-        tickers = await loop.run_in_executor(None, lambda: self.fetcher.exchange.fetch_tickers(symbols))
+        symbols = await self._get_krw_symbols(loop)
+        self.stats["ticker_calls"] += 1
+        try:
+            tickers = await loop.run_in_executor(None, lambda: self.fetcher.exchange.fetch_tickers(symbols))
+            self.stats["last_error"] = None
+        except Exception as exc:
+            self.stats["last_error"] = str(exc)
+            raise
         candidates: list[MarketCandidate] = []
         for symbol, ticker in tickers.items():
             price = float(ticker.get("last") or ticker.get("close") or 0)
@@ -39,6 +46,23 @@ class UpbitTickerPriceProvider:
                     )
                 )
         return candidates
+
+    async def _get_krw_symbols(self, loop) -> list[str]:
+        if self._krw_symbols is not None:
+            return self._krw_symbols
+        self.stats["market_load_calls"] += 1
+        try:
+            markets = await loop.run_in_executor(None, self.fetcher.exchange.load_markets)
+            self.stats["last_error"] = None
+        except Exception as exc:
+            self.stats["last_error"] = str(exc)
+            raise
+        self._krw_symbols = [
+            symbol
+            for symbol, market in markets.items()
+            if symbol.endswith("/KRW") and market.get("active", True)
+        ]
+        return self._krw_symbols
 
 
 class PaperLabService:

@@ -432,6 +432,17 @@ export default function AdminPage() {
                                         {formatDateTime(paperLab.state.last_rebalanced_at)} · {paperLab.state.rebalance_reason ?? '-'}
                                     </span>
                                 </div>
+                                <div className="flex items-center justify-between gap-3 mt-2">
+                                    <span className="text-xs text-th-text-muted">API 호출</span>
+                                    <span className="text-xs font-semibold text-th-text">
+                                        마켓 {paperLab.state.provider_stats?.market_load_calls ?? 0} · 티커 {paperLab.state.provider_stats?.ticker_calls ?? 0}
+                                    </span>
+                                </div>
+                                {paperLab.state.provider_stats?.last_error && (
+                                    <p className="mt-2 text-xs text-red-400">
+                                        {paperLab.state.provider_stats.last_error}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">

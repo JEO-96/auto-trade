@@ -15,10 +15,12 @@ class FakePriceProvider:
     def __init__(self, snapshots_by_tick):
         self.snapshots_by_tick = list(snapshots_by_tick)
         self.calls = 0
+        self.stats = {"ticker_calls": 0, "market_load_calls": 0}
 
     async def get_market_snapshot(self):
         snapshot = self.snapshots_by_tick[min(self.calls, len(self.snapshots_by_tick) - 1)]
         self.calls += 1
+        self.stats["ticker_calls"] = self.calls
         return snapshot
 
 
@@ -58,6 +60,7 @@ def test_first_tick_opens_equal_positions_for_all_symbols():
     assert buckets["ETH"]["position"]["qty"] == pytest.approx(20)
     assert store.state["monitored_symbol_count"] == 3
     assert store.state["symbols"] == ["BTC", "ETH"]
+    assert store.state["provider_stats"]["ticker_calls"] == 1
     assert store.state["window_start"] == "2026-05-25T09:00:00+09:00"
 
 
