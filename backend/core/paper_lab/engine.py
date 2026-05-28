@@ -103,6 +103,40 @@ class PaperLabState:
             "open_position_count": open_positions,
         }
 
+    def position_details(self, mark_prices: dict[str, float]) -> list[dict]:
+        details: list[dict] = []
+        for symbol, bucket in self.buckets.items():
+            if bucket.position is None:
+                details.append(
+                    {
+                        "symbol": symbol,
+                        "cash": bucket.cash,
+                        "position_open": False,
+                        "realized_pnl": bucket.realized_pnl,
+                    }
+                )
+                continue
+            if symbol not in mark_prices:
+                raise KeyError(f"Missing mark price for open position: {symbol}")
+            mark_price = mark_prices[symbol]
+            entry_value = bucket.position.entry_price * bucket.position.qty
+            unrealized_pnl = bucket.unrealized_pnl(mark_price)
+            details.append(
+                {
+                    "symbol": symbol,
+                    "cash": bucket.cash,
+                    "position_open": True,
+                    "qty": bucket.position.qty,
+                    "entry_price": bucket.position.entry_price,
+                    "mark_price": mark_price,
+                    "position_value": bucket.position.qty * mark_price,
+                    "unrealized_pnl": unrealized_pnl,
+                    "return_pct": (unrealized_pnl / entry_value * 100) if entry_value else 0.0,
+                    "realized_pnl": bucket.realized_pnl,
+                }
+            )
+        return details
+
 
 class PaperLabEngine:
     def __init__(self, symbols: list[str], total_capital: float) -> None:
@@ -118,6 +152,9 @@ class PaperLabEngine:
 
     def summary(self, mark_prices: dict[str, float]) -> dict:
         return self.state.summary(mark_prices)
+
+    def position_details(self, mark_prices: dict[str, float]) -> list[dict]:
+        return self.state.position_details(mark_prices)
 
     def to_dict(self) -> dict:
         return {

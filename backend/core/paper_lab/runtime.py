@@ -12,8 +12,8 @@ from core.paper_lab.selector import MarketCandidate, select_top_markets
 DEFAULT_RUN_ID = "paper_lab_market_scan_v1"
 DEFAULT_SELECTION_LIMIT = 10
 DEFAULT_MIN_QUOTE_VOLUME = 500_000_000.0
-DEFAULT_INTRADAY_REBALANCE_MIN_MINUTES = 60
-DEFAULT_INTRADAY_SCORE_IMPROVEMENT = 0.20
+DEFAULT_INTRADAY_REBALANCE_MIN_MINUTES = 180
+DEFAULT_INTRADAY_SCORE_IMPROVEMENT = 0.50
 
 
 class MarketDataProvider(Protocol):
@@ -102,6 +102,7 @@ class PaperLabRuntime:
                         "window_end": window_start_iso,
                         "summary": previous_summary,
                         "prices": held_prices,
+                        "positions": engine.position_details(held_prices),
                         "candidate_symbols": [candidate.symbol for candidate in selected],
                         "created_at": now.astimezone(KST).isoformat(),
                     },
@@ -161,6 +162,7 @@ class PaperLabRuntime:
                 "engine": engine.to_dict(),
                 "last_prices": prices,
                 "last_summary": summary,
+                "last_positions": engine.position_details(prices),
                 "updated_at": now.astimezone(KST).isoformat(),
             },
         )

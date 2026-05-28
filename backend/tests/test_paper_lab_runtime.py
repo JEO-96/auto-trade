@@ -62,6 +62,9 @@ def test_first_tick_opens_equal_positions_for_all_symbols():
     assert store.state["symbols"] == ["BTC", "ETH"]
     assert store.state["provider_stats"]["ticker_calls"] == 1
     assert store.state["window_start"] == "2026-05-25T09:00:00+09:00"
+    assert store.state["last_positions"][0]["symbol"] == "BTC"
+    assert store.state["last_positions"][0]["entry_price"] == pytest.approx(50_000)
+    assert store.state["last_positions"][0]["unrealized_pnl"] == pytest.approx(0)
 
 
 def test_same_window_tick_only_updates_state_without_snapshot():
@@ -168,6 +171,66 @@ def test_same_window_does_not_rebalance_before_min_hold_time():
     assert store.state["symbols"] == ["BTC", "ETH"]
 
 
+def test_default_intraday_rebalance_is_conservative_after_one_hour():
+    store = FakeStore()
+    now_values = iter([
+        datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        datetime(2026, 5, 25, 11, 1, tzinfo=KST),
+    ])
+    runtime = PaperLabRuntime(
+        PaperLabConfig(selection_limit=2, total_capital=200_000, min_quote_volume=0),
+        FakePriceProvider([
+            [
+                MarketCandidate("BTC", price=50_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_000, quote_volume=9_000, percentage=2),
+            ],
+            [
+                MarketCandidate("XRP", price=1_000, quote_volume=50_000, percentage=15),
+                MarketCandidate("BTC", price=51_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_100, quote_volume=9_000, percentage=1),
+            ],
+        ]),
+        store,
+        now_fn=lambda: next(now_values),
+    )
+
+    asyncio.run(runtime.tick())
+    result = asyncio.run(runtime.tick())
+
+    assert result["event"] == "updated"
+    assert store.state["symbols"] == ["BTC", "ETH"]
+
+
+def test_default_intraday_rebalance_requires_large_score_improvement_after_hold_time():
+    store = FakeStore()
+    now_values = iter([
+        datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        datetime(2026, 5, 25, 13, 1, tzinfo=KST),
+    ])
+    runtime = PaperLabRuntime(
+        PaperLabConfig(selection_limit=2, total_capital=200_000, min_quote_volume=0),
+        FakePriceProvider([
+            [
+                MarketCandidate("BTC", price=50_000, quote_volume=100_000, percentage=3),
+                MarketCandidate("ETH", price=5_000, quote_volume=90_000, percentage=2),
+            ],
+            [
+                MarketCandidate("XRP", price=1_000, quote_volume=100_000, percentage=4),
+                MarketCandidate("BTC", price=51_000, quote_volume=100_000, percentage=3),
+                MarketCandidate("ETH", price=5_100, quote_volume=90_000, percentage=2),
+            ],
+        ]),
+        store,
+        now_fn=lambda: next(now_values),
+    )
+
+    asyncio.run(runtime.tick())
+    result = asyncio.run(runtime.tick())
+
+    assert result["event"] == "updated"
+    assert store.state["symbols"] == ["BTC", "ETH"]
+
+
 def test_new_kst_9am_window_snapshots_and_rebalances():
     store = FakeStore()
     now_values = iter([
@@ -198,6 +261,9 @@ def test_new_kst_9am_window_snapshots_and_rebalances():
     assert len(store.snapshots) == 1
     assert store.snapshots[0]["window_start"] == "2026-05-25T09:00:00+09:00"
     assert store.snapshots[0]["summary"]["total_equity"] == pytest.approx(200_000)
+    assert store.snapshots[0]["positions"][0]["symbol"] == "BTC"
+    assert store.snapshots[0]["positions"][0]["mark_price"] == pytest.approx(60_000)
+    assert store.snapshots[0]["positions"][0]["unrealized_pnl"] == pytest.approx(20_000)
     buckets = store.state["engine"]["buckets"]
     assert store.state["symbols"] == ["XRP", "BTC"]
     assert buckets["XRP"]["position"]["qty"] == pytest.approx(200_000 / 2 / 1_000)

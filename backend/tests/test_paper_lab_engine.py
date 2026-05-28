@@ -130,6 +130,39 @@ def test_summary_multiple_symbols_mixed():
     assert summary["unrealized_pnl"] == pytest.approx(0, abs=1e-6)
 
 
+def test_position_details_include_symbol_level_unrealized_pnl():
+    engine = PaperLabEngine(["BTC", "ETH"], 200_000)
+    engine.buy("BTC", price=50_000)
+    engine.buy("ETH", price=5_000)
+
+    details = engine.position_details({"BTC": 55_000, "ETH": 4_500})
+
+    by_symbol = {detail["symbol"]: detail for detail in details}
+    assert by_symbol["BTC"]["entry_price"] == pytest.approx(50_000)
+    assert by_symbol["BTC"]["mark_price"] == pytest.approx(55_000)
+    assert by_symbol["BTC"]["unrealized_pnl"] == pytest.approx(10_000)
+    assert by_symbol["BTC"]["return_pct"] == pytest.approx(10)
+    assert by_symbol["ETH"]["unrealized_pnl"] == pytest.approx(-10_000)
+    assert by_symbol["ETH"]["return_pct"] == pytest.approx(-10)
+
+
+def test_position_details_include_closed_bucket_cash_and_realized_pnl():
+    engine = PaperLabEngine(["BTC"], 100_000)
+    engine.buy("BTC", price=50_000)
+    engine.sell("BTC", price=40_000)
+
+    details = engine.position_details({})
+
+    assert details == [
+        {
+            "symbol": "BTC",
+            "cash": pytest.approx(80_000),
+            "position_open": False,
+            "realized_pnl": pytest.approx(-20_000),
+        }
+    ]
+
+
 # --- Error cases ---
 
 def test_buy_rejects_zero_price():
