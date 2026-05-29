@@ -121,13 +121,16 @@ class PaperLabService:
 
 
 def build_paper_lab_service(db_factory, poll_seconds: int = 300) -> PaperLabService:
-    from core.paper_lab.confirmation import StrategyConfirmer
+    from core.paper_lab.confirmation import EnsembleConfirmer
 
+    # Validated 4h trend-following edge (entry-only pivot): buy when EITHER
+    # momentum_aggressive_4h or trend_rider_4h_v1 fires. Exits keep Phase 1
+    # risk controls (stop-loss, daily loss limit, cash-when-no-signal).
     runtime = PaperLabRuntime(
         PaperLabConfig(),
         UpbitTickerPriceProvider(db_factory=db_factory),
         SqlAlchemyPaperLabStore(db_factory),
-        confirmer=StrategyConfirmer(),
+        confirmer=EnsembleConfirmer(["momentum_aggressive_4h", "trend_rider_4h_v1"]),
     )
     return PaperLabService(runtime, poll_seconds=poll_seconds)
 

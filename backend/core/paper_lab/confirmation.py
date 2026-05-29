@@ -39,3 +39,27 @@ class StrategyConfirmer:
             return False
         prepared = self._strategy.apply_indicators(df.copy())
         return bool(self._strategy.check_buy_signal(prepared, len(prepared) - 1))
+
+
+class EnsembleConfirmer:
+    """Confirm an entry if ANY of several backtested strategies fires a buy.
+
+    Used to pivot the paper lab onto the validated 4h trend-following edge:
+    momentum_aggressive_4h + trend_rider_4h_v1 (both robust across universe
+    subsets, out-of-sample, and walk-forward). Each strategy applies its own
+    indicators on a fresh copy of the OHLCV frame.
+    """
+
+    def __init__(self, strategy_names: list[str], min_rows: int = 201) -> None:
+        self.strategy_names = list(strategy_names)
+        self.min_rows = min_rows
+        self._strategies = [get_strategy(name) for name in self.strategy_names]
+
+    def confirm(self, symbol: str, df: pd.DataFrame | None) -> bool:
+        if df is None or len(df) < self.min_rows:
+            return False
+        for strat in self._strategies:
+            prepared = strat.apply_indicators(df.copy())
+            if strat.check_buy_signal(prepared, len(prepared) - 1):
+                return True
+        return False

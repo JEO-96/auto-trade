@@ -11,9 +11,10 @@ from core.paper_lab.selector import MarketCandidate, select_top_markets
 
 DEFAULT_RUN_ID = "paper_lab_market_scan_v1"
 DEFAULT_SELECTION_LIMIT = 10
-# Liquidity floor = "major" universe. Raised from 5e8 (let 161 thin alts through,
-# the source of the -49% alt bleed) to 5e9 (~40 liquid majors/large-caps).
-DEFAULT_MIN_QUOTE_VOLUME = 5_000_000_000.0
+# Liquidity floor = "major" universe. 5e8 let 161 thin alts through (-49% bleed);
+# raised to 1e10 (~25 most-liquid KRW names) to focus on majors — research showed
+# the broad pool dilutes the 4h edge (top12 broke out-of-sample, top6-8 held).
+DEFAULT_MIN_QUOTE_VOLUME = 10_000_000_000.0
 DEFAULT_INTRADAY_REBALANCE_MIN_MINUTES = 180
 DEFAULT_INTRADAY_SCORE_IMPROVEMENT = 0.50
 # Risk controls (conservative defaults). stop_loss: per-symbol; daily_loss_limit: whole window.
@@ -23,8 +24,10 @@ DEFAULT_DAILY_LOSS_LIMIT_PCT = 0.05
 # same strategy = +16.87% on majors vs -49.35% on the top-24h-gainer alt set.
 DEFAULT_SHORTLIST_LIMIT = 30          # how many candidates to confirm before picking
 DEFAULT_MAX_PERCENTAGE = 25.0         # overheating cap: skip already-pumped names
-DEFAULT_CONFIRM_TIMEFRAME = "15m"
-DEFAULT_CONFIRM_HISTORY_LIMIT = 300   # candles fetched per candidate for confirmation
+# 4h trend-following is the validated edge (15m all lost in research; 4h
+# momentum_aggressive / trend_rider held across subsets, OOS, and walk-forward).
+DEFAULT_CONFIRM_TIMEFRAME = "4h"
+DEFAULT_CONFIRM_HISTORY_LIMIT = 300   # 4h candles per candidate (>=201 needed for signal)
 # Reserved bucket holding undeployed capital when fewer than selection_limit
 # confirmed setups exist (lets the lab hold cash instead of forcing full invest).
 CASH_BUCKET = "__CASH__"
