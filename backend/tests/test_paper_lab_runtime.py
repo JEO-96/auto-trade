@@ -364,6 +364,39 @@ def test_no_confirmed_candidates_holds_all_cash():
     assert store.state["last_positions"] == []
 
 
+def test_trailing_stop_exits_after_peak_drawdown():
+    store = FakeStore()
+    now_values = iter([
+        datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        datetime(2026, 5, 25, 10, 5, tzinfo=KST),
+        datetime(2026, 5, 25, 10, 10, tzinfo=KST),
+    ])
+    runtime = PaperLabRuntime(
+        PaperLabConfig(
+            selection_limit=1, total_capital=100_000, min_quote_volume=0,
+            trailing_stop_pct=0.05, regime_enabled=False,
+        ),
+        FakePriceProviderWithOhlcv([
+            [MarketCandidate("AAA", price=100, quote_volume=10_000, percentage=5)],
+            [MarketCandidate("AAA", price=120, quote_volume=10_000, percentage=5)],  # peak -> 120
+            [MarketCandidate("AAA", price=113, quote_volume=10_000, percentage=5)],  # -5.8% from peak
+        ]),
+        store,
+        now_fn=lambda: next(now_values),
+        confirmer=FakeConfirmer(["AAA"]),
+    )
+
+    asyncio.run(runtime.tick())          # buy AAA @100 (qty 1000), peak 100
+    asyncio.run(runtime.tick())          # 120: peak ratchets to 120, holds (120 > 114)
+    result = asyncio.run(runtime.tick())  # 113 <= 120*0.95=114 -> trailing exit
+
+    buckets = store.state["engine"]["buckets"]
+    assert result["event"] == "trailing_stop"
+    assert buckets["AAA"]["position"] is None
+    # realized = (113 - 100) * 1000 (sold at mark, not at peak)
+    assert store.state["last_summary"]["realized_pnl"] == pytest.approx((113 - 100) * 1000)
+
+
 def test_stop_loss_liquidates_losing_symbol_and_records_realized():
     store = FakeStore()
     now_values = iter([
@@ -371,7 +404,9 @@ def test_stop_loss_liquidates_losing_symbol_and_records_realized():
         datetime(2026, 5, 25, 10, 30, tzinfo=KST),
     ])
     runtime = PaperLabRuntime(
-        PaperLabConfig(selection_limit=2, total_capital=200_000, min_quote_volume=0),
+        # trailing disabled to isolate the hard stop-loss path
+        PaperLabConfig(selection_limit=2, total_capital=200_000, min_quote_volume=0,
+                       trailing_stop_pct=0.0),
         FakePriceProvider([
             [
                 MarketCandidate("BTC", price=50_000, quote_volume=10_000, percentage=3),

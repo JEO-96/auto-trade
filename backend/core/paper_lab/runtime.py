@@ -22,6 +22,9 @@ DEFAULT_INTRADAY_SCORE_IMPROVEMENT = 0.50
 # Risk controls (conservative defaults). stop_loss: per-symbol; daily_loss_limit: whole window.
 DEFAULT_STOP_LOSS_PCT = 0.05
 DEFAULT_DAILY_LOSS_LIMIT_PCT = 0.05
+# Phase 2: trailing take-profit — exit when price falls this far from the peak
+# since entry (matches trend_rider_4h_v1's native 5% trailing exit).
+DEFAULT_TRAILING_STOP_PCT = 0.05
 # Universe + confirmation (Phase 1). Backtest showed the universe is the #1 lever:
 # same strategy = +16.87% on majors vs -49.35% on the top-24h-gainer alt set.
 DEFAULT_SHORTLIST_LIMIT = 30          # how many candidates to confirm before picking
@@ -69,6 +72,7 @@ class PaperLabConfig:
     intraday_score_improvement: float = DEFAULT_INTRADAY_SCORE_IMPROVEMENT
     stop_loss_pct: float = DEFAULT_STOP_LOSS_PCT
     daily_loss_limit_pct: float = DEFAULT_DAILY_LOSS_LIMIT_PCT
+    trailing_stop_pct: float = DEFAULT_TRAILING_STOP_PCT
     shortlist_limit: int = DEFAULT_SHORTLIST_LIMIT
     max_percentage: float | None = DEFAULT_MAX_PERCENTAGE
     confirm_timeframe: str = DEFAULT_CONFIRM_TIMEFRAME
@@ -215,7 +219,13 @@ class PaperLabRuntime:
                         _rebalance_event(event, rebalance_reason, now, [], selected),
                     )
                 else:
+                    # Trailing take-profit (ratchets peak, exits on give-back) +
+                    # hard stop-loss from entry. Trailing binds once a position runs up.
+                    trailed = _apply_trailing_stop(
+                        engine, held_prices, self.config.trailing_stop_pct
+                    )
                     stopped = _apply_stop_loss(engine, held_prices, self.config.stop_loss_pct)
+                    exited = trailed or stopped
                     if _should_intraday_rebalance(
                         now=now,
                         last_rebalanced_at=last_rebalanced_at,
@@ -242,8 +252,12 @@ class PaperLabRuntime:
                     else:
                         selected_symbols = held_symbols
                         prices = held_prices
-                        event = "stop_loss" if stopped else "updated"
-                        rebalance_reason = "stop_loss" if stopped else "hold"
+                        if trailed:
+                            event = rebalance_reason = "trailing_stop"
+                        elif stopped:
+                            event = rebalance_reason = "stop_loss"
+                        else:
+                            event, rebalance_reason = "updated", "hold"
 
         engine_summary = engine.summary(prices)
         total_window_realized = window_realized_pnl + engine_summary["realized_pnl"]
@@ -391,6 +405,27 @@ def _apply_stop_loss(
             engine.state.buckets[symbol].sell(prices[symbol])
             stopped = True
     return stopped
+
+
+def _apply_trailing_stop(
+    engine: PaperLabEngine, prices: dict[str, float], trailing_pct: float
+) -> bool:
+    """Ratchet each open position's peak to the mark, then liquidate any whose
+    price has fallen >= trailing_pct from that peak. Returns True if any sold."""
+    if trailing_pct <= 0:
+        return False
+    exited = False
+    for symbol, bucket in engine.state.buckets.items():
+        pos = bucket.position
+        if pos is None or symbol not in prices:
+            continue
+        mark = prices[symbol]
+        if mark > pos.peak_price:
+            pos.peak_price = mark
+        if pos.peak_price > 0 and mark <= pos.peak_price * (1 - trailing_pct):
+            bucket.sell(mark)
+            exited = True
+    return exited
 
 
 def _should_intraday_rebalance(

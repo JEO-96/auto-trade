@@ -11,6 +11,7 @@ class PaperPosition:
     symbol: str
     qty: float
     entry_price: float
+    peak_price: float = 0.0  # high-water mark since entry, for trailing exits
 
 
 @dataclass
@@ -46,7 +47,9 @@ class SymbolBucket:
                 f"Insufficient cash for {self.symbol}: have {self.cash}, need {cost}"
             )
         self.cash -= cost
-        self.position = PaperPosition(symbol=self.symbol, qty=effective_qty, entry_price=price)
+        self.position = PaperPosition(
+            symbol=self.symbol, qty=effective_qty, entry_price=price, peak_price=price
+        )
 
     def sell(self, price: float) -> PaperTrade:
         if price <= 0:
@@ -166,6 +169,7 @@ class PaperLabEngine:
                             "symbol": bucket.position.symbol,
                             "qty": bucket.position.qty,
                             "entry_price": bucket.position.entry_price,
+                            "peak_price": bucket.position.peak_price,
                         }
                         if bucket.position
                         else None
@@ -195,6 +199,9 @@ class PaperLabEngine:
                     symbol=position_data["symbol"],
                     qty=float(position_data["qty"]),
                     entry_price=float(position_data["entry_price"]),
+                    peak_price=float(
+                        position_data.get("peak_price", position_data["entry_price"])
+                    ),
                 )
                 if position_data
                 else None
