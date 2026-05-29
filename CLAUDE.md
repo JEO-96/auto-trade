@@ -147,6 +147,7 @@ Current conservative defaults (`core/paper_lab/runtime.py`):
 - `DEFAULT_MIN_QUOTE_VOLUME = 10_000_000_000.0` (liquidity floor = "major" universe; ~25 Upbit KRW names)
 - `DEFAULT_MAX_PERCENTAGE = 25.0` (overheating cap; skip already-pumped names)
 - `DEFAULT_SHORTLIST_LIMIT = 30`, `DEFAULT_CONFIRM_TIMEFRAME = "4h"`, `DEFAULT_CONFIRM_HISTORY_LIMIT = 300`
+- `DEFAULT_REGIME_ENABLED = True` (BTC/KRW 4h close > EMA200 → risk-on; else hold cash, no new entries)
 
 Do not loosen those defaults casually. The 2026-05-27 review found that frequent candidate rotation made root-cause analysis harder and can increase chase-entry risk in 급등락 markets.
 
@@ -169,7 +170,13 @@ Backtest (surge_catcher_15m, 6mo, 15m, fees 0.05%, trailing): the **universe is 
 
 ### 4h trend pivot (commit `b3b871d`, 2026-05-30)
 
-A research sweep of 24 strategies (majors, 6mo, native TF) found **15m approaches all lose** (-13~-28%) and **4h trend-following is the only robust edge**. `momentum_aggressive_4h` and `trend_rider_4h_v1` stayed positive across universe subsets (top4/6/8/12), out-of-sample (prior 6mo), and walk-forward (trend_rider 4/4 quarters, momentum_aggressive 3/4) on focused majors (top8 ~+28-30%, PF 1.4). **Entry-only pivot** (exits unchanged): `EnsembleConfirmer` on 4h, liquidity floor raised to 1e10. Caveats: low trade frequency, small per-window samples, one -11.5% quarter; live dynamic selection ≠ backtest fixed set; exits are still the Phase-1 risk controls, not the strategies' native TP/SL (Phase 2 candidate). Regime filter (Phase 3) was tested and did **not** turn the pool positive (only lowered MDD) — do not re-chase it without new evidence.
+A research sweep of 24 strategies (majors, 6mo, native TF) found **15m approaches all lose** (-13~-28%) and **4h trend-following is the only robust edge**. `momentum_aggressive_4h` and `trend_rider_4h_v1` stayed positive across universe subsets (top4/6/8/12), out-of-sample (prior 6mo), and walk-forward (trend_rider 4/4 quarters, momentum_aggressive 3/4) on focused majors (top8 ~+28-30%, PF 1.4). **Entry-only pivot** (exits unchanged): `EnsembleConfirmer` on 4h, liquidity floor raised to 1e10. Caveats: low trade frequency, small per-window samples, one -11.5% quarter; live dynamic selection ≠ backtest fixed set; exits are still the Phase-1 risk controls, not the strategies' native TP/SL (Phase 2 candidate).
+
+### Overfitting / regime check + regime filter (commit `f5f2568`, 2026-05-30)
+
+⚠️ **The 4h edge is bull-regime dependent, not all-weather alpha.** Multi-year backtest (top8, 4h): `momentum_aggressive_4h` 2022 **-56.2%** / 2023 +114.6% / 2024 +91.2% / 2025 -13.3% / 2026 +21.8%; `trend_rider_4h_v1` -19.0% / +96.9% / +194.2% / +21.4% / +0.1%. Both blow up in the 2022 bear — the 2025-2026 validation gave false confidence. Parameter overfitting also present (momentum_aggressive comment "grid search 214% PnL", trend_rider v1–v4 variants). It is **bull beta with trend timing**, not a market-neutral daily-profit machine.
+
+**Phase 3 regime filter (deployed):** `runtime._is_risk_on` gates new entries on BTC/KRW 4h > EMA200 (`config.regime_*`, fail-open if data missing). Backtest: roughly halved bear losses (momentum -56%→-34%, trend -19%→-7%) and rescued 2025 (momentum -13%→+27%), at some bull-upside cost — risk reduction, **not** a cure (2022 still -34%). (Corrects the earlier note that dismissed the regime filter on 2025-only data.)
 
 Paper-lab verification command:
 
