@@ -24,6 +24,23 @@ class FakePriceProvider:
         return snapshot
 
 
+class FakePriceProviderWithOhlcv(FakePriceProvider):
+    """Price provider that also serves (placeholder) OHLCV for confirmation."""
+
+    async def get_ohlcv(self, symbol, timeframe, limit):
+        return f"ohlcv:{symbol}"  # confirmer ignores content in tests
+
+
+class FakeConfirmer:
+    """Confirms only symbols in the allow-list (ignores OHLCV content)."""
+
+    def __init__(self, allowed):
+        self.allowed = set(allowed)
+
+    def confirm(self, symbol, df):
+        return symbol in self.allowed
+
+
 class FakeStore:
     def __init__(self):
         self.state = None
@@ -229,6 +246,174 @@ def test_default_intraday_rebalance_requires_large_score_improvement_after_hold_
 
     assert result["event"] == "updated"
     assert store.state["symbols"] == ["BTC", "ETH"]
+
+
+def test_confirmation_buys_only_confirmed_and_holds_cash_for_rest():
+    store = FakeStore()
+    runtime = PaperLabRuntime(
+        PaperLabConfig(
+            selection_limit=3, total_capital=300_000,
+            min_quote_volume=0, shortlist_limit=5,
+        ),
+        FakePriceProviderWithOhlcv([[
+            MarketCandidate("AAA", price=100, quote_volume=10_000, percentage=5),
+            MarketCandidate("BBB", price=100, quote_volume=9_000, percentage=4),
+            MarketCandidate("CCC", price=100, quote_volume=8_000, percentage=3),
+        ]]),
+        store,
+        now_fn=lambda: datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        confirmer=FakeConfirmer(["AAA"]),  # only AAA passes the entry gate
+    )
+
+    result = asyncio.run(runtime.tick())
+
+    buckets = store.state["engine"]["buckets"]
+    assert result["event"] == "initialized"
+    # 1 of 3 slots filled -> per_slot 100,000 -> AAA qty 1000; rest stays cash
+    assert buckets["AAA"]["position"]["qty"] == pytest.approx(1000)
+    assert "BBB" not in buckets and "CCC" not in buckets
+    assert store.state["symbols"] == ["AAA"]
+    assert store.state["last_summary"]["total_equity"] == pytest.approx(300_000)
+    assert store.state["last_summary"]["open_position_count"] == 1
+    # reserved cash bucket is hidden from reported positions
+    assert all(p["symbol"] != "__CASH__" for p in store.state["last_positions"])
+    assert [p["symbol"] for p in store.state["last_positions"]] == ["AAA"]
+
+
+def test_no_confirmed_candidates_holds_all_cash():
+    store = FakeStore()
+    runtime = PaperLabRuntime(
+        PaperLabConfig(selection_limit=3, total_capital=300_000, min_quote_volume=0),
+        FakePriceProviderWithOhlcv([[
+            MarketCandidate("AAA", price=100, quote_volume=10_000, percentage=5),
+            MarketCandidate("BBB", price=100, quote_volume=9_000, percentage=4),
+        ]]),
+        store,
+        now_fn=lambda: datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        confirmer=FakeConfirmer([]),  # nothing confirmed -> fully in cash
+    )
+
+    result = asyncio.run(runtime.tick())
+
+    assert result["event"] == "initialized"
+    assert store.state["symbols"] == []
+    assert store.state["last_summary"]["total_equity"] == pytest.approx(300_000)
+    assert store.state["last_summary"]["open_position_count"] == 0
+    assert store.state["last_positions"] == []
+
+
+def test_stop_loss_liquidates_losing_symbol_and_records_realized():
+    store = FakeStore()
+    now_values = iter([
+        datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        datetime(2026, 5, 25, 10, 30, tzinfo=KST),
+    ])
+    runtime = PaperLabRuntime(
+        PaperLabConfig(selection_limit=2, total_capital=200_000, min_quote_volume=0),
+        FakePriceProvider([
+            [
+                MarketCandidate("BTC", price=50_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_000, quote_volume=9_000, percentage=2),
+            ],
+            [
+                # BTC drops -6% (breaches -5% stop), ETH up. Same candidate set => no rebalance.
+                MarketCandidate("BTC", price=47_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_100, quote_volume=9_000, percentage=2),
+            ],
+        ]),
+        store,
+        now_fn=lambda: next(now_values),
+    )
+
+    asyncio.run(runtime.tick())
+    result = asyncio.run(runtime.tick())
+
+    buckets = store.state["engine"]["buckets"]
+    assert result["event"] == "stop_loss"
+    assert buckets["BTC"]["position"] is None  # liquidated
+    assert buckets["ETH"]["position"] is not None  # still held
+    assert store.state["last_summary"]["realized_pnl"] == pytest.approx((47_000 - 50_000) * 2)
+
+
+def test_daily_loss_limit_liquidates_all_and_halts_reentry():
+    store = FakeStore()
+    now_values = iter([
+        datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        datetime(2026, 5, 25, 10, 30, tzinfo=KST),
+        datetime(2026, 5, 25, 11, 0, tzinfo=KST),
+    ])
+    runtime = PaperLabRuntime(
+        PaperLabConfig(selection_limit=2, total_capital=200_000, min_quote_volume=0),
+        FakePriceProvider([
+            [
+                MarketCandidate("BTC", price=50_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_000, quote_volume=9_000, percentage=2),
+            ],
+            [
+                # Equity 200,000 -> 184,000 = -8% > 5% daily limit -> liquidate all + halt.
+                MarketCandidate("BTC", price=44_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=4_800, quote_volume=9_000, percentage=2),
+            ],
+            [
+                # Even with much better candidates, halted window must not re-enter.
+                # (Held symbols BTC/ETH must remain priceable in the snapshot.)
+                MarketCandidate("XRP", price=1_000, quote_volume=99_000, percentage=30),
+                MarketCandidate("BTC", price=44_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=4_800, quote_volume=9_000, percentage=2),
+            ],
+        ]),
+        store,
+        now_fn=lambda: next(now_values),
+    )
+
+    asyncio.run(runtime.tick())
+    halt = asyncio.run(runtime.tick())
+    after = asyncio.run(runtime.tick())
+
+    assert halt["event"] == "daily_loss_halt"
+    assert store.state["halted"] is True
+    buckets = store.state["engine"]["buckets"]
+    assert all(b["position"] is None for b in buckets.values())
+    assert store.state["last_summary"]["realized_pnl"] == pytest.approx(
+        (44_000 - 50_000) * 2 + (4_800 - 5_000) * 20
+    )
+    assert after["event"] == "halted"
+    assert "XRP" not in store.state["engine"]["buckets"]  # no re-entry into new names
+
+
+def test_realized_pnl_from_stop_loss_is_reported_in_daily_snapshot():
+    store = FakeStore()
+    now_values = iter([
+        datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        datetime(2026, 5, 25, 10, 30, tzinfo=KST),
+        datetime(2026, 5, 26, 9, 1, tzinfo=KST),
+    ])
+    runtime = PaperLabRuntime(
+        PaperLabConfig(selection_limit=2, total_capital=200_000, min_quote_volume=0),
+        FakePriceProvider([
+            [
+                MarketCandidate("BTC", price=50_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_000, quote_volume=9_000, percentage=2),
+            ],
+            [
+                MarketCandidate("BTC", price=47_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_100, quote_volume=9_000, percentage=2),
+            ],
+            [
+                MarketCandidate("BTC", price=47_000, quote_volume=10_000, percentage=3),
+                MarketCandidate("ETH", price=5_100, quote_volume=9_000, percentage=2),
+            ],
+        ]),
+        store,
+        now_fn=lambda: next(now_values),
+    )
+
+    asyncio.run(runtime.tick())   # open
+    asyncio.run(runtime.tick())   # stop-loss BTC (realized -6000), same window
+    asyncio.run(runtime.tick())   # next window -> snapshot
+
+    assert len(store.snapshots) == 1
+    assert store.snapshots[0]["summary"]["realized_pnl"] == pytest.approx((47_000 - 50_000) * 2)
 
 
 def test_new_kst_9am_window_snapshots_and_rebalances():

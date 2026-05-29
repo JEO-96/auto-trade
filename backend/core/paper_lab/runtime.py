@@ -11,9 +11,23 @@ from core.paper_lab.selector import MarketCandidate, select_top_markets
 
 DEFAULT_RUN_ID = "paper_lab_market_scan_v1"
 DEFAULT_SELECTION_LIMIT = 10
-DEFAULT_MIN_QUOTE_VOLUME = 500_000_000.0
+# Liquidity floor = "major" universe. Raised from 5e8 (let 161 thin alts through,
+# the source of the -49% alt bleed) to 5e9 (~40 liquid majors/large-caps).
+DEFAULT_MIN_QUOTE_VOLUME = 5_000_000_000.0
 DEFAULT_INTRADAY_REBALANCE_MIN_MINUTES = 180
 DEFAULT_INTRADAY_SCORE_IMPROVEMENT = 0.50
+# Risk controls (conservative defaults). stop_loss: per-symbol; daily_loss_limit: whole window.
+DEFAULT_STOP_LOSS_PCT = 0.05
+DEFAULT_DAILY_LOSS_LIMIT_PCT = 0.05
+# Universe + confirmation (Phase 1). Backtest showed the universe is the #1 lever:
+# same strategy = +16.87% on majors vs -49.35% on the top-24h-gainer alt set.
+DEFAULT_SHORTLIST_LIMIT = 30          # how many candidates to confirm before picking
+DEFAULT_MAX_PERCENTAGE = 25.0         # overheating cap: skip already-pumped names
+DEFAULT_CONFIRM_TIMEFRAME = "15m"
+DEFAULT_CONFIRM_HISTORY_LIMIT = 300   # candles fetched per candidate for confirmation
+# Reserved bucket holding undeployed capital when fewer than selection_limit
+# confirmed setups exist (lets the lab hold cash instead of forcing full invest).
+CASH_BUCKET = "__CASH__"
 
 
 class MarketDataProvider(Protocol):
@@ -40,6 +54,12 @@ class PaperLabConfig:
     min_quote_volume: float = DEFAULT_MIN_QUOTE_VOLUME
     intraday_rebalance_min_minutes: int = DEFAULT_INTRADAY_REBALANCE_MIN_MINUTES
     intraday_score_improvement: float = DEFAULT_INTRADAY_SCORE_IMPROVEMENT
+    stop_loss_pct: float = DEFAULT_STOP_LOSS_PCT
+    daily_loss_limit_pct: float = DEFAULT_DAILY_LOSS_LIMIT_PCT
+    shortlist_limit: int = DEFAULT_SHORTLIST_LIMIT
+    max_percentage: float | None = DEFAULT_MAX_PERCENTAGE
+    confirm_timeframe: str = DEFAULT_CONFIRM_TIMEFRAME
+    confirm_history_limit: int = DEFAULT_CONFIRM_HISTORY_LIMIT
 
 
 class PaperLabRuntime:
@@ -49,29 +69,44 @@ class PaperLabRuntime:
         price_provider: MarketDataProvider,
         store: PaperLabStore,
         now_fn: Callable[[], datetime] | None = None,
+        confirmer=None,
     ) -> None:
         self.config = config
         self.price_provider = price_provider
         self.store = store
         self.now_fn = now_fn or (lambda: datetime.now(tz=KST))
+        # When set, candidates must pass confirmer.confirm(symbol, ohlcv_df) before
+        # being bought. When None, behaviour is unchanged (legacy full-invest path).
+        self.confirmer = confirmer
 
     async def tick(self) -> dict:
         now = self.now_fn()
         window_start, window_end = kst_daily_window(now)
         window_start_iso = window_start.isoformat()
         market_snapshot = await self.price_provider.get_market_snapshot()
+        # Shortlist a wider set (with liquidity + overheating filters) so the
+        # confirmation gate has candidates to choose from; without a confirmer,
+        # the shortlist equals the final selection (legacy behaviour).
+        shortlist_limit = (
+            self.config.shortlist_limit if self.confirmer is not None
+            else self.config.selection_limit
+        )
         selected = select_top_markets(
             market_snapshot,
-            limit=self.config.selection_limit,
+            limit=shortlist_limit,
             min_quote_volume=self.config.min_quote_volume,
+            max_percentage=self.config.max_percentage,
         )
-        selected_symbols = [candidate.symbol for candidate in selected]
         prices = {candidate.symbol: candidate.price for candidate in selected}
+        # Confirmed buy-list: only candidates passing the entry signal (capped at
+        # selection_limit). May be fewer than selection_limit -> remainder stays cash.
+        confirmed_symbols = await self._confirm_symbols([c.symbol for c in selected])
+        selected_symbols = confirmed_symbols
         state_doc = self.store.load_state(self.config.run_id)
 
         if state_doc is None:
-            engine = self._build_fully_invested_engine(
-                selected_symbols, self.config.total_capital, prices
+            engine = self._build_confirmed_engine(
+                selected_symbols, self.config.total_capital, prices, self.config.selection_limit
             )
             event = "initialized"
             rebalance_reason = "initial_selection"
@@ -85,16 +120,29 @@ class PaperLabRuntime:
                 )
             ]
             last_rebalanced_at = now.astimezone(KST).isoformat()
+            window_start_equity = self.config.total_capital
+            window_realized_pnl = 0.0
+            halted = False
         else:
             engine = PaperLabEngine.from_dict(state_doc["engine"])
             previous_window_start = state_doc["window_start"]
-            held_symbols = list(engine.state.buckets.keys())
+            # Exclude the reserved cash bucket from tradable symbol handling.
+            held_symbols = [s for s in engine.state.buckets.keys() if s != CASH_BUCKET]
             held_prices = _prices_for_symbols(market_snapshot, held_symbols)
             rebalance_reason = state_doc.get("rebalance_reason", "hold")
             rebalance_history = state_doc.get("rebalance_history", [])
             last_rebalanced_at = state_doc.get("last_rebalanced_at") or state_doc.get("updated_at")
+            # Carried-over per-window risk state (legacy states may lack these keys).
+            window_start_equity = state_doc.get("window_start_equity")
+            window_realized_pnl = state_doc.get("window_realized_pnl", 0.0)
+            halted = state_doc.get("halted", False)
             if previous_window_start != window_start_iso:
                 previous_summary = engine.summary(held_prices)
+                # Surface the full window's realized PnL (intraday rebuilds discard the
+                # engine ledger, so accumulate it in window_realized_pnl instead of 0).
+                previous_summary["realized_pnl"] = (
+                    window_realized_pnl + previous_summary["realized_pnl"]
+                )
                 self.store.save_snapshot(
                     self.config.run_id,
                     {
@@ -102,13 +150,14 @@ class PaperLabRuntime:
                         "window_end": window_start_iso,
                         "summary": previous_summary,
                         "prices": held_prices,
-                        "positions": engine.position_details(held_prices),
+                        "positions": _visible_positions(engine.position_details(held_prices)),
                         "candidate_symbols": [candidate.symbol for candidate in selected],
                         "created_at": now.astimezone(KST).isoformat(),
                     },
                 )
-                engine = self._build_fully_invested_engine(
-                    selected_symbols, previous_summary["total_equity"], prices
+                engine = self._build_confirmed_engine(
+                    selected_symbols, previous_summary["total_equity"], prices,
+                    self.config.selection_limit,
                 )
                 event = "daily_rebalanced"
                 rebalance_reason = "daily_window_rotation"
@@ -117,34 +166,75 @@ class PaperLabRuntime:
                     rebalance_history,
                     _rebalance_event(event, rebalance_reason, now, selected_symbols, selected),
                 )
+                # New window: reset risk state.
+                window_start_equity = previous_summary["total_equity"]
+                window_realized_pnl = 0.0
+                halted = False
             else:
+                if window_start_equity is None:
+                    window_start_equity = engine.summary(held_prices)["total_equity"]
                 held_summary = engine.summary(held_prices)
-                if _should_intraday_rebalance(
-                    now=now,
-                    last_rebalanced_at=last_rebalanced_at,
-                    held_symbols=held_symbols,
-                    selected_symbols=selected_symbols,
-                    market_snapshot=market_snapshot,
-                    min_minutes=self.config.intraday_rebalance_min_minutes,
-                    min_score_improvement=self.config.intraday_score_improvement,
-                ):
-                    engine = self._build_fully_invested_engine(
-                        selected_symbols, held_summary["total_equity"], prices
-                    )
-                    event = "intraday_rebalanced"
-                    rebalance_reason = "intraday_candidate_rotation"
-                    last_rebalanced_at = now.astimezone(KST).isoformat()
-                    rebalance_history = _append_rebalance_history(
-                        rebalance_history,
-                        _rebalance_event(event, rebalance_reason, now, selected_symbols, selected),
-                    )
-                else:
+                drawdown_pct = (
+                    (window_start_equity - held_summary["total_equity"]) / window_start_equity
+                    if window_start_equity
+                    else 0.0
+                )
+                if halted:
+                    # Daily loss limit already tripped this window: stay in cash, no re-entry.
                     selected_symbols = held_symbols
                     prices = held_prices
-                    event = "updated"
-                    rebalance_reason = "hold"
+                    event = "halted"
+                    rebalance_reason = "daily_loss_halt"
+                elif drawdown_pct >= self.config.daily_loss_limit_pct:
+                    _liquidate_positions(engine, held_prices, held_symbols)
+                    halted = True
+                    selected_symbols = held_symbols
+                    prices = held_prices
+                    event = "daily_loss_halt"
+                    rebalance_reason = "daily_loss_limit"
+                    rebalance_history = _append_rebalance_history(
+                        rebalance_history,
+                        _rebalance_event(event, rebalance_reason, now, [], selected),
+                    )
+                else:
+                    stopped = _apply_stop_loss(engine, held_prices, self.config.stop_loss_pct)
+                    if _should_intraday_rebalance(
+                        now=now,
+                        last_rebalanced_at=last_rebalanced_at,
+                        held_symbols=held_symbols,
+                        selected_symbols=selected_symbols,
+                        market_snapshot=market_snapshot,
+                        min_minutes=self.config.intraday_rebalance_min_minutes,
+                        min_score_improvement=self.config.intraday_score_improvement,
+                    ):
+                        # Preserve realized PnL (incl. any stop-loss above) before the
+                        # rebuild discards the engine ledger.
+                        window_realized_pnl += engine.summary(held_prices)["realized_pnl"]
+                        engine = self._build_confirmed_engine(
+                            selected_symbols, held_summary["total_equity"], prices,
+                            self.config.selection_limit,
+                        )
+                        event = "intraday_rebalanced"
+                        rebalance_reason = "intraday_candidate_rotation"
+                        last_rebalanced_at = now.astimezone(KST).isoformat()
+                        rebalance_history = _append_rebalance_history(
+                            rebalance_history,
+                            _rebalance_event(event, rebalance_reason, now, selected_symbols, selected),
+                        )
+                    else:
+                        selected_symbols = held_symbols
+                        prices = held_prices
+                        event = "stop_loss" if stopped else "updated"
+                        rebalance_reason = "stop_loss" if stopped else "hold"
 
-        summary = engine.summary(prices)
+        engine_summary = engine.summary(prices)
+        total_window_realized = window_realized_pnl + engine_summary["realized_pnl"]
+        summary = {
+            **engine_summary,
+            "realized_pnl": total_window_realized,
+            "window_realized_pnl": total_window_realized,
+            "window_start_equity": window_start_equity,
+        }
         self.store.save_state(
             self.config.run_id,
             {
@@ -159,22 +249,72 @@ class PaperLabRuntime:
                 "rebalance_history": rebalance_history,
                 "window_start": window_start_iso,
                 "window_end": window_end.isoformat(),
+                "window_start_equity": window_start_equity,
+                "window_realized_pnl": window_realized_pnl,
+                "halted": halted,
                 "engine": engine.to_dict(),
                 "last_prices": prices,
                 "last_summary": summary,
-                "last_positions": engine.position_details(prices),
+                "last_positions": _visible_positions(engine.position_details(prices)),
                 "updated_at": now.astimezone(KST).isoformat(),
             },
         )
         return {"event": event, "summary": summary, "prices": prices}
 
-    def _build_fully_invested_engine(
-        self, symbols: list[str], total_capital: float, prices: dict[str, float]
+    def _build_confirmed_engine(
+        self,
+        confirmed_symbols: list[str],
+        total_capital: float,
+        prices: dict[str, float],
+        slot_count: int,
     ) -> PaperLabEngine:
-        engine = PaperLabEngine(symbols, total_capital)
-        for symbol in symbols:
-            engine.buy(symbol, price=prices[symbol])
+        """Equal-weight engine that buys only confirmed symbols.
+
+        Capital is split into ``slot_count`` equal slots. Each confirmed symbol
+        fills one slot; unfilled slots stay in the reserved cash bucket. With no
+        confirmer, ``confirmed_symbols`` already equals the top selection, so all
+        slots fill and the cash bucket is empty (legacy full-invest behaviour).
+        """
+        slot_count = max(slot_count, 1)
+        per_slot = total_capital / slot_count
+        filled = [s for s in confirmed_symbols if s in prices][:slot_count]
+        buckets: dict[str, dict] = {
+            sym: {"cash": per_slot, "position": None, "trades": []} for sym in filled
+        }
+        buckets[CASH_BUCKET] = {
+            "cash": total_capital - per_slot * len(filled),
+            "position": None,
+            "trades": [],
+        }
+        engine = PaperLabEngine.from_dict({"buckets": buckets})
+        for sym in filled:
+            engine.buy(sym, price=prices[sym])
         return engine
+
+    async def _confirm_symbols(self, symbols: list[str]) -> list[str]:
+        """Return symbols passing the entry confirmer, capped at selection_limit.
+
+        Without a confirmer, returns the top selection_limit symbols unchanged.
+        """
+        limit = self.config.selection_limit
+        if self.confirmer is None:
+            return symbols[:limit]
+        confirmed: list[str] = []
+        for symbol in symbols:
+            if len(confirmed) >= limit:
+                break
+            df = await self._fetch_confirmation_ohlcv(symbol)
+            if self.confirmer.confirm(symbol, df):
+                confirmed.append(symbol)
+        return confirmed
+
+    async def _fetch_confirmation_ohlcv(self, symbol: str):
+        getter = getattr(self.price_provider, "get_ohlcv", None)
+        if getter is None:
+            return None
+        return await getter(
+            symbol, self.config.confirm_timeframe, self.config.confirm_history_limit
+        )
 
 
 def _prices_for_symbols(
@@ -182,6 +322,35 @@ def _prices_for_symbols(
 ) -> dict[str, float]:
     prices_by_symbol = {candidate.symbol: candidate.price for candidate in market_snapshot}
     return {symbol: prices_by_symbol[symbol] for symbol in symbols}
+
+
+def _visible_positions(details: list[dict]) -> list[dict]:
+    """Hide the internal reserved cash bucket from reported positions."""
+    return [d for d in details if d.get("symbol") != CASH_BUCKET]
+
+
+def _liquidate_positions(engine: PaperLabEngine, prices: dict[str, float], symbols: list[str]) -> None:
+    """Sell every open position among ``symbols`` at its mark price (realizes PnL)."""
+    for symbol in symbols:
+        bucket = engine.state.buckets.get(symbol)
+        if bucket is not None and bucket.position is not None:
+            bucket.sell(prices[symbol])
+
+
+def _apply_stop_loss(
+    engine: PaperLabEngine, prices: dict[str, float], stop_loss_pct: float
+) -> bool:
+    """Liquidate positions whose return breaches -stop_loss_pct. Returns True if any sold."""
+    if stop_loss_pct <= 0:
+        return False
+    threshold = -abs(stop_loss_pct) * 100  # position_details return_pct is in percent
+    stopped = False
+    for detail in engine.position_details(prices):
+        if detail.get("position_open") and detail["return_pct"] <= threshold:
+            symbol = detail["symbol"]
+            engine.state.buckets[symbol].sell(prices[symbol])
+            stopped = True
+    return stopped
 
 
 def _should_intraday_rebalance(

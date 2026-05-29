@@ -17,11 +17,21 @@ def select_top_markets(
     candidates: list[MarketCandidate],
     limit: int,
     min_quote_volume: float,
+    max_percentage: float | None = None,
 ) -> list[MarketCandidate]:
+    """Score & rank candidates.
+
+    - ``min_quote_volume``: liquidity floor (filters illiquid alts / fake pumps).
+    - ``max_percentage``: overheating cap. Candidates whose 24h change already
+      exceeds this are excluded to avoid buying the top of a pump. ``None``
+      disables the cap (legacy behaviour).
+    """
     eligible = [
         candidate
         for candidate in candidates
-        if candidate.price > 0 and candidate.quote_volume >= min_quote_volume
+        if candidate.price > 0
+        and candidate.quote_volume >= min_quote_volume
+        and (max_percentage is None or candidate.percentage <= max_percentage)
     ]
     scored = [
         MarketCandidate(

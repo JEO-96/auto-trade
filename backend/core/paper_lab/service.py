@@ -12,14 +12,33 @@ logger = logging.getLogger(__name__)
 
 
 class UpbitTickerPriceProvider:
-    def __init__(self) -> None:
+    def __init__(self, db_factory=None) -> None:
         self.fetcher = DataFetcher(exchange_id="upbit")
+        self.db_factory = db_factory
         self._krw_symbols: list[str] | None = None
         self.stats = {
             "market_load_calls": 0,
             "ticker_calls": 0,
+            "ohlcv_calls": 0,
             "last_error": None,
         }
+
+    async def get_ohlcv(self, symbol: str, timeframe: str, limit: int):
+        """Fetch candle history for one symbol (DB-cached). Returns DataFrame or None."""
+        loop = asyncio.get_running_loop()
+        self.stats["ohlcv_calls"] += 1
+
+        def _fetch():
+            if self.db_factory is not None:
+                with self.db_factory() as db:
+                    return self.fetcher.fetch_ohlcv(symbol, timeframe, limit=limit, db=db)
+            return self.fetcher.fetch_ohlcv(symbol, timeframe, limit=limit)
+
+        try:
+            return await loop.run_in_executor(None, _fetch)
+        except Exception as exc:
+            self.stats["last_error"] = str(exc)
+            return None
 
     async def get_market_snapshot(self) -> list[MarketCandidate]:
         loop = asyncio.get_running_loop()
@@ -102,10 +121,13 @@ class PaperLabService:
 
 
 def build_paper_lab_service(db_factory, poll_seconds: int = 300) -> PaperLabService:
+    from core.paper_lab.confirmation import StrategyConfirmer
+
     runtime = PaperLabRuntime(
         PaperLabConfig(),
-        UpbitTickerPriceProvider(),
+        UpbitTickerPriceProvider(db_factory=db_factory),
         SqlAlchemyPaperLabStore(db_factory),
+        confirmer=StrategyConfirmer(),
     )
     return PaperLabService(runtime, poll_seconds=poll_seconds)
 
