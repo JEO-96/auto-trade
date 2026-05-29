@@ -144,9 +144,9 @@ Current conservative defaults (`core/paper_lab/runtime.py`):
 - `DEFAULT_INTRADAY_SCORE_IMPROVEMENT = 0.50`
 - `DEFAULT_STOP_LOSS_PCT = 0.05` (per-symbol stop)
 - `DEFAULT_DAILY_LOSS_LIMIT_PCT = 0.05` (whole-window halt)
-- `DEFAULT_MIN_QUOTE_VOLUME = 5_000_000_000.0` (liquidity floor = "major" universe; ~40 Upbit KRW names)
+- `DEFAULT_MIN_QUOTE_VOLUME = 10_000_000_000.0` (liquidity floor = "major" universe; ~25 Upbit KRW names)
 - `DEFAULT_MAX_PERCENTAGE = 25.0` (overheating cap; skip already-pumped names)
-- `DEFAULT_SHORTLIST_LIMIT = 30`, `DEFAULT_CONFIRM_TIMEFRAME = "15m"`, `DEFAULT_CONFIRM_HISTORY_LIMIT = 300`
+- `DEFAULT_SHORTLIST_LIMIT = 30`, `DEFAULT_CONFIRM_TIMEFRAME = "4h"`, `DEFAULT_CONFIRM_HISTORY_LIMIT = 300`
 
 Do not loosen those defaults casually. The 2026-05-27 review found that frequent candidate rotation made root-cause analysis harder and can increase chase-entry risk in 급등락 markets.
 
@@ -154,7 +154,7 @@ Do not loosen those defaults casually. The 2026-05-27 review found that frequent
 
 The lab no longer buys the top-24h-gainers blindly. Per tick:
 1. `selector.select_top_markets(..., min_quote_volume=5e9, max_percentage=25)` → liquid, non-overheated shortlist (up to `shortlist_limit`).
-2. `core/paper_lab/confirmation.StrategyConfirmer` reuses backtested `surge_catcher_15m` **read-only** (`apply_indicators` + `check_buy_signal`) on each candidate's 15m OHLCV. Symbols with `< 201` candles (new listings) are rejected.
+2. `core/paper_lab/confirmation.EnsembleConfirmer` reuses backtested 4h strategies **read-only** (`apply_indicators` + `check_buy_signal`) on each candidate's 4h OHLCV — buys if EITHER `momentum_aggressive_4h` or `trend_rider_4h_v1` fires. Symbols with `< 201` candles (new listings) are rejected. (Was `StrategyConfirmer(surge_catcher_15m)` on 15m before the 4h pivot.)
 3. Engine buys **only confirmed** symbols (equal slot sizing); unfilled slots stay in the reserved `__CASH__` bucket (no forced full-invest). `__CASH__` is hidden from reported `positions`/`last_positions` but counts toward equity.
 4. Risk controls in `runtime.tick` hold path: per-symbol stop-loss, daily loss limit (liquidate all + `halted` for the window), and `window_realized_pnl` accumulation so realized losses survive intraday engine rebuilds.
 
@@ -165,12 +165,16 @@ The confirmer is wired in production via `build_paper_lab_service`; tests inject
 
 ### Validation risk note (do not over-trust the universe)
 
-Backtest (surge_catcher_15m, 6mo, 15m, fees 0.05%, trailing): the **universe is the #1 lever**, not the entry signal. Same strategy returned **-49% on the alt top-gainer set** vs **+16.87% on 4 sample majors**, but a broader **12-major pool was only ~breakeven (-0.7%, PF 0.99, MDD -21%)**. The major filter converts catastrophe → breakeven + cash-when-no-signal; it is **not yet a profitable model**. Positive expectancy still needs Phase 2 (engine trailing exit) / Phase 3 (regime filter) / param tuning. Do not claim profitability from the major filter alone.
+Backtest (surge_catcher_15m, 6mo, 15m, fees 0.05%, trailing): the **universe is the #1 lever**, not the entry signal. Same strategy returned **-49% on the alt top-gainer set** vs **+16.87% on 4 sample majors**, but a broader **12-major pool was only ~breakeven (-0.7%, PF 0.99, MDD -21%)**. The major filter converts catastrophe → breakeven + cash-when-no-signal; it is **not yet a profitable model**.
+
+### 4h trend pivot (commit `b3b871d`, 2026-05-30)
+
+A research sweep of 24 strategies (majors, 6mo, native TF) found **15m approaches all lose** (-13~-28%) and **4h trend-following is the only robust edge**. `momentum_aggressive_4h` and `trend_rider_4h_v1` stayed positive across universe subsets (top4/6/8/12), out-of-sample (prior 6mo), and walk-forward (trend_rider 4/4 quarters, momentum_aggressive 3/4) on focused majors (top8 ~+28-30%, PF 1.4). **Entry-only pivot** (exits unchanged): `EnsembleConfirmer` on 4h, liquidity floor raised to 1e10. Caveats: low trade frequency, small per-window samples, one -11.5% quarter; live dynamic selection ≠ backtest fixed set; exits are still the Phase-1 risk controls, not the strategies' native TP/SL (Phase 2 candidate). Regime filter (Phase 3) was tested and did **not** turn the pool positive (only lowered MDD) — do not re-chase it without new evidence.
 
 Paper-lab verification command:
 
 ```bash
-cd backend && python -m pytest tests/test_paper_lab_engine.py tests/test_paper_lab_runtime.py tests/test_paper_lab_selector.py tests/test_paper_lab_service.py -q
+cd backend && python -m pytest tests/test_paper_lab_engine.py tests/test_paper_lab_runtime.py tests/test_paper_lab_selector.py tests/test_paper_lab_service.py tests/test_paper_lab_confirmation.py -q
 ```
 
 After deploying paper-lab changes, verify the production server commit, container health, and runtime defaults inside the backend container.
