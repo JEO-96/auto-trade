@@ -41,6 +41,25 @@ class FakeConfirmer:
         return symbol in self.allowed
 
 
+class FakeRegimeProvider(FakePriceProvider):
+    """Serves a real BTC/KRW close series (up/down trend) for the regime check,
+    and a placeholder for candidate OHLCV."""
+
+    def __init__(self, snapshots, btc_trend):
+        super().__init__(snapshots)
+        self.btc_trend = btc_trend  # "up" -> risk-on, "down" -> risk-off
+
+    async def get_ohlcv(self, symbol, timeframe, limit):
+        if symbol == "BTC/KRW":
+            import pandas as pd
+            if self.btc_trend == "up":
+                closes = [100 + 100 * i / 249 for i in range(250)]
+            else:
+                closes = [200 - 100 * i / 249 for i in range(250)]
+            return pd.DataFrame({"timestamp": list(range(250)), "close": closes})
+        return f"ohlcv:{symbol}"
+
+
 class FakeStore:
     def __init__(self):
         self.state = None
@@ -278,6 +297,49 @@ def test_confirmation_buys_only_confirmed_and_holds_cash_for_rest():
     # reserved cash bucket is hidden from reported positions
     assert all(p["symbol"] != "__CASH__" for p in store.state["last_positions"])
     assert [p["symbol"] for p in store.state["last_positions"]] == ["AAA"]
+
+
+def test_regime_off_blocks_new_entries():
+    store = FakeStore()
+    runtime = PaperLabRuntime(
+        PaperLabConfig(selection_limit=3, total_capital=300_000, min_quote_volume=0,
+                       shortlist_limit=5),
+        FakeRegimeProvider([[
+            MarketCandidate("AAA", price=100, quote_volume=10_000, percentage=5),
+            MarketCandidate("BBB", price=100, quote_volume=9_000, percentage=4),
+        ]], btc_trend="down"),  # BTC below EMA -> risk-off
+        store,
+        now_fn=lambda: datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        confirmer=FakeConfirmer(["AAA", "BBB"]),  # would confirm, but regime blocks
+    )
+
+    result = asyncio.run(runtime.tick())
+
+    assert result["event"] == "initialized"
+    assert store.state["symbols"] == []  # risk-off -> all cash
+    assert store.state["last_summary"]["open_position_count"] == 0
+    assert store.state["last_summary"]["total_equity"] == pytest.approx(300_000)
+
+
+def test_regime_on_allows_entries():
+    store = FakeStore()
+    runtime = PaperLabRuntime(
+        PaperLabConfig(selection_limit=3, total_capital=300_000, min_quote_volume=0,
+                       shortlist_limit=5),
+        FakeRegimeProvider([[
+            MarketCandidate("AAA", price=100, quote_volume=10_000, percentage=5),
+            MarketCandidate("BBB", price=100, quote_volume=9_000, percentage=4),
+        ]], btc_trend="up"),  # BTC above EMA -> risk-on
+        store,
+        now_fn=lambda: datetime(2026, 5, 25, 10, 0, tzinfo=KST),
+        confirmer=FakeConfirmer(["AAA"]),
+    )
+
+    result = asyncio.run(runtime.tick())
+
+    assert result["event"] == "initialized"
+    assert store.state["symbols"] == ["AAA"]
+    assert "AAA" in store.state["engine"]["buckets"]
 
 
 def test_no_confirmed_candidates_holds_all_cash():

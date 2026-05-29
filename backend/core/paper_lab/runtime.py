@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable, Protocol
 
+import pandas as pd
+
 from core.paper_lab.daily_window import KST, kst_daily_window
 from core.paper_lab.engine import PaperLabEngine
 from core.paper_lab.selector import MarketCandidate, select_top_markets
@@ -28,6 +30,14 @@ DEFAULT_MAX_PERCENTAGE = 25.0         # overheating cap: skip already-pumped nam
 # momentum_aggressive / trend_rider held across subsets, OOS, and walk-forward).
 DEFAULT_CONFIRM_TIMEFRAME = "4h"
 DEFAULT_CONFIRM_HISTORY_LIMIT = 300   # 4h candles per candidate (>=201 needed for signal)
+# Regime filter: only open NEW positions when the market leader trends up.
+# Overfitting check showed the 4h edge is bull-regime dependent (2022 bear
+# -19~-56%); this gate roughly halved bear losses in backtest.
+DEFAULT_REGIME_ENABLED = True
+DEFAULT_REGIME_SYMBOL = "BTC/KRW"
+DEFAULT_REGIME_TIMEFRAME = "4h"
+DEFAULT_REGIME_EMA_PERIOD = 200
+DEFAULT_REGIME_HISTORY_LIMIT = 300
 # Reserved bucket holding undeployed capital when fewer than selection_limit
 # confirmed setups exist (lets the lab hold cash instead of forcing full invest).
 CASH_BUCKET = "__CASH__"
@@ -63,6 +73,11 @@ class PaperLabConfig:
     max_percentage: float | None = DEFAULT_MAX_PERCENTAGE
     confirm_timeframe: str = DEFAULT_CONFIRM_TIMEFRAME
     confirm_history_limit: int = DEFAULT_CONFIRM_HISTORY_LIMIT
+    regime_enabled: bool = DEFAULT_REGIME_ENABLED
+    regime_symbol: str = DEFAULT_REGIME_SYMBOL
+    regime_timeframe: str = DEFAULT_REGIME_TIMEFRAME
+    regime_ema_period: int = DEFAULT_REGIME_EMA_PERIOD
+    regime_history_limit: int = DEFAULT_REGIME_HISTORY_LIMIT
 
 
 class PaperLabRuntime:
@@ -299,6 +314,10 @@ class PaperLabRuntime:
 
         Without a confirmer, returns the top selection_limit symbols unchanged.
         """
+        # Regime gate: in a downtrend (market leader below its EMA) hold cash —
+        # no NEW entries. Existing positions stay managed by stop/daily-limit.
+        if self.config.regime_enabled and not await self._is_risk_on():
+            return []
         limit = self.config.selection_limit
         if self.confirmer is None:
             return symbols[:limit]
@@ -318,6 +337,24 @@ class PaperLabRuntime:
         return await getter(
             symbol, self.config.confirm_timeframe, self.config.confirm_history_limit
         )
+
+    async def _is_risk_on(self) -> bool:
+        """True if the regime leader (BTC) closes above its EMA. Fail-open: if
+        regime data is unavailable, do not block trading (return True)."""
+        getter = getattr(self.price_provider, "get_ohlcv", None)
+        if getter is None:
+            return True
+        df = await getter(
+            self.config.regime_symbol,
+            self.config.regime_timeframe,
+            self.config.regime_history_limit,
+        )
+        period = self.config.regime_ema_period
+        if not isinstance(df, pd.DataFrame) or "close" not in df or len(df) < period:
+            return True
+        close = df["close"]
+        ema = close.ewm(span=period, adjust=False).mean()
+        return bool(close.iloc[-1] > ema.iloc[-1])
 
 
 def _prices_for_symbols(
