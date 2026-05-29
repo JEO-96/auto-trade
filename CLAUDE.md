@@ -143,6 +143,7 @@ Current conservative defaults (`core/paper_lab/runtime.py`):
 - `DEFAULT_INTRADAY_REBALANCE_MIN_MINUTES = 180`
 - `DEFAULT_INTRADAY_SCORE_IMPROVEMENT = 0.50`
 - `DEFAULT_STOP_LOSS_PCT = 0.05` (per-symbol stop)
+- `DEFAULT_TRAILING_STOP_PCT = 0.05` (per-symbol trailing take-profit; exit on 5% give-back from peak)
 - `DEFAULT_DAILY_LOSS_LIMIT_PCT = 0.05` (whole-window halt)
 - `DEFAULT_MIN_QUOTE_VOLUME = 10_000_000_000.0` (liquidity floor = "major" universe; ~25 Upbit KRW names)
 - `DEFAULT_MAX_PERCENTAGE = 25.0` (overheating cap; skip already-pumped names)
@@ -155,9 +156,9 @@ Do not loosen those defaults casually. The 2026-05-27 review found that frequent
 
 The lab no longer buys the top-24h-gainers blindly. Per tick:
 1. `selector.select_top_markets(..., min_quote_volume=5e9, max_percentage=25)` → liquid, non-overheated shortlist (up to `shortlist_limit`).
-2. `core/paper_lab/confirmation.EnsembleConfirmer` reuses backtested 4h strategies **read-only** (`apply_indicators` + `check_buy_signal`) on each candidate's 4h OHLCV — buys if EITHER `momentum_aggressive_4h` or `trend_rider_4h_v1` fires. Symbols with `< 201` candles (new listings) are rejected. (Was `StrategyConfirmer(surge_catcher_15m)` on 15m before the 4h pivot.)
+2. `core/paper_lab/confirmation.StrategyConfirmer("trend_rider_4h_v1")` reuses the backtested strategy **read-only** (`apply_indicators` + `check_buy_signal`) on each candidate's 4h OHLCV. Symbols with `< 201` candles (new listings) are rejected. (History: `surge_catcher_15m`/15m → `EnsembleConfirmer(momentum_aggressive_4h, trend_rider_4h_v1)`/4h → trend_rider-only after Phase 2 validation dropped crash-fragile momentum_aggressive. `EnsembleConfirmer` remains available.)
 3. Engine buys **only confirmed** symbols (equal slot sizing); unfilled slots stay in the reserved `__CASH__` bucket (no forced full-invest). `__CASH__` is hidden from reported `positions`/`last_positions` but counts toward equity.
-4. Risk controls in `runtime.tick` hold path: per-symbol stop-loss, daily loss limit (liquidate all + `halted` for the window), and `window_realized_pnl` accumulation so realized losses survive intraday engine rebuilds.
+4. Risk controls in `runtime.tick` hold path: per-symbol **trailing take-profit** (`PaperPosition.peak_price`, exit on 5% give-back) + stop-loss, daily loss limit (liquidate all + `halted` for the window), regime gate, and `window_realized_pnl` accumulation so realized PnL survives intraday engine rebuilds.
 
 New state/snapshot fields (in addition to `positions`/`last_positions`):
 `window_start_equity`, `window_realized_pnl`, `halted`. `summary.realized_pnl` is now the **window-level** realized PnL (was structurally 0 before — intraday rebuilds discarded the ledger). `provider_stats.ohlcv_calls` appears only on this code — use it to confirm the deploy is live.
@@ -179,6 +180,10 @@ A research sweep of 24 strategies (majors, 6mo, native TF) found **15m approache
 **Phase 3 regime filter (deployed):** `runtime._is_risk_on` gates new entries on BTC/KRW 4h > EMA200 (`config.regime_*`, fail-open if data missing). Backtest: roughly halved bear losses (momentum -56%→-34%, trend -19%→-7%) and rescued 2025 (momentum -13%→+27%), at some bull-upside cost — risk reduction, **not** a cure (2022 still -34%). (Corrects the earlier note that dismissed the regime filter on 2025-only data.)
 
 **Pre-2022 out-of-sample (reconciliation):** Tested on pre-optimization-era data (2018-2021, long-history Upbit coins), both strategies were **4/4 years positive** including the 2018 bear (+44%/+40%) — so the "overfit to recent 3 years" worry is largely allayed; the trend logic predates the optimization window. The two differ in crash robustness: re-running 2022 on the *same old coins*, `trend_rider_4h_v1` was **+28%** (the -19% was the alt-heavy SOL/DOGE/AVAX/LINK universe, not the strategy), while `momentum_aggressive_4h` was still **-45%** (genuinely crash-fragile regardless of universe). Net lesson: the real risks are universe quality in crashes (mitigated by the 1e10 floor) and momentum_aggressive's crash fragility — not recency overfit. Caveat: 2018-2021 returns are likely inflated by thin early-market liquidity vs the 0.05% fee assumption.
+
+### Phase 2: trend_rider-only + trailing (commit `5385cc3`, 2026-05-30)
+
+Goal set: **≥20%/yr (cycle average)**. Backtesting the *combined* deployed system (ensemble + regime + unified 5% trailing) on quality majors 2018-2026 exposed that the unified trailing + ensemble was mediocre (3 down years, MDD -25~-34%) — momentum_aggressive dragged 2022/2025 negative. Dropping it: **trend_rider-only + regime + native 5% trailing** is cleaner — 7/9 years positive, mild down years (2018 -10%, 2022 -15%), 2025 -25%→+13.5%, 5/9 years ≥+20%. So production was simplified to `StrategyConfirmer("trend_rider_4h_v1")` and a per-symbol trailing take-profit was added to the engine. Honest framing: cycle-average ≥20% is realistic for this bull-beta-with-trend-timing system, but **not every year** (2018/2022 mild losses), and 2018-2021 magnitudes are liquidity-inflated. Track live equity vs +20%/yr in the daily review.
 
 Paper-lab verification command:
 
