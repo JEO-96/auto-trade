@@ -138,12 +138,34 @@ As of commit `2da626d`, paper-lab snapshots/state include symbol-level position 
 - Current state field: `last_positions`
 - Each position includes `symbol`, `qty`, `entry_price`, `mark_price`, `position_value`, `unrealized_pnl`, `return_pct`, and `realized_pnl`
 
-Current conservative defaults:
+Current conservative defaults (`core/paper_lab/runtime.py`):
 
 - `DEFAULT_INTRADAY_REBALANCE_MIN_MINUTES = 180`
 - `DEFAULT_INTRADAY_SCORE_IMPROVEMENT = 0.50`
+- `DEFAULT_STOP_LOSS_PCT = 0.05` (per-symbol stop)
+- `DEFAULT_DAILY_LOSS_LIMIT_PCT = 0.05` (whole-window halt)
+- `DEFAULT_MIN_QUOTE_VOLUME = 5_000_000_000.0` (liquidity floor = "major" universe; ~40 Upbit KRW names)
+- `DEFAULT_MAX_PERCENTAGE = 25.0` (overheating cap; skip already-pumped names)
+- `DEFAULT_SHORTLIST_LIMIT = 30`, `DEFAULT_CONFIRM_TIMEFRAME = "15m"`, `DEFAULT_CONFIRM_HISTORY_LIMIT = 300`
 
 Do not loosen those defaults casually. The 2026-05-27 review found that frequent candidate rotation made root-cause analysis harder and can increase chase-entry risk in 급등락 markets.
+
+### Phase 1 entry pipeline (as of commit `6f56393`, 2026-05-30)
+
+The lab no longer buys the top-24h-gainers blindly. Per tick:
+1. `selector.select_top_markets(..., min_quote_volume=5e9, max_percentage=25)` → liquid, non-overheated shortlist (up to `shortlist_limit`).
+2. `core/paper_lab/confirmation.StrategyConfirmer` reuses backtested `surge_catcher_15m` **read-only** (`apply_indicators` + `check_buy_signal`) on each candidate's 15m OHLCV. Symbols with `< 201` candles (new listings) are rejected.
+3. Engine buys **only confirmed** symbols (equal slot sizing); unfilled slots stay in the reserved `__CASH__` bucket (no forced full-invest). `__CASH__` is hidden from reported `positions`/`last_positions` but counts toward equity.
+4. Risk controls in `runtime.tick` hold path: per-symbol stop-loss, daily loss limit (liquidate all + `halted` for the window), and `window_realized_pnl` accumulation so realized losses survive intraday engine rebuilds.
+
+New state/snapshot fields (in addition to `positions`/`last_positions`):
+`window_start_equity`, `window_realized_pnl`, `halted`. `summary.realized_pnl` is now the **window-level** realized PnL (was structurally 0 before — intraday rebuilds discarded the ledger). `provider_stats.ohlcv_calls` appears only on this code — use it to confirm the deploy is live.
+
+The confirmer is wired in production via `build_paper_lab_service`; tests inject a fake confirmer (no OHLCV path) so legacy behavior is preserved when `confirmer=None`.
+
+### Validation risk note (do not over-trust the universe)
+
+Backtest (surge_catcher_15m, 6mo, 15m, fees 0.05%, trailing): the **universe is the #1 lever**, not the entry signal. Same strategy returned **-49% on the alt top-gainer set** vs **+16.87% on 4 sample majors**, but a broader **12-major pool was only ~breakeven (-0.7%, PF 0.99, MDD -21%)**. The major filter converts catastrophe → breakeven + cash-when-no-signal; it is **not yet a profitable model**. Positive expectancy still needs Phase 2 (engine trailing exit) / Phase 3 (regime filter) / param tuning. Do not claim profitability from the major filter alone.
 
 Paper-lab verification command:
 
