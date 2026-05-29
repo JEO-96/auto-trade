@@ -178,6 +178,8 @@ A research sweep of 24 strategies (majors, 6mo, native TF) found **15m approache
 
 **Phase 3 regime filter (deployed):** `runtime._is_risk_on` gates new entries on BTC/KRW 4h > EMA200 (`config.regime_*`, fail-open if data missing). Backtest: roughly halved bear losses (momentum -56%→-34%, trend -19%→-7%) and rescued 2025 (momentum -13%→+27%), at some bull-upside cost — risk reduction, **not** a cure (2022 still -34%). (Corrects the earlier note that dismissed the regime filter on 2025-only data.)
 
+**Pre-2022 out-of-sample (reconciliation):** Tested on pre-optimization-era data (2018-2021, long-history Upbit coins), both strategies were **4/4 years positive** including the 2018 bear (+44%/+40%) — so the "overfit to recent 3 years" worry is largely allayed; the trend logic predates the optimization window. The two differ in crash robustness: re-running 2022 on the *same old coins*, `trend_rider_4h_v1` was **+28%** (the -19% was the alt-heavy SOL/DOGE/AVAX/LINK universe, not the strategy), while `momentum_aggressive_4h` was still **-45%** (genuinely crash-fragile regardless of universe). Net lesson: the real risks are universe quality in crashes (mitigated by the 1e10 floor) and momentum_aggressive's crash fragility — not recency overfit. Caveat: 2018-2021 returns are likely inflated by thin early-market liquidity vs the 0.05% fee assumption.
+
 Paper-lab verification command:
 
 ```bash
