@@ -117,3 +117,38 @@ Any frontend modification MUST pass the following before reporting 'Done':
 4. **Build Attempt**: If logic is complex, run `npm run build` locally to verify webpack/next.js integrity.
 
 Failure to follow these steps leads to deployment breakage. Execute these now for any changes.
+
+---
+
+## Paper Lab Daily Review and Risk Notes
+
+The multi-coin paper lab is separate from regular bot `trade_logs`.
+For daily reviews, use production DB evidence instead of git history:
+
+- `paper_lab_daily_snapshots`: KST 09:00 daily paper-lab windows, total equity, realized/unrealized PnL, snapshot JSON.
+- `paper_lab_run_states`: current selected symbols, candidates, provider stats, rebalance history, current engine state.
+- `trade_logs` joined with `bot_configs.paper_trading_mode = TRUE`: regular paper bot logs only. Multi-coin paper-lab losses can be unrealized and absent from `trade_logs`.
+
+Always state the exact KST window in reports, for example:
+`2026-05-27 09:00 ~ 2026-05-28 09:00 KST`.
+
+As of commit `2da626d`, paper-lab snapshots/state include symbol-level position details:
+
+- Daily snapshot field: `positions`
+- Current state field: `last_positions`
+- Each position includes `symbol`, `qty`, `entry_price`, `mark_price`, `position_value`, `unrealized_pnl`, `return_pct`, and `realized_pnl`
+
+Current conservative defaults:
+
+- `DEFAULT_INTRADAY_REBALANCE_MIN_MINUTES = 180`
+- `DEFAULT_INTRADAY_SCORE_IMPROVEMENT = 0.50`
+
+Do not loosen those defaults casually. The 2026-05-27 review found that frequent candidate rotation made root-cause analysis harder and can increase chase-entry risk in 급등락 markets.
+
+Paper-lab verification command:
+
+```bash
+cd backend && python -m pytest tests/test_paper_lab_engine.py tests/test_paper_lab_runtime.py tests/test_paper_lab_selector.py tests/test_paper_lab_service.py -q
+```
+
+After deploying paper-lab changes, verify the production server commit, container health, and runtime defaults inside the backend container.
