@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 
 from core.data_fetcher import DataFetcher
 from core.paper_lab.runtime import PaperLabConfig, PaperLabRuntime
@@ -10,12 +11,26 @@ from core.paper_lab.store import SqlAlchemyPaperLabStore
 
 logger = logging.getLogger(__name__)
 
+# Refresh the KRW universe periodically so new listings enter and delisted codes
+# drop out without a server restart. Upbit rejects a fetch_tickers batch with a
+# 404 "Code not found" if even one requested code is stale, so a stale cache
+# would otherwise break every tick until restart.
+SYMBOL_CACHE_TTL_SECONDS = 6 * 3600
+
+
+def _is_unknown_market_error(exc: Exception) -> bool:
+    """True when Upbit rejected the request because a market code is unknown
+    (e.g. a delisted coin still in our cached symbol list)."""
+    message = str(exc)
+    return "Code not found" in message or '"name":404' in message
+
 
 class UpbitTickerPriceProvider:
     def __init__(self, db_factory=None) -> None:
         self.fetcher = DataFetcher(exchange_id="upbit")
         self.db_factory = db_factory
         self._krw_symbols: list[str] | None = None
+        self._krw_symbols_loaded_at: float = 0.0
         self.stats = {
             "market_load_calls": 0,
             "ticker_calls": 0,
@@ -48,8 +63,18 @@ class UpbitTickerPriceProvider:
             tickers = await loop.run_in_executor(None, lambda: self.fetcher.exchange.fetch_tickers(symbols))
             self.stats["last_error"] = None
         except Exception as exc:
-            self.stats["last_error"] = str(exc)
-            raise
+            # A single delisted code makes Upbit 404 the whole batch. Reload the
+            # market universe (drops the stale code) and retry once so the lab
+            # self-heals across delistings instead of failing every tick.
+            if _is_unknown_market_error(exc):
+                self.stats["last_error"] = str(exc)
+                logger.warning("[PaperLab] stale market code in ticker batch; reloading universe and retrying: %s", exc)
+                symbols = await self._get_krw_symbols(loop, force_reload=True)
+                tickers = await loop.run_in_executor(None, lambda: self.fetcher.exchange.fetch_tickers(symbols))
+                self.stats["last_error"] = None
+            else:
+                self.stats["last_error"] = str(exc)
+                raise
         candidates: list[MarketCandidate] = []
         for symbol, ticker in tickers.items():
             price = float(ticker.get("last") or ticker.get("close") or 0)
@@ -66,12 +91,22 @@ class UpbitTickerPriceProvider:
                 )
         return candidates
 
-    async def _get_krw_symbols(self, loop) -> list[str]:
-        if self._krw_symbols is not None:
+    async def _get_krw_symbols(self, loop, force_reload: bool = False) -> list[str]:
+        fresh = (
+            self._krw_symbols is not None
+            and not force_reload
+            and (time.monotonic() - self._krw_symbols_loaded_at) < SYMBOL_CACHE_TTL_SECONDS
+        )
+        if fresh:
             return self._krw_symbols
         self.stats["market_load_calls"] += 1
         try:
-            markets = await loop.run_in_executor(None, self.fetcher.exchange.load_markets)
+            if force_reload:
+                # reload=True bypasses ccxt's in-memory markets cache so delisted
+                # codes are actually dropped (a plain call returns the stale set).
+                markets = await loop.run_in_executor(None, lambda: self.fetcher.exchange.load_markets(True))
+            else:
+                markets = await loop.run_in_executor(None, self.fetcher.exchange.load_markets)
             self.stats["last_error"] = None
         except Exception as exc:
             self.stats["last_error"] = str(exc)
@@ -81,6 +116,7 @@ class UpbitTickerPriceProvider:
             for symbol, market in markets.items()
             if symbol.endswith("/KRW") and market.get("active", True)
         ]
+        self._krw_symbols_loaded_at = time.monotonic()
         return self._krw_symbols
 
 
