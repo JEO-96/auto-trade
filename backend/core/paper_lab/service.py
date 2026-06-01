@@ -63,14 +63,17 @@ class UpbitTickerPriceProvider:
             tickers = await loop.run_in_executor(None, lambda: self.fetcher.exchange.fetch_tickers(symbols))
             self.stats["last_error"] = None
         except Exception as exc:
-            # A single delisted code makes Upbit 404 the whole batch. Reload the
-            # market universe (drops the stale code) and retry once so the lab
-            # self-heals across delistings instead of failing every tick.
+            # A single bad code makes Upbit 404 the whole batch. This happens for
+            # delisted coins (dropped by a market reload) AND for coins under
+            # trading suspension (still listed in /market/all, so a reload keeps
+            # them). Reload to pick up delistings, then fetch resiliently so any
+            # remaining bad code is isolated and skipped instead of failing the
+            # tick. Lets the lab self-heal without a restart.
             if _is_unknown_market_error(exc):
                 self.stats["last_error"] = str(exc)
-                logger.warning("[PaperLab] stale market code in ticker batch; reloading universe and retrying: %s", exc)
+                logger.warning("[PaperLab] bad market code in ticker batch; reloading universe and refetching: %s", exc)
                 symbols = await self._get_krw_symbols(loop, force_reload=True)
-                tickers = await loop.run_in_executor(None, lambda: self.fetcher.exchange.fetch_tickers(symbols))
+                tickers = await self._fetch_tickers_skipping_unknown(loop, symbols)
                 self.stats["last_error"] = None
             else:
                 self.stats["last_error"] = str(exc)
@@ -90,6 +93,28 @@ class UpbitTickerPriceProvider:
                     )
                 )
         return candidates
+
+    async def _fetch_tickers_skipping_unknown(self, loop, symbols: list[str]) -> dict:
+        """Fetch tickers for ``symbols``, dropping any code Upbit rejects with a
+        404 "Code not found". Tries the whole batch first (one request when all
+        codes are valid) and only bisects to isolate bad codes on failure, so the
+        cost is O(bad * log n) extra requests rather than one-per-symbol."""
+        if not symbols:
+            return {}
+        try:
+            return await loop.run_in_executor(
+                None, lambda: self.fetcher.exchange.fetch_tickers(symbols)
+            )
+        except Exception as exc:
+            if not _is_unknown_market_error(exc):
+                raise
+            if len(symbols) == 1:
+                logger.warning("[PaperLab] skipping unknown market code: %s", symbols[0])
+                return {}
+            mid = len(symbols) // 2
+            left = await self._fetch_tickers_skipping_unknown(loop, symbols[:mid])
+            right = await self._fetch_tickers_skipping_unknown(loop, symbols[mid:])
+            return {**left, **right}
 
     async def _get_krw_symbols(self, loop, force_reload: bool = False) -> list[str]:
         fresh = (

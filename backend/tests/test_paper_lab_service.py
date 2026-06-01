@@ -85,3 +85,43 @@ def test_price_provider_self_heals_on_delisted_market_code():
     assert fake_exchange.fetch_tickers_calls == 2
     assert [candidate.symbol for candidate in result] == ["BTC/KRW", "ETH/KRW"]
     assert provider.stats["last_error"] is None
+
+
+class SuspendedMarketExchange:
+    """A code stays in /market/all even after a reload (trading suspension), and
+    Upbit 404s any ticker batch containing it. The resilient fetch must bisect,
+    drop the suspended code, and still return the other tickers."""
+
+    def __init__(self):
+        self.load_markets_calls = 0
+        self.fetch_tickers_calls = 0
+
+    def load_markets(self, reload=False):
+        self.load_markets_calls += 1
+        return {
+            "BTC/KRW": {"active": True},
+            "ETH/KRW": {"active": True},
+            "SUSP/KRW": {"active": True},  # listed but suspended → reload keeps it
+        }
+
+    def fetch_tickers(self, symbols):
+        self.fetch_tickers_calls += 1
+        if "SUSP/KRW" in symbols:
+            raise Exception('upbit {"error":{"name":404,"message":"Code not found"}}')
+        return {
+            symbol: {"last": 100, "quoteVolume": 1_000_000_000, "percentage": 1.5}
+            for symbol in symbols
+        }
+
+
+def test_price_provider_skips_suspended_code_via_bisection():
+    provider = UpbitTickerPriceProvider()
+    fake_exchange = SuspendedMarketExchange()
+    provider.fetcher.exchange = fake_exchange
+
+    result = asyncio.run(provider.get_market_snapshot())
+
+    # The suspended code is dropped; the remaining markets still come through and
+    # no exception bubbles up to crash the tick.
+    assert [candidate.symbol for candidate in result] == ["BTC/KRW", "ETH/KRW"]
+    assert provider.stats["last_error"] is None
