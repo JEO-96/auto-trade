@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 # 404 "Code not found" if even one requested code is stale, so a stale cache
 # would otherwise break every tick until restart.
 SYMBOL_CACHE_TTL_SECONDS = 6 * 3600
+UPBIT_TICKER_BATCH_SIZE = 100
 
 
 def _is_unknown_market_error(exc: Exception) -> bool:
@@ -60,7 +61,7 @@ class UpbitTickerPriceProvider:
         symbols = await self._get_krw_symbols(loop)
         self.stats["ticker_calls"] += 1
         try:
-            tickers = await loop.run_in_executor(None, lambda: self.fetcher.exchange.fetch_tickers(symbols))
+            tickers = await loop.run_in_executor(None, lambda: self._fetch_tickers_batched(symbols))
             self.stats["last_error"] = None
         except Exception as exc:
             # A single bad code makes Upbit 404 the whole batch. This happens for
@@ -102,9 +103,7 @@ class UpbitTickerPriceProvider:
         if not symbols:
             return {}
         try:
-            return await loop.run_in_executor(
-                None, lambda: self.fetcher.exchange.fetch_tickers(symbols)
-            )
+            return await loop.run_in_executor(None, lambda: self._fetch_tickers_batched(symbols))
         except Exception as exc:
             if not _is_unknown_market_error(exc):
                 raise
@@ -143,6 +142,13 @@ class UpbitTickerPriceProvider:
         ]
         self._krw_symbols_loaded_at = time.monotonic()
         return self._krw_symbols
+
+    def _fetch_tickers_batched(self, symbols: list[str]) -> dict:
+        tickers: dict = {}
+        for i in range(0, len(symbols), UPBIT_TICKER_BATCH_SIZE):
+            batch = symbols[i : i + UPBIT_TICKER_BATCH_SIZE]
+            tickers.update(self.fetcher.exchange.fetch_tickers(batch))
+        return tickers
 
 
 class PaperLabService:

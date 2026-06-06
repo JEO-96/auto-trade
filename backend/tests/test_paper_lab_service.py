@@ -125,3 +125,34 @@ def test_price_provider_skips_suspended_code_via_bisection():
     # no exception bubbles up to crash the tick.
     assert [candidate.symbol for candidate in result] == ["BTC/KRW", "ETH/KRW"]
     assert provider.stats["last_error"] is None
+
+
+def test_price_provider_batches_ticker_requests_for_large_krw_market_set():
+    class BatchLimitedExchange:
+        def __init__(self):
+            self.fetch_tickers_batches = []
+
+        def load_markets(self):
+            return {f"COIN{i:03d}/KRW": {"active": True} for i in range(205)}
+
+        def fetch_tickers(self, symbols):
+            self.fetch_tickers_batches.append(list(symbols))
+            if len(symbols) > 100:
+                raise ValueError("too many symbols in one ticker request")
+            return {
+                symbol: {
+                    "last": 100,
+                    "quoteVolume": 1_000_000_000,
+                    "percentage": 1.5,
+                }
+                for symbol in symbols
+            }
+
+    provider = UpbitTickerPriceProvider()
+    fake_exchange = BatchLimitedExchange()
+    provider.fetcher.exchange = fake_exchange
+
+    snapshot = asyncio.run(provider.get_market_snapshot())
+
+    assert len(snapshot) == 205
+    assert [len(batch) for batch in fake_exchange.fetch_tickers_batches] == [100, 100, 5]
