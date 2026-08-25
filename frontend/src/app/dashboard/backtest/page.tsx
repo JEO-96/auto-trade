@@ -363,15 +363,12 @@ export default function BacktestPage() {
         }
     }, [filteredBacktestStrategies]);
 
-    // 전략 변경 시 타임프레임 자동 설정 + 튜닝 기본값 동기화
-    const prevStrategyRef = useRef(form.strategy_name);
+    // 전략과 시간봉은 항상 함께 유지한다. 초기 전략 선택과 설정 로드 순서가
+    // 달라도 화면 및 요청값이 전략의 고정 시간봉과 일치하도록 보장한다.
     useEffect(() => {
-        if (prevStrategyRef.current !== form.strategy_name) {
-            prevStrategyRef.current = form.strategy_name;
-            const tf = getStrategyTimeframe(form.strategy_name);
-            setForm(prev => prev.timeframe === tf ? prev : { ...prev, timeframe: tf });
-            syncTuningDefaults(form.strategy_name);
-        }
+        const timeframe = getStrategyTimeframe(form.strategy_name);
+        setForm(prev => prev.timeframe === timeframe ? prev : { ...prev, timeframe });
+        syncTuningDefaults(form.strategy_name);
     }, [form.strategy_name, syncTuningDefaults]);
 
     const toggleSymbol = (symbol: string) => {
@@ -386,6 +383,17 @@ export default function BacktestPage() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setForm({ ...form, [name]: value, period_preset: '' });
+    };
+
+    const handleStrategyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const strategyName = e.target.value;
+        const timeframe = getStrategyTimeframe(strategyName);
+        setForm(prev => ({
+            ...prev,
+            strategy_name: strategyName,
+            timeframe,
+            period_preset: '',
+        }));
     };
 
     const setPeriodPreset = (key: string, months: number) => {
@@ -1098,7 +1106,7 @@ export default function BacktestPage() {
                                 <select
                                     name="strategy_name"
                                     value={form.strategy_name}
-                                    onChange={handleChange}
+                                    onChange={handleStrategyChange}
                                     className="w-full bg-th-card border border-th-border rounded-xl px-4 py-3 text-sm font-medium text-th-text appearance-none cursor-pointer focus:border-primary/30 transition-colors [&>option]:bg-[--select-bg] [&>option]:text-th-text"
                                 >
                                     {[
