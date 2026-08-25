@@ -15,6 +15,7 @@ from constants import (
     MAX_LIVE_BOTS_PER_USER,
     SYMBOL_PATTERN,
     VALID_TIMEFRAMES,
+    resolve_strategy_timeframe,
 )
 from crypto_utils import fetch_exchange_balance
 from dependencies import get_db, get_current_user
@@ -164,7 +165,7 @@ def create_bot(
     bot = models.BotConfig(
         user_id=current_user.id,
         symbol=req.symbol,
-        timeframe=req.timeframe,
+        timeframe=resolve_strategy_timeframe(req.strategy_name, req.timeframe),
         exchange_name=req.exchange_name,
         strategy_name=req.strategy_name,
         paper_trading_mode=req.paper_trading_mode,
@@ -214,6 +215,13 @@ def update_bot(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Allocated capital must be positive.",
         )
+    effective_strategy_name = update_data.get("strategy_name", bot.strategy_name)
+    effective_timeframe = update_data.get("timeframe", bot.timeframe)
+    update_data["timeframe"] = resolve_strategy_timeframe(
+        effective_strategy_name,
+        effective_timeframe,
+    )
+
 
     # 모의투자 → 실매매로 변경 시: 관리자만 허용 + 기존 실매매 봇 수 체크
     if "paper_trading_mode" in update_data and update_data["paper_trading_mode"] is False:
@@ -283,6 +291,18 @@ async def start_bot(bot_id: int, current_user: models.User = Depends(get_current
             status_code=status.HTTP_403_FORBIDDEN,
             detail="실매매 기능은 현재 준비 중입니다. 모의투자 모드를 이용해주세요.",
         )
+    normalized_timeframe = resolve_strategy_timeframe(bot.strategy_name, bot.timeframe)
+    if bot.timeframe != normalized_timeframe:
+        logger.info(
+            "Normalizing bot %d timeframe from %s to %s for %s",
+            bot.id,
+            bot.timeframe,
+            normalized_timeframe,
+            bot.strategy_name,
+        )
+        bot.timeframe = normalized_timeframe
+        db.commit()
+
 
     # 실매매 봇 검증: 운용자본 vs 거래소 KRW 잔고
     if not bot.paper_trading_mode:

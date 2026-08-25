@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 import models, schemas
+from constants import resolve_strategy_timeframe
 from dependencies import get_db, get_current_user
 from core.vector_backtester import VectorBacktester, backtest_tasks
 from utils import safe_json_loads
@@ -93,6 +94,7 @@ def _start_backtest(
     custom_params: dict | None = None,
 ) -> dict:
     """백테스트 태스크 생성 + DB 기록의 공통 로직."""
+    timeframe = resolve_strategy_timeframe(strategy_name, timeframe)
     tester = VectorBacktester(strategy_name=strategy_name)
     task_id = tester.start_async_backtest(
         symbols=symbols,

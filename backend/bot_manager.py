@@ -16,6 +16,7 @@ from constants import (
     MIN_ORDER_KRW,
     STOP_LOSS_COOLDOWN_SECONDS,
     STRATEGY_LABELS,
+    resolve_strategy_timeframe,
 )
 from feedback_formatter import (
     format_sell_notification,
@@ -65,12 +66,24 @@ def _load_bot_config(bot_config_id: int) -> Optional[dict]:
 
         symbols = parse_symbols(bot_config.symbol or "BTC/KRW")
 
+        strategy_name = getattr(bot_config, 'strategy_name', 'james_pro_stable')
+        timeframe = resolve_strategy_timeframe(strategy_name, bot_config.timeframe or '1h')
+        if bot_config.timeframe != timeframe:
+            logger.info(
+                "[Bot %d] Normalizing timeframe from %s to %s for %s",
+                bot_config_id,
+                bot_config.timeframe,
+                timeframe,
+                strategy_name,
+            )
+            bot_config.timeframe = timeframe
+            db.commit()
         return {
             "symbols": symbols,
-            "timeframe": bot_config.timeframe,
+            "timeframe": timeframe,
             "liquid_capital": bot_config.allocated_capital,
             "paper_trading": bot_config.paper_trading_mode,
-            "strategy_name": getattr(bot_config, 'strategy_name', 'james_pro_stable'),
+            "strategy_name": strategy_name,
             "exchange_name": getattr(bot_config, 'exchange_name', 'upbit'),
             "user_id": bot_config.user_id,
             "custom_strategy_id": getattr(bot_config, 'custom_strategy_id', None),

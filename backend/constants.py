@@ -29,6 +29,29 @@ VALID_TIMEFRAMES: set[str] = {
     "1d", "1w",
 }
 
+# 전략명에 포함된 전용 타임프레임을 서버에서도 강제한다. 프런트엔드의 자동 선택만
+# 신뢰하면 직접 API 요청이나 이전에 저장된 봇 설정으로 다른 시간봉이 실행될 수 있다.
+_STRATEGY_TIMEFRAME_PATTERN: re.Pattern = re.compile(r'_(\d+[mhdw])(?:_v\d+)?$')
+_LEGACY_STRATEGY_TIMEFRAMES: dict[str, str] = {
+    "steady_compounder": "4h",
+    "steady_compounder_v1": "4h",
+}
+
+
+def resolve_strategy_timeframe(strategy_name: str | None, requested_timeframe: str | None) -> str:
+    """전략이 전용 시간봉이면 요청값 대신 그 시간봉을 반환한다."""
+    timeframe = requested_timeframe or "1h"
+    if not strategy_name:
+        return timeframe
+
+    legacy_timeframe = _LEGACY_STRATEGY_TIMEFRAMES.get(strategy_name)
+    if legacy_timeframe:
+        return legacy_timeframe
+
+    match = _STRATEGY_TIMEFRAME_PATTERN.search(strategy_name)
+    matched_timeframe = match.group(1) if match else None
+    return matched_timeframe if matched_timeframe in VALID_TIMEFRAMES else timeframe
+
 # ──────────────────────────────────────────────
 # 리스크 관리 (Risk Management)
 # ──────────────────────────────────────────────
